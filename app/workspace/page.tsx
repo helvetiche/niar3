@@ -2,6 +2,8 @@
 
 import { WorkspaceLoadingScreen } from "@/components/WorkspaceLoadingScreen";
 import { WorkspaceCalendar } from "@/components/WorkspaceCalendar";
+import { GenerateProfilesTool } from "@/components/GenerateProfilesTool";
+import { ConsolidateIfrTool } from "@/components/ConsolidateIfrTool";
 import { WorkspaceToolPlaceholder } from "@/components/WorkspaceToolPlaceholder";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
 
@@ -40,6 +42,10 @@ export default function WorkspacePage() {
         >
           {selectedTab === "calendar" ? (
             <WorkspaceCalendar />
+          ) : selectedTab === "lipa-summary" ? (
+            <GenerateProfilesTool />
+          ) : selectedTab === "consolidate-ifr" ? (
+            <ConsolidateIfrTool />
           ) : (
             TOOL_CONTENT[selectedTab] && (
               <WorkspaceToolPlaceholder

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { fetchProfile } from "@/lib/api/profile";
 import {
   FileTextIcon,
   StackIcon,
@@ -18,8 +19,6 @@ import type { AuthUser } from "@/types/auth";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
 import type { UserProfile } from "@/types/profile";
 import { ProfileModal } from "./ProfileModal";
-
-const PROFILE_KEY = (uid: string) => `profile_${uid}`;
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar_collapsed";
 
@@ -39,18 +38,6 @@ function saveSidebarCollapsed(collapsed: boolean) {
   } catch {
     /* ignore */
   }
-}
-
-function loadProfile(uid: string): UserProfile {
-  if (typeof window === "undefined")
-    return { first: "", middle: "", last: "", birthday: "" };
-  try {
-    const stored = localStorage.getItem(PROFILE_KEY(uid));
-    if (stored) return JSON.parse(stored) as UserProfile;
-  } catch {
-    /* ignore */
-  }
-  return { first: "", middle: "", last: "", birthday: "" };
 }
 
 const CALENDAR = {
@@ -101,13 +88,29 @@ function getDisplayName(profile: UserProfile, email: string | null): string {
 
 export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const [search, setSearch] = useState("");
-  const [profile, setProfile] = useState<UserProfile>({ first: "", middle: "", last: "", birthday: "" });
+  const [profile, setProfile] = useState<UserProfile>({
+    first: "",
+    middle: "",
+    last: "",
+    birthday: "",
+  });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   useEffect(() => {
-    setProfile(loadProfile(user.uid));
+    let cancelled = false;
+    fetchProfile()
+      .then((p) => {
+        if (!cancelled) setProfile(p);
+      })
+      .catch(() => {
+        if (!cancelled)
+          setProfile({ first: "", middle: "", last: "", birthday: "" });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user.uid]);
 
   useEffect(() => {
@@ -121,12 +124,16 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const toggleCollapsed = () => setCollapsed((c) => !c);
 
   const displayName = getDisplayName(profile, user.email);
-  const firstLetter = (profile.first?.[0] || user.email?.[0] || "U").toUpperCase();
+  const firstLetter = (
+    profile.first?.[0] ||
+    user.email?.[0] ||
+    "U"
+  ).toUpperCase();
 
   const filteredTools = TOOLS.filter(
     (tool) =>
       tool.name.toLowerCase().includes(search.toLowerCase()) ||
-      tool.description.toLowerCase().includes(search.toLowerCase())
+      tool.description.toLowerCase().includes(search.toLowerCase()),
   );
 
   const navItems = collapsed
@@ -140,9 +147,15 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
         collapsed ? "w-[72px]" : "w-96"
       }`}
     >
-      <div className={`border-b border-emerald-800 ${collapsed ? "px-2 py-3" : "px-4 py-4"}`}>
-        <div className={`flex items-center justify-between ${collapsed ? "flex-col gap-2" : "gap-2"}`}>
-          <div className={`flex min-w-0 items-start ${collapsed ? "flex-col items-center" : "gap-3"}`}>
+      <div
+        className={`border-b border-emerald-800 ${collapsed ? "px-2 py-3" : "px-4 py-4"}`}
+      >
+        <div
+          className={`flex items-center justify-between ${collapsed ? "flex-col gap-2" : "gap-2"}`}
+        >
+          <div
+            className={`flex min-w-0 items-start ${collapsed ? "flex-col items-center" : "gap-3"}`}
+          >
             <Image
               src="/logo.png"
               alt="NIA Logo"
@@ -177,7 +190,11 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
         {!collapsed && (
           <div className="mt-3 flex items-center gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-white/60 bg-white/10 px-3 py-2">
-              <MagnifyingGlassIcon size={18} weight="duotone" className="shrink-0 text-white" />
+              <MagnifyingGlassIcon
+                size={18}
+                weight="duotone"
+                className="shrink-0 text-white"
+              />
               <input
                 type="search"
                 placeholder="Search tools..."
@@ -272,7 +289,9 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
                     </div>
                     {!collapsed && (
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-white">{item.name}</p>
+                        <p className="text-sm font-medium text-white">
+                          {item.name}
+                        </p>
                         <p className="mt-0.5 text-xs text-emerald-200/80 line-clamp-2">
                           {"description" in item ? item.description : ""}
                         </p>
@@ -285,13 +304,19 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
           </ul>
         )}
       </nav>
-      <div className={`border-t border-emerald-800 ${collapsed ? "p-2" : "p-3"}`}>
+      <div
+        className={`border-t border-emerald-800 ${collapsed ? "p-2" : "p-3"}`}
+      >
         <button
           type="button"
           onClick={() => setIsProfileOpen(true)}
-          title={collapsed ? `${displayName} (${user.email ?? "—"})` : undefined}
+          title={
+            collapsed ? `${displayName} (${user.email ?? "—"})` : undefined
+          }
           className={`flex w-full items-center rounded-lg transition hover:bg-emerald-800 ${
-            collapsed ? "justify-center px-2 py-2.5" : "gap-3 px-3 py-2.5 text-left"
+            collapsed
+              ? "justify-center px-2 py-2.5"
+              : "gap-3 px-3 py-2.5 text-left"
           }`}
         >
           <div
@@ -304,10 +329,18 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
           {!collapsed && (
             <>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="truncate text-sm font-medium text-white">{displayName}</p>
-                <p className="truncate text-xs text-emerald-200/80">{user.email ?? "—"}</p>
+                <p className="truncate text-sm font-medium text-white">
+                  {displayName}
+                </p>
+                <p className="truncate text-xs text-emerald-200/80">
+                  {user.email ?? "—"}
+                </p>
               </div>
-              <PencilSimpleIcon size={18} weight="duotone" className="shrink-0 text-white/70" />
+              <PencilSimpleIcon
+                size={18}
+                weight="duotone"
+                className="shrink-0 text-white/70"
+              />
             </>
           )}
         </button>

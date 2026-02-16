@@ -13,29 +13,7 @@ import {
 } from "@phosphor-icons/react";
 import type { AuthUser } from "@/types/auth";
 import type { UserProfile } from "@/types/profile";
-
-const PROFILE_KEY = (uid: string) => `profile_${uid}`;
-
-function loadProfile(uid: string): UserProfile {
-  if (typeof window === "undefined")
-    return { first: "", middle: "", last: "", birthday: "" };
-  try {
-    const stored = localStorage.getItem(PROFILE_KEY(uid));
-    if (stored) return JSON.parse(stored) as UserProfile;
-  } catch {
-    /* ignore */
-  }
-  return { first: "", middle: "", last: "", birthday: "" };
-}
-
-function saveProfile(uid: string, profile: UserProfile) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(PROFILE_KEY(uid), JSON.stringify(profile));
-  } catch {
-    /* ignore */
-  }
-}
+import { saveProfile } from "@/lib/api/profile";
 
 export function ProfileModal({
   isOpen,
@@ -64,11 +42,30 @@ export function ProfileModal({
     if (isOpen) {
       gsap.set(overlayRef.current, { display: "block", opacity: 0 });
       gsap.set(panelRef.current, { y: "100%", opacity: 0 });
-      gsap.to(overlayRef.current, { opacity: 1, duration: 0.3, ease: "power2.out" });
-      gsap.to(panelRef.current, { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" });
+      gsap.to(overlayRef.current, {
+        opacity: 1,
+        duration: 0.3,
+        ease: "power2.out",
+      });
+      gsap.to(panelRef.current, {
+        y: 0,
+        opacity: 1,
+        duration: 0.4,
+        ease: "power3.out",
+      });
     } else {
-      gsap.to(panelRef.current, { y: "100%", opacity: 0, duration: 0.3, ease: "power3.in" });
-      gsap.to(overlayRef.current, { opacity: 0, duration: 0.25, delay: 0.15, ease: "power2.in" });
+      gsap.to(panelRef.current, {
+        y: "100%",
+        opacity: 0,
+        duration: 0.3,
+        ease: "power3.in",
+      });
+      gsap.to(overlayRef.current, {
+        opacity: 0,
+        duration: 0.25,
+        delay: 0.15,
+        ease: "power2.in",
+      });
     }
   }, [isOpen]);
 
@@ -89,11 +86,15 @@ export function ProfileModal({
     });
   };
 
-  const handleSave = () => {
-    saveProfile(user.uid, profile);
-    onProfileChange(profile);
-    toast.success("Profile saved successfully");
-    handleClose();
+  const handleSave = async () => {
+    try {
+      await saveProfile(profile);
+      onProfileChange(profile);
+      toast.success("Profile saved successfully");
+      handleClose();
+    } catch {
+      toast.error("Failed to save profile");
+    }
   };
 
   const handleChangePassword = async () => {
@@ -138,23 +139,34 @@ export function ProfileModal({
           </button>
         </div>
         <p className="mb-6 text-sm text-emerald-200/90">
-          Store your details here for quick access across tools. Some features will automatically
-          fill forms and credentials based on the information you provide.
+          Store your details here for quick access across tools. Some features
+          will automatically fill forms and credentials based on the information
+          you provide.
         </p>
 
         <div className="space-y-4">
           <div>
             <div className="mb-1 flex items-center gap-2">
-              <UserIcon size={16} weight="duotone" className="text-emerald-300" />
-              <label className="text-xs font-medium text-emerald-200/80">Name</label>
+              <UserIcon
+                size={16}
+                weight="duotone"
+                className="text-emerald-300"
+              />
+              <label className="text-xs font-medium text-emerald-200/80">
+                Name
+              </label>
             </div>
-            <p className="mb-1.5 text-xs text-white/60">First, middle, and last name.</p>
+            <p className="mb-1.5 text-xs text-white/60">
+              First, middle, and last name.
+            </p>
             <div className="flex gap-3">
               <div className="min-w-0 flex-1">
                 <input
                   type="text"
                   value={profile.first}
-                  onChange={(e) => setProfile((p) => ({ ...p, first: e.target.value }))}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, first: e.target.value }))
+                  }
                   placeholder="First"
                   className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
                 />
@@ -163,7 +175,9 @@ export function ProfileModal({
                 <input
                   type="text"
                   value={profile.middle}
-                  onChange={(e) => setProfile((p) => ({ ...p, middle: e.target.value }))}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, middle: e.target.value }))
+                  }
                   placeholder="Middle"
                   className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
                 />
@@ -172,7 +186,9 @@ export function ProfileModal({
                 <input
                   type="text"
                   value={profile.last}
-                  onChange={(e) => setProfile((p) => ({ ...p, last: e.target.value }))}
+                  onChange={(e) =>
+                    setProfile((p) => ({ ...p, last: e.target.value }))
+                  }
                   placeholder="Last"
                   className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
                 />
@@ -181,23 +197,41 @@ export function ProfileModal({
           </div>
           <div>
             <div className="mb-1 flex items-center gap-2">
-              <CalendarBlankIcon size={16} weight="duotone" className="text-emerald-300" />
-              <label className="text-xs font-medium text-emerald-200/80">Birthday</label>
+              <CalendarBlankIcon
+                size={16}
+                weight="duotone"
+                className="text-emerald-300"
+              />
+              <label className="text-xs font-medium text-emerald-200/80">
+                Birthday
+              </label>
             </div>
-            <p className="mb-1.5 text-xs text-white/60">Date of birth for records.</p>
+            <p className="mb-1.5 text-xs text-white/60">
+              Date of birth for records.
+            </p>
             <input
               type="date"
               value={profile.birthday}
-              onChange={(e) => setProfile((p) => ({ ...p, birthday: e.target.value }))}
+              onChange={(e) =>
+                setProfile((p) => ({ ...p, birthday: e.target.value }))
+              }
               className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 [color-scheme:dark]"
             />
           </div>
           <div>
             <div className="mb-1 flex items-center gap-2">
-              <EnvelopeIcon size={16} weight="duotone" className="text-emerald-300" />
-              <label className="text-xs font-medium text-emerald-200/80">Email</label>
+              <EnvelopeIcon
+                size={16}
+                weight="duotone"
+                className="text-emerald-300"
+              />
+              <label className="text-xs font-medium text-emerald-200/80">
+                Email
+              </label>
             </div>
-            <p className="mb-1.5 text-xs text-white/60">Your login email. Cannot be changed.</p>
+            <p className="mb-1.5 text-xs text-white/60">
+              Your login email. Cannot be changed.
+            </p>
             <input
               type="email"
               value={user.email ?? ""}
@@ -208,7 +242,9 @@ export function ProfileModal({
         </div>
 
         <div className="mt-6 space-y-3 border-t border-emerald-800 pt-6">
-          <p className="mb-2 text-xs font-medium text-emerald-200/80">Utilities</p>
+          <p className="mb-2 text-xs font-medium text-emerald-200/80">
+            Utilities
+          </p>
           <div className="mb-1 text-xs text-white/60">
             Receive a reset link at your email to set a new password.
           </div>

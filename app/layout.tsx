@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono } from "next/font/google";
+import { Google_Sans, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/ToastProvider";
 import "./globals.css";
+
+const googleSans = Google_Sans({
+  variable: "--font-google-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  adjustFontFallback: false,
+});
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
@@ -22,9 +29,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={jetbrainsMono.variable}
+      className={`${googleSans.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="antialiased font-sans google-sans">
+      <body className="antialiased font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>
