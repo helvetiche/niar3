@@ -1,23 +1,26 @@
 "use client";
 
 export type ConsolidateIfrPayload = {
-  file: File;
-  sheetId: string;
+  files: File[];
+  template: File;
   tabName?: string;
 };
 
 export type ConsolidateIfrResult = {
-  success: boolean;
-  row: number;
-  rowsWritten: number;
+  blob: Blob;
+  consolidatedCount: number;
+  skippedCount: number;
+  skippedItems: string[];
 };
 
 export const consolidateIfrFile = async (
   payload: ConsolidateIfrPayload,
 ): Promise<ConsolidateIfrResult> => {
   const formData = new FormData();
-  formData.append("file", payload.file);
-  formData.append("sheetId", payload.sheetId);
+  payload.files.forEach((file) => {
+    formData.append("files", file);
+  });
+  formData.append("template", payload.template);
   if (payload.tabName?.trim()) {
     formData.append("tabName", payload.tabName.trim());
   }
@@ -33,5 +36,13 @@ export const consolidateIfrFile = async (
     throw new Error((data as { error?: string }).error ?? "Failed to consolidate file");
   }
 
-  return response.json() as Promise<ConsolidateIfrResult>;
+  const blob = await response.blob();
+  const consolidatedCount = Number(response.headers.get("X-Consolidated-Count") ?? "0");
+  const skippedCount = Number(response.headers.get("X-Skipped-Count") ?? "0");
+  const skippedItemsHeader = response.headers.get("X-Skipped-Items") ?? "";
+  const skippedItems = skippedItemsHeader
+    ? skippedItemsHeader.split(",").filter(Boolean)
+    : [];
+
+  return { blob, consolidatedCount, skippedCount, skippedItems };
 };

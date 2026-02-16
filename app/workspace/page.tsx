@@ -42,7 +42,7 @@ export default function WorkspacePage() {
         >
           {selectedTab === "calendar" ? (
             <WorkspaceCalendar />
-          ) : selectedTab === "lipa-summary" ? (
+          ) : selectedTab === "ifr-scanner" ? (
             <GenerateProfilesTool />
           ) : selectedTab === "consolidate-ifr" ? (
             <ConsolidateIfrTool />

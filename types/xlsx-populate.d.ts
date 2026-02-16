@@ -12,6 +12,7 @@ declare module "xlsx-populate" {
 
   interface Cell {
     value(val?: string | number): string | number | this;
+    style(name: string, value: string): this;
   }
 
   interface Range {
