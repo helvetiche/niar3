@@ -58,5 +58,5 @@ export function getClientIdentifier(request: Request): string {
 }
 
 export function isRateLimitEnabled(): boolean {
-  return redis !== null
+  return redis !== null && process.env.NODE_ENV === 'production'
 }

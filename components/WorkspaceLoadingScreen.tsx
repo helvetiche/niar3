@@ -4,7 +4,20 @@ import { useEffect, useState } from "react";
 import { gsap } from "gsap";
 import { WrenchIcon, CheckCircleIcon } from "@phosphor-icons/react";
 
-const DURATION_MS = 1000;
+const DURATION_MS = 2000;
+
+const QUOTES = [
+  "Excellence is not a destination; it's a continuous journey.",
+  "The only way to do great work is to love what you do.",
+  "Productivity is never an accident. It is always the result of a commitment to excellence.",
+  "Do what you can, with what you have, where you are.",
+  "Simplicity is the ultimate sophistication.",
+  "The secret of getting ahead is getting started.",
+  "Quality is not an act, it is a habit.",
+  "Efficiency is doing things right; effectiveness is doing the right things.",
+  "Small steps lead to big changes.",
+  "The best time to plant a tree was 20 years ago. The second best time is now.",
+];
 
 export function WorkspaceLoadingScreen({
   onComplete,
@@ -14,6 +27,11 @@ export function WorkspaceLoadingScreen({
   const [progress, setProgress] = useState(0);
   const [isDone, setIsDone] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [quote, setQuote] = useState(QUOTES[0]);
+
+  useEffect(() => {
+    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  }, []);
 
   useEffect(() => {
     const start = performance.now();
@@ -81,6 +99,9 @@ export function WorkspaceLoadingScreen({
         </div>
         <p className="tabular-nums text-sm font-medium text-white/90">
           {progress}%
+        </p>
+        <p className="max-w-md text-center text-sm italic text-white/70">
+          {quote}
         </p>
       </div>
     </div>
