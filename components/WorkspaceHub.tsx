@@ -121,9 +121,9 @@ export function WorkspaceHub() {
   }, [search]);
 
   return (
-    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-6 shadow-xl shadow-emerald-950/30">
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
       <header className="mb-6">
-        <h2 className="flex items-center gap-2 text-2xl font-medium text-white">
+        <h2 className="flex items-center gap-2 text-xl font-medium text-white sm:text-2xl">
           <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
             <HouseIcon size={20} className="text-white" />
           </span>
@@ -148,7 +148,7 @@ export function WorkspaceHub() {
           the feature page with all controls ready so you can upload files,
           configure inputs, and generate outputs faster.
         </p>
-        <div className="mt-4 max-w-md">
+        <div className="mt-4 w-full max-w-md">
           <label
             htmlFor="workspace-hub-search"
             className="flex items-center gap-2 rounded-lg border border-white/50 bg-white/15 px-3 py-2 backdrop-blur-sm"
@@ -171,7 +171,7 @@ export function WorkspaceHub() {
         </div>
       </header>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredTools.map((tool) => {
           const Icon = tool.icon;
           return (
@@ -179,7 +179,7 @@ export function WorkspaceHub() {
               key={tool.id}
               type="button"
               onClick={() => handleSelectTool(tool.id)}
-              className="group min-w-[260px] flex-1 rounded-xl border border-emerald-700/70 bg-emerald-900/60 p-5 text-left backdrop-blur-sm transition hover:border-white/55 hover:bg-emerald-900/70"
+              className="group w-full rounded-xl border border-emerald-700/70 bg-emerald-900/60 p-4 text-left backdrop-blur-sm transition hover:border-white/55 hover:bg-emerald-900/70 sm:p-5"
               aria-label={`Open ${tool.name}`}
             >
               <div className="flex items-center gap-3">
@@ -211,7 +211,7 @@ export function WorkspaceHub() {
           );
         })}
         {filteredTools.length === 0 && (
-          <div className="col-span-3 rounded-xl border border-white/35 bg-white/10 p-4 text-sm text-white/85 backdrop-blur-sm">
+          <div className="col-span-full rounded-xl border border-white/35 bg-white/10 p-4 text-sm text-white/85 backdrop-blur-sm">
             No tools matched your search.
           </div>
         )}

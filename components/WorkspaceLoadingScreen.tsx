@@ -29,7 +29,11 @@ export function WorkspaceLoadingScreen({
   const [progress, setProgress] = useState(0);
   const [isDone, setIsDone] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const [quote] = useState(getRandomQuote);
+  const [quote, setQuote] = useState(QUOTES[0] ?? "");
+
+  useEffect(() => {
+    setQuote(getRandomQuote());
+  }, []);
 
   useEffect(() => {
     const start = performance.now();

@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
 import type { AuthUser } from "@/types/auth";
 
 export const WORKSPACE_TABS = [
@@ -28,8 +34,21 @@ export function WorkspaceProvider({
   children: ReactNode;
 }) {
   const [selectedTab, setSelectedTab] = useState<WorkspaceTab>("hub");
+  const handleSetSelectedTab = useCallback(
+    (tab: WorkspaceTab) => {
+      if (tab === selectedTab) return;
+      setSelectedTab(tab);
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    },
+    [selectedTab],
+  );
+
   return (
-    <WorkspaceContext.Provider value={{ user, selectedTab, setSelectedTab }}>
+    <WorkspaceContext.Provider
+      value={{ user, selectedTab, setSelectedTab: handleSetSelectedTab }}
+    >
       {children}
     </WorkspaceContext.Provider>
   );

@@ -344,7 +344,7 @@ export function GenerateProfilesTool() {
   }
 
   return (
-    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-6 shadow-xl shadow-emerald-950/30">
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
       <div className="mb-6">
         <h2 className="flex items-center gap-2 text-xl font-medium text-white">
           <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
@@ -362,7 +362,7 @@ export function GenerateProfilesTool() {
             ZIP Output
           </span>
         </div>
-        <p className="mt-2 text-sm text-white/85">
+        <p className="mt-2 text-sm text-white/85 text-justify">
           Upload master lists and scan files to automatically generate one
           profile workbook per lot with consistent naming and folder structure.
           Select your template, configure optional consolidation, and download

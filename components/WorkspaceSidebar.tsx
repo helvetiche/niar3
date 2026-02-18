@@ -14,6 +14,7 @@ import {
   ListBulletsIcon,
   SquaresFourIcon,
   PencilSimpleIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import type { AuthUser } from "@/types/auth";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
@@ -98,7 +99,10 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(loadSidebarCollapsed);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const { selectedTab, setSelectedTab } = useWorkspaceTab();
 
   useEffect(() => {
     let cancelled = false;
@@ -119,7 +123,32 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
     saveSidebarCollapsed(collapsed);
   }, [collapsed]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const syncDesktopState = (event?: MediaQueryListEvent) => {
+      const matches = event ? event.matches : mediaQuery.matches;
+      setIsDesktop(matches);
+      if (matches) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    syncDesktopState();
+    mediaQuery.addEventListener("change", syncDesktopState);
+    return () => {
+      mediaQuery.removeEventListener("change", syncDesktopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktop) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [selectedTab, isDesktop]);
+
   const toggleCollapsed = () => setCollapsed((c) => !c);
+  const handleToggleMobileMenu = () =>
+    setIsMobileMenuOpen((isOpen) => !isOpen);
 
   const displayName = getDisplayName(profile, user.email);
   const firstLetter = (
@@ -134,32 +163,47 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
       tool.description.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const navItems = collapsed ? TOOLS : filteredTools;
-  const { selectedTab, setSelectedTab } = useWorkspaceTab();
+  const effectiveCollapsed = collapsed && isDesktop;
+  const navItems = effectiveCollapsed ? TOOLS : filteredTools;
+  const showSidebarContent = isDesktop || isMobileMenuOpen;
+  const mobileNavPanelClassName = isDesktop
+    ? "flex min-h-0 flex-1 flex-col"
+    : `absolute left-0 right-0 top-full z-40 origin-top border-b border-emerald-800 bg-emerald-900 shadow-2xl shadow-emerald-950/40 transition-all duration-300 ease-out motion-reduce:transition-none ${
+        isMobileMenuOpen
+          ? "pointer-events-auto translate-y-0 scale-y-100 opacity-100"
+          : "pointer-events-none -translate-y-1 scale-y-95 opacity-0"
+      }`;
+  const mobileBackdropClassName = isDesktop
+    ? "hidden"
+    : `fixed inset-0 z-20 bg-emerald-950/55 backdrop-blur-sm transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+        isMobileMenuOpen
+          ? "pointer-events-auto opacity-100"
+          : "pointer-events-none opacity-0"
+      }`;
 
   return (
     <aside
-      className={`sticky top-0 flex h-screen shrink-0 self-start flex-col overflow-hidden border-r border-emerald-950/50 bg-emerald-900 transition-[width] duration-200 ease-out ${
-        collapsed ? "w-[72px]" : "w-96"
+      className={`sticky top-0 z-40 flex w-full shrink-0 flex-col overflow-visible border-b border-emerald-950/50 bg-emerald-900 lg:z-auto lg:h-screen lg:self-start lg:overflow-hidden lg:border-b-0 lg:border-r lg:transition-[width] lg:duration-200 lg:ease-out ${
+        effectiveCollapsed ? "lg:w-[72px]" : "lg:w-96"
       }`}
     >
       <div
-        className={`border-b border-emerald-800 ${collapsed ? "px-2 py-3" : "px-4 py-4"}`}
+        className={`relative z-50 border-b border-emerald-800 ${effectiveCollapsed ? "px-2 py-3" : "px-3 py-3 sm:px-4 sm:py-4"}`}
       >
         <div
-          className={`flex items-center justify-between ${collapsed ? "flex-col gap-2" : "gap-2"}`}
+          className={`flex items-center justify-between ${effectiveCollapsed ? "lg:flex-col lg:gap-2" : "gap-2"}`}
         >
           <div
-            className={`flex min-w-0 items-start ${collapsed ? "flex-col items-center" : "gap-3"}`}
+            className={`flex min-w-0 items-start ${effectiveCollapsed ? "lg:flex-col lg:items-center" : "gap-3"}`}
           >
             <Image
               src="/logo.png"
               alt="NIA Logo"
-              width={collapsed ? 32 : 40}
-              height={collapsed ? 32 : 40}
-              className={`shrink-0 object-contain ${collapsed ? "h-8 w-8" : "h-10 w-auto"}`}
+              width={effectiveCollapsed ? 32 : 40}
+              height={effectiveCollapsed ? 32 : 40}
+              className={`shrink-0 object-contain ${effectiveCollapsed ? "h-8 w-8" : "h-10 w-auto"}`}
             />
-            {!collapsed && (
+            {!effectiveCollapsed && (
               <div className="min-w-0 flex-1">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-white">
                   NIA Productivity Tools
@@ -173,17 +217,29 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
           <button
             type="button"
             onClick={toggleCollapsed}
-            className="shrink-0 rounded-lg p-2 transition hover:bg-emerald-800"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="hidden shrink-0 rounded-lg p-2 transition hover:bg-emerald-800 lg:inline-flex"
+            aria-label={effectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {collapsed ? (
+            {effectiveCollapsed ? (
               <CaretRightIcon size={20} weight="bold" className="text-white" />
             ) : (
               <CaretLeftIcon size={20} weight="bold" className="text-white" />
             )}
           </button>
+          <button
+            type="button"
+            onClick={handleToggleMobileMenu}
+            className="inline-flex shrink-0 rounded-lg p-2 transition hover:bg-emerald-800 lg:hidden"
+            aria-label={isMobileMenuOpen ? "Close workspace menu" : "Open workspace menu"}
+          >
+            {isMobileMenuOpen ? (
+              <XIcon size={20} weight="bold" className="text-white" />
+            ) : (
+              <ListBulletsIcon size={20} weight="duotone" className="text-white" />
+            )}
+          </button>
         </div>
-        {!collapsed && (
+        {!effectiveCollapsed && isDesktop && showSidebarContent && (
           <div className="mt-3 flex items-center gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-white/60 bg-white/10 px-3 py-2">
               <MagnifyingGlassIcon
@@ -228,118 +284,172 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
           </div>
         )}
       </div>
-      <nav className="flex-1 overflow-y-auto p-2">
-        {viewMode === "grid" && !collapsed ? (
-          <ul className="grid grid-cols-3 gap-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = selectedTab === item.id;
-              return (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTab(item.id)}
-                    title={"description" in item ? item.description : undefined}
-                    className={`flex w-full flex-col items-center gap-2 rounded-lg p-3 transition hover:bg-emerald-800 ${
-                      isActive ? "bg-emerald-800" : ""
-                    }`}
-                  >
-                    <div className="flex shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-white p-2.5">
-                      <Icon size={24} weight="duotone" className="text-white" />
-                    </div>
-                    <p className="text-center text-xs font-medium text-white line-clamp-2">
-                      {item.name}
-                    </p>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <ul className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = selectedTab === item.id;
-              return (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTab(item.id)}
-                    title={item.name}
-                    className={`flex w-full items-center rounded-lg transition hover:bg-emerald-800 ${
-                      collapsed
-                        ? "justify-center px-2 py-3"
-                        : "items-start gap-4 px-4 py-3 text-left"
-                    } ${isActive ? "bg-emerald-800" : ""}`}
-                  >
-                    <div
-                      className={`flex shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-white ${
-                        collapsed ? "p-2" : "p-2.5"
-                      }`}
-                    >
-                      <Icon
-                        size={collapsed ? 20 : 24}
-                        weight="duotone"
-                        className="text-white"
-                      />
-                    </div>
-                    {!collapsed && (
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-white">
+      <button
+        type="button"
+        aria-label="Close workspace menu overlay"
+        className={mobileBackdropClassName}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+      <div className={mobileNavPanelClassName} aria-hidden={!showSidebarContent}>
+        <div className="min-h-0 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+          {!effectiveCollapsed && showSidebarContent && (
+            <div className="flex items-center gap-2 border-b border-emerald-800 p-2 lg:hidden">
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-white/60 bg-white/10 px-3 py-2">
+                <MagnifyingGlassIcon
+                  size={18}
+                  weight="duotone"
+                  className="shrink-0 text-white"
+                />
+                <input
+                  type="search"
+                  placeholder="Search tools..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full bg-transparent text-sm text-white placeholder:text-white/70 focus:outline-none"
+                />
+              </div>
+              <div className="flex shrink-0 rounded-lg border border-white/60 bg-white/10 p-1">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("list")}
+                  title="List view"
+                  className={`rounded-md p-1.5 transition ${
+                    viewMode === "list"
+                      ? "bg-emerald-700 text-white"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <ListBulletsIcon size={18} weight="duotone" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("grid")}
+                  title="Grid view"
+                  className={`rounded-md p-1.5 transition ${
+                    viewMode === "grid"
+                      ? "bg-emerald-700 text-white"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <SquaresFourIcon size={18} weight="duotone" />
+                </button>
+              </div>
+            </div>
+          )}
+          <nav className="max-h-[65dvh] flex-1 overflow-y-auto p-2 lg:max-h-none">
+            {viewMode === "grid" && !effectiveCollapsed ? (
+              <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = selectedTab === item.id;
+                  return (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab(item.id)}
+                        title={"description" in item ? item.description : undefined}
+                        className={`flex w-full flex-col items-center gap-2 rounded-lg p-3 transition hover:bg-emerald-800 ${
+                          isActive ? "bg-emerald-800" : ""
+                        }`}
+                      >
+                        <div className="flex shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-white p-2.5">
+                          <Icon size={24} weight="duotone" className="text-white" />
+                        </div>
+                        <p className="text-center text-xs font-medium text-white line-clamp-2">
                           {item.name}
                         </p>
-                        <p className="mt-0.5 text-xs text-emerald-200/80 line-clamp-2">
-                          {"description" in item ? item.description : ""}
-                        </p>
-                      </div>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </nav>
-      <div
-        className={`border-t border-emerald-800 ${collapsed ? "p-2" : "p-3"}`}
-      >
-        <button
-          type="button"
-          onClick={() => setIsProfileOpen(true)}
-          title={
-            collapsed ? `${displayName} (${user.email ?? "—"})` : undefined
-          }
-          className={`flex w-full items-center rounded-lg transition hover:bg-emerald-800 ${
-            collapsed
-              ? "justify-center px-2 py-2.5"
-              : "gap-3 px-3 py-2.5 text-left"
-          }`}
-        >
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <ul className="space-y-1">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = selectedTab === item.id;
+                  return (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTab(item.id)}
+                        title={item.name}
+                        className={`flex w-full items-center rounded-lg transition hover:bg-emerald-800 ${
+                          effectiveCollapsed
+                            ? "justify-center px-2 py-3"
+                            : "items-start gap-4 px-4 py-3 text-left"
+                        } ${isActive ? "bg-emerald-800" : ""}`}
+                      >
+                        <div
+                          className={`flex shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-white ${
+                            effectiveCollapsed ? "p-2" : "p-2.5"
+                          }`}
+                        >
+                          <Icon
+                            size={effectiveCollapsed ? 20 : 24}
+                            weight="duotone"
+                            className="text-white"
+                          />
+                        </div>
+                        {!effectiveCollapsed && (
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-white">
+                              {item.name}
+                            </p>
+                            <p className="mt-0.5 text-xs text-emerald-200/80 line-clamp-2">
+                              {"description" in item ? item.description : ""}
+                            </p>
+                          </div>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </nav>
           <div
-            className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-800 font-semibold text-white ${
-              collapsed ? "h-9 w-9 text-xs" : "h-10 w-10 text-sm"
-            }`}
+            className={`border-t border-emerald-800 ${effectiveCollapsed ? "p-2" : "p-3"}`}
           >
-            {firstLetter}
-          </div>
-          {!collapsed && (
-            <>
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <p className="truncate text-sm font-medium text-white">
-                  {displayName}
-                </p>
-                <p className="truncate text-xs text-emerald-200/80">
-                  {user.email ?? "—"}
-                </p>
+            <button
+              type="button"
+              onClick={() => setIsProfileOpen(true)}
+              title={
+                effectiveCollapsed ? `${displayName} (${user.email ?? "—"})` : undefined
+              }
+              className={`flex w-full items-center rounded-lg transition hover:bg-emerald-800 ${
+                effectiveCollapsed
+                  ? "justify-center px-2 py-2.5"
+                  : "gap-3 px-3 py-2.5 text-left"
+              }`}
+            >
+              <div
+                className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-800 font-semibold text-white ${
+                  effectiveCollapsed ? "h-9 w-9 text-xs" : "h-10 w-10 text-sm"
+                }`}
+              >
+                {firstLetter}
               </div>
-              <PencilSimpleIcon
-                size={18}
-                weight="duotone"
-                className="shrink-0 text-white/70"
-              />
-            </>
-          )}
-        </button>
+              {!effectiveCollapsed && (
+                <>
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <p className="truncate text-sm font-medium text-white">
+                      {displayName}
+                    </p>
+                    <p className="truncate text-xs text-emerald-200/80">
+                      {user.email ?? "—"}
+                    </p>
+                  </div>
+                  <PencilSimpleIcon
+                    size={18}
+                    weight="duotone"
+                    className="shrink-0 text-white/70"
+                  />
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </div>
       <ProfileModal
         isOpen={isProfileOpen}
