@@ -18,6 +18,7 @@ import { listTemplates, type StoredTemplate } from "@/lib/api/templates";
 const defaultZipName = "farmer-profiles";
 const defaultConsolidationDivision = "0";
 const defaultConsolidationIA = "IA";
+const defaultMergedConsolidationFileName = "ALL DIVISION CONSOLIDATED";
 const defaultProfileFolderName = "land account";
 const scannerConsolidationTemplateStorageKey =
   "ifr-scanner:last-consolidation-template-id";
@@ -85,6 +86,10 @@ export function GenerateProfilesTool() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [zipName, setZipName] = useState(defaultZipName);
   const [createConsolidation, setCreateConsolidation] = useState(false);
+  const [createMergedConsolidation, setCreateMergedConsolidation] =
+    useState(false);
+  const [mergedConsolidationFileName, setMergedConsolidationFileName] =
+    useState(defaultMergedConsolidationFileName);
   const [consolidationTemplates, setConsolidationTemplates] = useState<
     StoredTemplate[]
   >([]);
@@ -242,6 +247,8 @@ export function GenerateProfilesTool() {
         templateId: selectedTemplateId,
         createConsolidation,
         consolidationTemplateId,
+        createMergedConsolidation,
+        mergedConsolidationFileName,
         profileFolderName,
         sourceFolderNames,
         sourceConsolidationDivisions,
@@ -293,6 +300,8 @@ export function GenerateProfilesTool() {
     setSourceFiles([]);
     setSelectedTemplateId("");
     setCreateConsolidation(false);
+    setCreateMergedConsolidation(false);
+    setMergedConsolidationFileName(defaultMergedConsolidationFileName);
     setConsolidationTemplateId("");
     setProfileFolderName(defaultProfileFolderName);
     setSourceFolderNames({});
@@ -581,7 +590,13 @@ export function GenerateProfilesTool() {
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-800 focus:ring-white/60"
             checked={createConsolidation}
-            onChange={(event) => setCreateConsolidation(event.target.checked)}
+            onChange={(event) => {
+              const nextChecked = event.target.checked;
+              setCreateConsolidation(nextChecked);
+              if (!nextChecked) {
+                setCreateMergedConsolidation(false);
+              }
+            }}
             aria-label="Create consolidation file from generated land profiles"
           />
           <span>
@@ -624,6 +639,52 @@ export function GenerateProfilesTool() {
                 ZIP.
               </span>
             </label>
+
+            <div className="md:col-span-2 rounded-lg border border-white/30 bg-white/10 p-3">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  className="mt-1 h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-800 focus:ring-white/60"
+                  checked={createMergedConsolidation}
+                  onChange={(event) =>
+                    setCreateMergedConsolidation(event.target.checked)
+                  }
+                  aria-label="Create merged xlsx file from all consolidated outputs"
+                />
+                <span>
+                  <span className="flex items-center gap-2 text-sm font-medium text-white">
+                    <CheckSquareIcon size={16} className="text-white" />
+                    Create Merged XLSX File
+                  </span>
+                  <span className="mt-1 block text-xs text-white/80">
+                    Combine all generated consolidation files into one workbook
+                    with separate sheets for each source file.
+                  </span>
+                </span>
+              </label>
+
+              {createMergedConsolidation && (
+                <label className="mt-3 block">
+                  <span className="mb-2 block text-sm font-medium text-white/90">
+                    Combined Consolidation File Name
+                  </span>
+                  <input
+                    type="text"
+                    aria-label="Set merged consolidation file name"
+                    value={mergedConsolidationFileName}
+                    onChange={(event) =>
+                      setMergedConsolidationFileName(event.target.value)
+                    }
+                    className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                    placeholder={defaultMergedConsolidationFileName}
+                  />
+                  <span className="mt-2 block text-xs text-white/80">
+                    This filename is used for the merged workbook added to the
+                    ZIP root.
+                  </span>
+                </label>
+              )}
+            </div>
 
             <p className="md:col-span-2 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs text-white/85">
               Consolidation filename is automatic per file:{" "}

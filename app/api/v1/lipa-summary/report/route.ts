@@ -94,6 +94,7 @@ export async function POST(request: Request) {
       error instanceof Error
         ? error.message
         : "Failed to build LIPA report output";
+    const isValidationError = error instanceof z.ZodError;
     await logAuditTrailEntry({
       uid: session.user.uid,
       action: "lipa-summary.report.post",
@@ -101,9 +102,16 @@ export async function POST(request: Request) {
       route: "/api/v1/lipa-summary/report",
       method: "POST",
       request,
-      httpStatus: 500,
+      httpStatus: isValidationError ? 400 : 500,
       errorMessage: message,
     });
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: isValidationError
+          ? "Invalid report payload."
+          : "Failed to build LIPA report output.",
+      },
+      { status: isValidationError ? 400 : 500 },
+    );
   }
 }

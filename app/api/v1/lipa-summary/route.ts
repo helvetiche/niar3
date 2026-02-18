@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth/get-session";
 import { buildLipaReportData } from "@/lib/lipa-summary";
 import { generateLipaReportWorkbook } from "@/lib/lipa-report-generator";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { validateUploads } from "@/lib/upload-limits";
 
 const fileMappingSchema = z.object({
   fileIndex: z.number().int().nonnegative(),
@@ -22,6 +23,13 @@ const parseMappings = (
   if (!Array.isArray(parsed)) throw new Error("Invalid file division mapping.");
   return z.array(fileMappingSchema).parse(parsed);
 };
+const lipaUploadLimits = {
+  maxFileCount: 400,
+  maxFileSizeBytes: 150 * 1024 * 1024,
+  maxTotalSizeBytes: 8 * 1024 * 1024 * 1024,
+  allowedExtensions: [".pdf"],
+  allowedMimeSubstrings: ["pdf"],
+} as const;
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -62,6 +70,24 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Please upload at least one PDF file." },
         { status: 400 },
+      );
+    }
+
+    const uploadValidation = validateUploads(files, lipaUploadLimits);
+    if (!uploadValidation.ok) {
+      await logAuditTrailEntry({
+        uid: session.user.uid,
+        action: "lipa-summary.post",
+        status: "rejected",
+        route: "/api/v1/lipa-summary",
+        method: "POST",
+        request,
+        httpStatus: uploadValidation.status,
+        details: { reason: uploadValidation.reason },
+      });
+      return NextResponse.json(
+        { error: uploadValidation.message },
+        { status: uploadValidation.status },
       );
     }
 
@@ -187,9 +213,32 @@ export async function POST(request: Request) {
       httpStatus: isQuotaOrRateLimit ? 429 : 500,
       errorMessage: message,
     });
+    const isValidationError = error instanceof z.ZodError;
+    const isClientInputError =
+      message.includes("Only PDF files are supported") ||
+      message.includes("Missing division mapping") ||
+      message.includes("Invalid page number") ||
+      message.includes("Invalid file division mapping") ||
+      message.includes("File division mapping is required");
     return NextResponse.json(
-      { error: message },
-      { status: isQuotaOrRateLimit ? 429 : 500 },
+      {
+        error: isValidationError
+          ? "Invalid request payload."
+          : isClientInputError
+            ? message
+            : isQuotaOrRateLimit
+              ? "LIPA summary request is currently rate-limited. Please retry."
+              : "Failed to generate LIPA summary report.",
+      },
+      {
+        status: isValidationError
+          ? 400
+          : isClientInputError
+            ? 400
+            : isQuotaOrRateLimit
+              ? 429
+              : 500,
+      },
     );
   }
 }

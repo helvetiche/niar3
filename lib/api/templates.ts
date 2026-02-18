@@ -10,6 +10,9 @@ export type StoredTemplate = {
   contentType: string;
   sizeBytes: number;
   createdAt: number;
+  updatedAt?: number;
+  uploaderUid?: string;
+  updatedByUid?: string;
 };
 
 export async function listTemplates(
@@ -65,4 +68,33 @@ export async function deleteTemplate(templateId: string): Promise<void> {
       (data as { error?: string }).error ?? "Failed to delete template",
     );
   }
+}
+
+export async function updateTemplate(
+  templateId: string,
+  updates: {
+    name?: string;
+    file?: File | null;
+  },
+): Promise<StoredTemplate> {
+  const formData = new FormData();
+  if (updates.name?.trim()) {
+    formData.append("name", updates.name.trim());
+  }
+  if (updates.file) {
+    formData.append("file", updates.file);
+  }
+
+  const response = await fetch(`/api/v1/templates/${templateId}`, {
+    method: "PATCH",
+    credentials: "include",
+    body: formData,
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(
+      (data as { error?: string }).error ?? "Failed to update template",
+    );
+  }
+  return response.json() as Promise<StoredTemplate>;
 }

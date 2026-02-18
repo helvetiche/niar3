@@ -8,12 +8,20 @@ import {
 } from "@/lib/firebase-admin/firestore";
 import { uploadBufferToStorage } from "@/lib/firebase-admin/storage";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { validateUploads } from "@/lib/upload-limits";
 
 const isScope = (value: unknown): value is TemplateScope =>
   value === "ifr-scanner" || value === "consolidate-ifr";
 
 const sanitizeFilename = (name: string): string =>
   name.replace(/[^a-zA-Z0-9._-]/g, "_");
+const templateUploadLimits = {
+  maxFileCount: 1,
+  maxFileSizeBytes: 100 * 1024 * 1024,
+  maxTotalSizeBytes: 100 * 1024 * 1024,
+  allowedExtensions: [".xlsx", ".xls"],
+  allowedMimeSubstrings: ["sheet", "excel"],
+} as const;
 
 export async function GET(request: Request) {
   const result = await getSession();
@@ -48,7 +56,7 @@ export async function GET(request: Request) {
   const scope = isScope(scopeRaw) ? scopeRaw : undefined;
 
   try {
-    const templates = await listTemplates(result.user.uid, scope);
+    const templates = await listTemplates(scope);
     await logAuditTrailEntry({
       uid: result.user.uid,
       action: "templates.get",
@@ -116,6 +124,24 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    const uploadValidation = validateUploads([file], templateUploadLimits);
+    if (!uploadValidation.ok) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "templates.post",
+        status: "rejected",
+        route: "/api/v1/templates",
+        method: "POST",
+        request,
+        httpStatus: uploadValidation.status,
+        details: { reason: uploadValidation.reason },
+      });
+      return NextResponse.json(
+        { error: uploadValidation.message },
+        { status: uploadValidation.status },
+      );
+    }
     if (!isScope(scope)) {
       await logAuditTrailEntry({
         uid: result.user.uid,
@@ -135,7 +161,7 @@ export async function POST(request: Request) {
 
     const id = randomUUID();
     const filename = sanitizeFilename(file.name || "template.xlsx");
-    const storagePath = `users/${result.user.uid}/templates/${scope}/${id}-${filename}`;
+    const storagePath = `shared/templates/${scope}/${id}-${filename}`;
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const contentType =
@@ -143,7 +169,8 @@ export async function POST(request: Request) {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     await uploadBufferToStorage(storagePath, buffer, contentType);
-    const saved = await createTemplateRecord(result.user.uid, {
+    const saved = await createTemplateRecord(
+      {
       id,
       name:
         typeof customName === "string" && customName.trim()
@@ -153,7 +180,9 @@ export async function POST(request: Request) {
       storagePath,
       contentType,
       sizeBytes: file.size,
-    });
+      },
+      result.user.uid,
+    );
 
     await logAuditTrailEntry({
       uid: result.user.uid,
@@ -183,9 +212,6 @@ export async function POST(request: Request) {
       httpStatus: 500,
       errorMessage: "Failed to save template",
     });
-    return NextResponse.json(
-      { error: "Failed to save template" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to save template" }, { status: 500 });
   }
 }

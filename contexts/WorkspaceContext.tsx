@@ -11,6 +11,7 @@ import type { AuthUser } from "@/types/auth";
 
 export const WORKSPACE_TABS = [
   "hub",
+  "template-manager",
   "lipa-summary",
   "consolidate-ifr",
   "merge-files",

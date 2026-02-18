@@ -5,6 +5,7 @@ import Image from "next/image";
 import { fetchProfile } from "@/lib/api/profile";
 import {
   HouseIcon,
+  GearIcon,
   FileTextIcon,
   StackIcon,
   ArrowsMergeIcon,
@@ -14,6 +15,7 @@ import {
   ListBulletsIcon,
   SquaresFourIcon,
   PencilSimpleIcon,
+  SignOutIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import type { AuthUser } from "@/types/auth";
@@ -48,6 +50,13 @@ const TOOLS = [
     description:
       "Central workspace hub for quick access to all productivity tools.",
     icon: HouseIcon,
+  },
+  {
+    id: "template-manager" as const,
+    name: "TEMPLATE MANAGER",
+    description:
+      "View and update shared templates used across IFR and consolidation tools.",
+    icon: GearIcon,
   },
   {
     id: "lipa-summary" as const,
@@ -102,6 +111,9 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const [isDesktop, setIsDesktop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
   const { selectedTab, setSelectedTab } = useWorkspaceTab();
 
   useEffect(() => {
@@ -149,6 +161,40 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const toggleCollapsed = () => setCollapsed((c) => !c);
   const handleToggleMobileMenu = () =>
     setIsMobileMenuOpen((isOpen) => !isOpen);
+  const handleOpenLogoutModal = () => {
+    setLogoutError("");
+    setIsLogoutModalOpen(true);
+  };
+  const handleCloseLogoutModal = () => {
+    if (isLoggingOut) return;
+    setIsLogoutModalOpen(false);
+    setLogoutError("");
+  };
+  const handleConfirmLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    setLogoutError("");
+    try {
+      const response = await fetch("/api/v1/auth/session", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const data = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        throw new Error(data.error ?? "Failed to logout");
+      }
+      window.location.assign("/?login=1");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to logout. Please try again.";
+      setLogoutError(message);
+      setIsLoggingOut(false);
+    }
+  };
 
   const displayName = getDisplayName(profile, user.email);
   const firstLetter = (
@@ -448,6 +494,33 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
                 </>
               )}
             </button>
+            <button
+              type="button"
+              onClick={handleOpenLogoutModal}
+              title={effectiveCollapsed ? "Logout" : undefined}
+              aria-label="Open logout confirmation"
+              className={`mt-2 flex w-full items-center rounded-lg border border-white/35 transition hover:bg-emerald-800 ${
+                effectiveCollapsed
+                  ? "justify-center px-2 py-2.5"
+                  : "gap-3 px-3 py-2.5 text-left"
+              }`}
+            >
+              <div
+                className={`flex shrink-0 items-center justify-center rounded-full border border-white/30 text-white ${
+                  effectiveCollapsed ? "h-9 w-9" : "h-10 w-10"
+                }`}
+              >
+                <SignOutIcon size={effectiveCollapsed ? 18 : 20} />
+              </div>
+              {!effectiveCollapsed && (
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className="truncate text-sm font-medium text-white">Logout</p>
+                  <p className="truncate text-xs text-emerald-200/80">
+                    End current session safely
+                  </p>
+                </div>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -458,6 +531,59 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
         profile={profile}
         onProfileChange={setProfile}
       />
+      {isLogoutModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Logout confirmation"
+          onClick={handleCloseLogoutModal}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              handleCloseLogoutModal();
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-white/20 bg-emerald-950 p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="text-lg font-medium text-white">Confirm Logout</h3>
+            <p className="mt-2 text-sm text-white/85">
+              Are you sure you want to logout from this account?
+            </p>
+            {logoutError && (
+              <p className="mt-3 rounded-lg border border-rose-300/40 bg-rose-900/20 px-3 py-2 text-xs text-rose-100">
+                {logoutError}
+              </p>
+            )}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleCloseLogoutModal}
+                disabled={isLoggingOut}
+                aria-label="Cancel logout"
+                className="rounded-lg border border-white/35 px-3 py-2 text-sm text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void handleConfirmLogout();
+                }}
+                disabled={isLoggingOut}
+                aria-label="Confirm logout"
+                className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/60"
+              >
+                <SignOutIcon size={16} />
+                {isLoggingOut ? "Logging out..." : "Yes, Logout"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

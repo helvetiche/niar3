@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/get-session";
 import { mergeExcelBuffers, mergePdfBuffers } from "@/lib/merge-files";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { validateUploads } from "@/lib/upload-limits";
 
 type MergeMode = "pdf" | "excel";
 
@@ -9,6 +10,20 @@ type PageOrderItem = {
   fileIndex: number;
   pageIndex: number;
 };
+const pdfUploadLimits = {
+  maxFileCount: 400,
+  maxFileSizeBytes: 150 * 1024 * 1024,
+  maxTotalSizeBytes: 8 * 1024 * 1024 * 1024,
+  allowedExtensions: [".pdf"],
+  allowedMimeSubstrings: ["pdf"],
+} as const;
+const excelUploadLimits = {
+  maxFileCount: 400,
+  maxFileSizeBytes: 150 * 1024 * 1024,
+  maxTotalSizeBytes: 8 * 1024 * 1024 * 1024,
+  allowedExtensions: [".xlsx", ".xls"],
+  allowedMimeSubstrings: ["sheet", "excel"],
+} as const;
 
 const isMergeMode = (value: unknown): value is MergeMode =>
   value === "pdf" || value === "excel";
@@ -117,6 +132,27 @@ export async function POST(request: Request) {
       );
     }
 
+    const uploadValidation = validateUploads(
+      files,
+      modeValue === "pdf" ? pdfUploadLimits : excelUploadLimits,
+    );
+    if (!uploadValidation.ok) {
+      await logAuditTrailEntry({
+        uid: session.user.uid,
+        action: "merge-files.post",
+        status: "rejected",
+        route: "/api/v1/merge-files",
+        method: "POST",
+        request,
+        httpStatus: uploadValidation.status,
+        details: { reason: uploadValidation.reason, mode: modeValue },
+      });
+      return NextResponse.json(
+        { error: uploadValidation.message },
+        { status: uploadValidation.status },
+      );
+    }
+
     const fileName =
       typeof fileNameValue === "string" ? fileNameValue : undefined;
     const inputFiles = await Promise.all(
@@ -195,6 +231,10 @@ export async function POST(request: Request) {
     console.error("[api/merge-files POST]", error);
     const message =
       error instanceof Error ? error.message : "Failed to merge files";
+    const isClientSafeError =
+      message.includes("Invalid PDF page order") ||
+      message.includes("PDF page order") ||
+      message.includes("Invalid Excel page names payload");
     await logAuditTrailEntry({
       uid: session.user.uid,
       action: "merge-files.post",
@@ -205,6 +245,9 @@ export async function POST(request: Request) {
       httpStatus: 500,
       errorMessage: message,
     });
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: isClientSafeError ? message : "Failed to merge files." },
+      { status: 500 },
+    );
   }
 }

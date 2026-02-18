@@ -4,6 +4,22 @@ import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
 import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
 import { buildConsolidatedWorkbook } from "@/lib/consolidation";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { validateUploads } from "@/lib/upload-limits";
+
+const ifrUploadLimits = {
+  maxFileCount: 400,
+  maxFileSizeBytes: 100 * 1024 * 1024,
+  maxTotalSizeBytes: 5 * 1024 * 1024 * 1024,
+  allowedExtensions: [".xlsx", ".xls"],
+  allowedMimeSubstrings: ["sheet", "excel"],
+} as const;
+const templateUploadLimits = {
+  maxFileCount: 1,
+  maxFileSizeBytes: 100 * 1024 * 1024,
+  maxTotalSizeBytes: 100 * 1024 * 1024,
+  allowedExtensions: [".xlsx", ".xls"],
+  allowedMimeSubstrings: ["sheet", "excel"],
+} as const;
 
 export async function POST(request: Request) {
   const result = await getSession();
@@ -78,13 +94,46 @@ export async function POST(request: Request) {
     }
 
     const ifrFiles = files.length > 0 ? files : [singleFile as File];
+    const ifrUploadValidation = validateUploads(ifrFiles, ifrUploadLimits);
+    if (!ifrUploadValidation.ok) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "consolidate-ifr.post",
+        status: "rejected",
+        route: "/api/v1/consolidate-ifr",
+        method: "POST",
+        request,
+        httpStatus: ifrUploadValidation.status,
+        details: { reason: ifrUploadValidation.reason },
+      });
+      return NextResponse.json(
+        { error: ifrUploadValidation.message },
+        { status: ifrUploadValidation.status },
+      );
+    }
 
     let templateBuffer: Buffer;
     if (template instanceof File) {
+      const templateValidation = validateUploads([template], templateUploadLimits);
+      if (!templateValidation.ok) {
+        await logAuditTrailEntry({
+          uid: result.user.uid,
+          action: "consolidate-ifr.post",
+          status: "rejected",
+          route: "/api/v1/consolidate-ifr",
+          method: "POST",
+          request,
+          httpStatus: templateValidation.status,
+          details: { reason: templateValidation.reason },
+        });
+        return NextResponse.json(
+          { error: templateValidation.message },
+          { status: templateValidation.status },
+        );
+      }
       templateBuffer = Buffer.from(await template.arrayBuffer());
     } else {
       const savedTemplate = await getTemplateRecord(
-        result.user.uid,
         String(templateId).trim(),
       );
       if (!savedTemplate) {
@@ -184,6 +233,9 @@ export async function POST(request: Request) {
     if (isNoConsolidation) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to consolidate IFR file." },
+      { status: 500 },
+    );
   }
 }

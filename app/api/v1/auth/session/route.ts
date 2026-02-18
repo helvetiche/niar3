@@ -134,3 +134,51 @@ export async function POST(request: Request) {
     );
   }
 }
+
+/**
+ * DELETE /api/v1/auth/session
+ * Clears the __session cookie to log out the user.
+ */
+export async function DELETE(request: Request) {
+  try {
+    const auth = getAdminAuth();
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get(SESSION_COOKIE)?.value;
+    let revokedUid: string | null = null;
+
+    if (sessionToken) {
+      try {
+        const decoded = await auth.verifySessionCookie(sessionToken, true);
+        revokedUid = decoded.uid;
+        await auth.revokeRefreshTokens(decoded.uid);
+      } catch {
+        // Ignore invalid/expired cookies during logout cleanup.
+      }
+    }
+
+    cookieStore.delete(SESSION_COOKIE);
+    await logAuditTrailEntry({
+      uid: revokedUid,
+      action: "auth.session.delete",
+      status: "success",
+      route: "/api/v1/auth/session",
+      method: "DELETE",
+      request,
+      httpStatus: 200,
+    });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[auth/session DELETE]", err);
+    await logAuditTrailEntry({
+      action: "auth.session.delete",
+      status: "error",
+      route: "/api/v1/auth/session",
+      method: "DELETE",
+      request,
+      httpStatus: 500,
+      errorMessage: message,
+    });
+    return NextResponse.json({ error: "Failed to logout" }, { status: 500 });
+  }
+}

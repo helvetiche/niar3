@@ -4,6 +4,8 @@ export type GenerateProfilesOptions = {
   templateId: string;
   createConsolidation?: boolean;
   consolidationTemplateId?: string;
+  createMergedConsolidation?: boolean;
+  mergedConsolidationFileName?: string;
   profileFolderName?: string;
   sourceFolderNames?: Record<string, string>;
   sourceConsolidationDivisions?: Record<string, string>;
@@ -33,6 +35,15 @@ export const generateProfilesZip = async (
         "consolidationTemplateId",
         options.consolidationTemplateId.trim(),
       );
+    }
+    if (options.createMergedConsolidation) {
+      formData.append("createMergedConsolidation", "true");
+      if (options.mergedConsolidationFileName?.trim()) {
+        formData.append(
+          "mergedConsolidationFileName",
+          options.mergedConsolidationFileName.trim(),
+        );
+      }
     }
   }
   if (options.profileFolderName?.trim()) {

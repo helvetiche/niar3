@@ -5,6 +5,7 @@ import {
   ArrowsMergeIcon,
   CheckCircleIcon,
   DatabaseIcon,
+  GearIcon,
   FilePdfIcon,
   FileTextIcon,
   FilesIcon,
@@ -48,6 +49,18 @@ type HubTool = {
 };
 
 const HUB_TOOLS: HubTool[] = [
+  {
+    id: "template-manager",
+    name: "TEMPLATE MANAGER",
+    description:
+      "Create, view, rename, replace, and delete shared templates used by all authenticated users across workspace tools.",
+    icon: GearIcon,
+    tags: [
+      { id: "shared", label: "Shared Access", icon: LinkSimpleIcon },
+      { id: "update", label: "Update Templates", icon: CheckCircleIcon },
+      { id: "manage", label: "Template Control", icon: SquaresFourIcon },
+    ],
+  },
   {
     id: "ifr-scanner",
     name: "IFR SCANNER",

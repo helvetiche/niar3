@@ -155,7 +155,7 @@ export function Footer() {
             })}
           </div>
           <p
-            className="mt-3 text-sm leading-relaxed text-white sm:text-base"
+            className="mt-3 text-sm leading-relaxed text-white sm:text-base text-justify"
             style={{ fontFamily: "var(--font-jetbrains-mono)" }}
           >
             {selectedPanel.content}

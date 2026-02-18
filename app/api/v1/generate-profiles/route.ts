@@ -7,7 +7,9 @@ import { generateProfileBuffer } from "@/lib/profileGenerator";
 import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
 import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
 import { buildConsolidatedWorkbook } from "@/lib/consolidation";
+import { mergeExcelBuffers } from "@/lib/merge-files";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { validateUploads } from "@/lib/upload-limits";
 
 const sanitizeFolderName = (value: string): string =>
   value
@@ -69,6 +71,32 @@ const buildConsolidationFileName = (division: string, ia: string): string => {
   return `${paddedDivision} ${iaName} CONSOLIDATED`;
 };
 
+const defaultMergedConsolidationFileName = "ALL DIVISION CONSOLIDATED";
+const sourceUploadLimits = {
+  maxFileCount: 400,
+  maxFileSizeBytes: 100 * 1024 * 1024,
+  maxTotalSizeBytes: 5 * 1024 * 1024 * 1024,
+  allowedExtensions: [".xlsx", ".xls"],
+  allowedMimeSubstrings: ["sheet", "excel"],
+} as const;
+const templateUploadLimits = {
+  maxFileCount: 1,
+  maxFileSizeBytes: 100 * 1024 * 1024,
+  maxTotalSizeBytes: 100 * 1024 * 1024,
+  allowedExtensions: [".xlsx", ".xls"],
+  allowedMimeSubstrings: ["sheet", "excel"],
+} as const;
+const ensureXlsxExtension = (value: string): string => {
+  const cleaned = value
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+  const baseName = cleaned || defaultMergedConsolidationFileName;
+  return baseName.toLowerCase().endsWith(".xlsx")
+    ? baseName
+    : `${baseName}.xlsx`;
+};
+
 const parseTextMap = (
   value: FormDataEntryValue | null,
   transformer: (input: string) => string,
@@ -118,6 +146,12 @@ export async function POST(request: Request) {
     const templateId = formData.get("templateId");
     const createConsolidationRaw = formData.get("createConsolidation");
     const consolidationTemplateIdRaw = formData.get("consolidationTemplateId");
+    const createMergedConsolidationRaw = formData.get(
+      "createMergedConsolidation",
+    );
+    const mergedConsolidationFileNameRaw = formData.get(
+      "mergedConsolidationFileName",
+    );
     const consolidationDivisionRaw = formData.get("consolidationDivision");
     const consolidationIARaw = formData.get("consolidationIA");
     const profileFolderNameRaw = formData.get("profileFolderName");
@@ -134,6 +168,14 @@ export async function POST(request: Request) {
       typeof consolidationTemplateIdRaw === "string"
         ? consolidationTemplateIdRaw.trim()
         : "";
+    const createMergedConsolidation =
+      typeof createMergedConsolidationRaw === "string" &&
+      createMergedConsolidationRaw.toLowerCase() === "true";
+    const mergedConsolidationFileName =
+      typeof mergedConsolidationFileNameRaw === "string" &&
+      mergedConsolidationFileNameRaw.trim()
+        ? mergedConsolidationFileNameRaw.trim()
+        : defaultMergedConsolidationFileName;
     const consolidationDivision =
       typeof consolidationDivisionRaw === "string"
         ? consolidationDivisionRaw.replace(/[^0-9]/g, "") || "0"
@@ -161,6 +203,24 @@ export async function POST(request: Request) {
 
     const sourceFiles =
       files.length > 0 ? files : singleFile instanceof File ? [singleFile] : [];
+
+    const sourceUploadValidation = validateUploads(sourceFiles, sourceUploadLimits);
+    if (!sourceUploadValidation.ok) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "generate-profiles.post",
+        status: "rejected",
+        route: "/api/v1/generate-profiles",
+        method: "POST",
+        request,
+        httpStatus: sourceUploadValidation.status,
+        details: { reason: sourceUploadValidation.reason },
+      });
+      return NextResponse.json(
+        { error: sourceUploadValidation.message },
+        { status: sourceUploadValidation.status },
+      );
+    }
 
     if (sourceFiles.length === 0) {
       await logAuditTrailEntry({
@@ -222,10 +282,26 @@ export async function POST(request: Request) {
 
     let templateBuffer: Buffer;
     if (template instanceof File) {
+      const templateValidation = validateUploads([template], templateUploadLimits);
+      if (!templateValidation.ok) {
+        await logAuditTrailEntry({
+          uid: result.user.uid,
+          action: "generate-profiles.post",
+          status: "rejected",
+          route: "/api/v1/generate-profiles",
+          method: "POST",
+          request,
+          httpStatus: templateValidation.status,
+          details: { reason: templateValidation.reason },
+        });
+        return NextResponse.json(
+          { error: templateValidation.message },
+          { status: templateValidation.status },
+        );
+      }
       templateBuffer = Buffer.from(await template.arrayBuffer());
     } else if (typeof templateId === "string" && templateId.trim()) {
       const savedTemplate = await getTemplateRecord(
-        result.user.uid,
         templateId.trim(),
       );
       if (!savedTemplate) {
@@ -263,11 +339,12 @@ export async function POST(request: Request) {
     const zip = new JSZip();
     const seenDivisionFolders = new Map<string, number>();
     let totalGeneratedProfiles = 0;
+    const consolidatedFilesForMerge: Array<{ fileName: string; buffer: Buffer }> =
+      [];
 
     let consolidationTemplateBuffer: Buffer | null = null;
     if (createConsolidation) {
       const consolidationTemplate = await getTemplateRecord(
-        result.user.uid,
         consolidationTemplateId,
       );
       if (!consolidationTemplate) {
@@ -365,6 +442,31 @@ export async function POST(request: Request) {
           ia: sourceIA,
         });
         divisionFolder.file(consolidated.outputName, consolidated.buffer);
+        consolidatedFilesForMerge.push({
+          fileName: consolidated.outputName,
+          buffer: consolidated.buffer,
+        });
+      }
+    }
+
+    if (
+      createConsolidation &&
+      createMergedConsolidation &&
+      consolidatedFilesForMerge.length > 0
+    ) {
+      if (consolidatedFilesForMerge.length === 1) {
+        const singleFile = consolidatedFilesForMerge[0];
+        const outputName = ensureXlsxExtension(mergedConsolidationFileName);
+        zip.file(outputName, singleFile.buffer);
+      } else {
+        const { buffer, outputName } = await mergeExcelBuffers({
+          inputFiles: consolidatedFilesForMerge,
+          fileName: mergedConsolidationFileName,
+          excelPageNames: consolidatedFilesForMerge.map((item) =>
+            getFileBaseName(item.fileName),
+          ),
+        });
+        zip.file(outputName, buffer);
       }
     }
 
@@ -406,6 +508,9 @@ export async function POST(request: Request) {
         sourceFileCount: sourceFiles.length,
         totalGeneratedProfiles,
         createConsolidation,
+        createMergedConsolidation:
+          createConsolidation && createMergedConsolidation,
+        mergedConsolidationFileCount: consolidatedFilesForMerge.length,
       },
     });
 
@@ -429,6 +534,9 @@ export async function POST(request: Request) {
       httpStatus: 500,
       errorMessage: message,
     });
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to generate profiles." },
+      { status: 500 },
+    );
   }
 }

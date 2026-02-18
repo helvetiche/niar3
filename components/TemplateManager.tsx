@@ -10,6 +10,7 @@ import {
 import {
   deleteTemplate,
   listTemplates,
+  updateTemplate,
   uploadTemplate,
   type StoredTemplate,
   type TemplateScope,
@@ -31,10 +32,13 @@ export function TemplateManager({
 }: Props) {
   const [templates, setTemplates] = useState<StoredTemplate[]>([]);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [updateFile, setUpdateFile] = useState<File | null>(null);
+  const [updateName, setUpdateName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const updateInputRef = useRef<HTMLInputElement | null>(null);
 
   const refreshTemplates = useCallback(async () => {
     setIsLoading(true);
@@ -83,6 +87,17 @@ export function TemplateManager({
     window.localStorage.removeItem(key);
   }, [scope, selectedTemplateId]);
 
+  useEffect(() => {
+    if (!selectedTemplateId) {
+      setUpdateName("");
+      setUpdateFile(null);
+      if (updateInputRef.current) updateInputRef.current.value = "";
+      return;
+    }
+    const selected = templates.find((template) => template.id === selectedTemplateId);
+    setUpdateName(selected?.name ?? "");
+  }, [selectedTemplateId, templates]);
+
   const handleUpload = async () => {
     if (!uploadFile) {
       setMessage("Choose a template file first.");
@@ -119,6 +134,37 @@ export function TemplateManager({
       setMessage("Template deleted.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Delete failed.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!selectedTemplateId) {
+      setMessage("Select a saved template to update.");
+      return;
+    }
+
+    const trimmedName = updateName.trim();
+    if (!trimmedName && !updateFile) {
+      setMessage("Provide a new name and/or replacement file.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const updated = await updateTemplate(selectedTemplateId, {
+        name: trimmedName || undefined,
+        file: updateFile,
+      });
+      setTemplates((previous) =>
+        previous.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      setUpdateFile(null);
+      if (updateInputRef.current) updateInputRef.current.value = "";
+      setMessage("Template updated.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Update failed.");
     } finally {
       setIsLoading(false);
     }
@@ -161,7 +207,7 @@ export function TemplateManager({
             aria-hidden="true"
             onClick={() => setIsModalOpen(false)}
           />
-          <section className="relative z-10 w-full max-w-2xl rounded-xl border border-white/45 bg-white/15 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
+          <section className="relative z-10 max-h-[85dvh] w-full max-w-2xl overflow-y-auto rounded-xl border border-white/45 bg-white/15 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-5">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-medium text-white">
                 Template Manager
@@ -179,12 +225,16 @@ export function TemplateManager({
             <p className="mt-1 text-xs text-white/80">
               Save templates to Firebase Storage and reuse them later.
             </p>
-            <p className="mt-2 text-xs leading-5 text-white/80">
+            <p className="mt-2 text-xs leading-5 text-white/80 sm:hidden">
+              Keep templates in one place. Select one to use now, upload new
+              versions, and delete old ones.
+            </p>
+            <p className="mt-2 hidden text-xs leading-5 text-white/80 sm:block">
               Use this manager to keep your official templates in one place.
               Select a saved template to use it immediately in the current tool,
               upload a new file when layouts change, and delete outdated
-              versions to keep the list clean. Templates are stored per account
-              and per tool scope.
+              versions to keep the list clean. Templates are shared across all
+              authenticated users and grouped by tool scope.
             </p>
 
             <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
@@ -217,7 +267,11 @@ export function TemplateManager({
                 Delete
               </button>
             </div>
-            <p className="mt-2 text-xs leading-5 text-white/80">
+            <p className="mt-2 text-xs leading-5 text-white/80 sm:hidden">
+              Pick a template for the next run. If deleted, choose another
+              template before continuing.
+            </p>
+            <p className="mt-2 hidden text-xs leading-5 text-white/80 sm:block">
               Select the template you want to use for the next run. When
               selected, the current tool automatically references this template
               during generation or consolidation. If you remove a selected
@@ -249,12 +303,61 @@ export function TemplateManager({
                 Save
               </button>
             </div>
-            <p className="mt-2 text-xs leading-5 text-white/80">
+            <p className="mt-2 text-xs leading-5 text-white/80 sm:hidden">
+              Upload .xlsx or .xls templates. New uploads are auto-selected for
+              this session.
+            </p>
+            <p className="mt-2 hidden text-xs leading-5 text-white/80 sm:block">
               Upload new templates in .xlsx or .xls format. Use clear file names
               so your team can identify the correct version quickly. After
               upload, the template is saved to Firebase Storage and selected
               automatically for this session. You can switch templates anytime
               without reloading the page.
+            </p>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+              <input
+                type="text"
+                aria-label="Update selected template name"
+                value={updateName}
+                onChange={(event) => setUpdateName(event.target.value)}
+                disabled={isLoading || !selectedTemplateId}
+                placeholder="Updated template name"
+                className="rounded-lg border border-white/50 bg-white/20 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/40 disabled:cursor-not-allowed disabled:text-white/60"
+              />
+              <button
+                type="button"
+                aria-label="Update selected template"
+                onClick={() => {
+                  void handleUpdate();
+                }}
+                disabled={
+                  isLoading ||
+                  !selectedTemplateId ||
+                  (!updateName.trim() && !updateFile)
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/50 bg-white/20 px-3 py-2 text-sm text-white transition hover:bg-white/30 disabled:cursor-not-allowed disabled:text-white/60"
+              >
+                Update
+              </button>
+            </div>
+
+            <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto]">
+              <input
+                ref={updateInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                aria-label="Replace selected template file"
+                onChange={(event) =>
+                  setUpdateFile(event.target.files?.[0] ?? null)
+                }
+                disabled={isLoading || !selectedTemplateId}
+                className="block w-full rounded-lg border border-white/50 bg-white/20 px-3 py-2 text-sm text-white file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-emerald-900 hover:file:bg-emerald-50 disabled:cursor-not-allowed disabled:text-white/60"
+              />
+            </div>
+            <p className="mt-2 text-xs leading-5 text-white/80">
+              Update lets you rename the selected template and/or replace its
+              file while keeping the same template ID for all users.
             </p>
 
             {message && <p className="mt-3 text-xs text-white">{message}</p>}

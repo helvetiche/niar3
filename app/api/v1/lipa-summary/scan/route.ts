@@ -3,11 +3,19 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth/get-session";
 import { scanLipaSourceFile } from "@/lib/lipa-summary";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { validateUploads } from "@/lib/upload-limits";
 
 const scanPayloadSchema = z.object({
   divisionName: z.string().min(1),
   pageNumber: z.number().int().nonnegative(),
 });
+const scanUploadLimits = {
+  maxFileCount: 1,
+  maxFileSizeBytes: 150 * 1024 * 1024,
+  maxTotalSizeBytes: 150 * 1024 * 1024,
+  allowedExtensions: [".pdf"],
+  allowedMimeSubstrings: ["pdf"],
+} as const;
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -45,10 +53,8 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (
-      !file.type.includes("pdf") &&
-      !file.name.toLowerCase().endsWith(".pdf")
-    ) {
+    const uploadValidation = validateUploads([file], scanUploadLimits);
+    if (!uploadValidation.ok) {
       await logAuditTrailEntry({
         uid: session.user.uid,
         action: "lipa-summary.scan.post",
@@ -56,16 +62,12 @@ export async function POST(request: Request) {
         route: "/api/v1/lipa-summary/scan",
         method: "POST",
         request,
-        httpStatus: 400,
-        details: {
-          reason: "invalid-file-type",
-          fileName: file.name,
-          fileType: file.type,
-        },
+        httpStatus: uploadValidation.status,
+        details: { reason: uploadValidation.reason },
       });
       return NextResponse.json(
-        { error: "Only PDF files are supported." },
-        { status: 400 },
+        { error: uploadValidation.message },
+        { status: uploadValidation.status },
       );
     }
     if (typeof payloadRaw !== "string" || !payloadRaw.trim()) {
@@ -133,9 +135,16 @@ export async function POST(request: Request) {
       httpStatus: isQuotaOrRateLimit ? 429 : 500,
       errorMessage: message,
     });
+    const isValidationError = error instanceof z.ZodError;
     return NextResponse.json(
-      { error: message },
-      { status: isQuotaOrRateLimit ? 429 : 500 },
+      {
+        error: isValidationError
+          ? "Invalid scan payload."
+          : isQuotaOrRateLimit
+            ? "LIPA scan request is currently rate-limited. Please retry."
+            : "Failed to scan PDF for LIPA summary.",
+      },
+      { status: isValidationError ? 400 : isQuotaOrRateLimit ? 429 : 500 },
     );
   }
 }
