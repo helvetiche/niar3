@@ -2,8 +2,11 @@
 
 export type ConsolidateIfrPayload = {
   files: File[];
-  template: File;
-  tabName?: string;
+  template?: File | null;
+  templateId?: string;
+  fileName?: string;
+  division?: string;
+  ia?: string;
 };
 
 export type ConsolidateIfrResult = {
@@ -11,6 +14,7 @@ export type ConsolidateIfrResult = {
   consolidatedCount: number;
   skippedCount: number;
   skippedItems: string[];
+  skippedDetails: { fileName: string; fileId?: string; reason: string }[];
 };
 
 export const consolidateIfrFile = async (
@@ -20,9 +24,20 @@ export const consolidateIfrFile = async (
   payload.files.forEach((file) => {
     formData.append("files", file);
   });
-  formData.append("template", payload.template);
-  if (payload.tabName?.trim()) {
-    formData.append("tabName", payload.tabName.trim());
+  if (payload.template) {
+    formData.append("template", payload.template);
+  }
+  if (!payload.template && payload.templateId?.trim()) {
+    formData.append("templateId", payload.templateId.trim());
+  }
+  if (payload.fileName?.trim()) {
+    formData.append("fileName", payload.fileName.trim());
+  }
+  if (payload.division?.trim()) {
+    formData.append("division", payload.division.trim());
+  }
+  if (payload.ia?.trim()) {
+    formData.append("ia", payload.ia.trim());
   }
 
   const response = await fetch("/api/v1/consolidate-ifr", {
@@ -43,6 +58,17 @@ export const consolidateIfrFile = async (
   const skippedItems = skippedItemsHeader
     ? skippedItemsHeader.split(",").filter(Boolean)
     : [];
+  const skippedDetailsHeader = response.headers.get("X-Skipped-Details") ?? "";
+  let skippedDetails: { fileName: string; fileId?: string; reason: string }[] = [];
+  if (skippedDetailsHeader) {
+    try {
+      skippedDetails = JSON.parse(
+        decodeURIComponent(skippedDetailsHeader),
+      ) as typeof skippedDetails;
+    } catch {
+      skippedDetails = [];
+    }
+  }
 
-  return { blob, consolidatedCount, skippedCount, skippedItems };
+  return { blob, consolidatedCount, skippedCount, skippedItems, skippedDetails };
 };

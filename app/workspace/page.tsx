@@ -33,13 +33,7 @@ export default function WorkspacePage() {
     <>
       <WorkspaceLoadingScreen />
       <main className="flex min-h-0 flex-1 flex-col bg-zinc-50">
-        <div
-          className={
-            selectedTab === "calendar"
-              ? "flex min-h-0 flex-1 flex-col p-4"
-              : "mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8"
-          }
-        >
+        <div className="flex min-h-0 flex-1 flex-col p-4">
           {selectedTab === "calendar" ? (
             <WorkspaceCalendar />
           ) : selectedTab === "ifr-scanner" ? (

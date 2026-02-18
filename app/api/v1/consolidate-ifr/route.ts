@@ -3,6 +3,8 @@ import XlsxPopulate from "xlsx-populate";
 import { getSession } from "@/lib/auth/get-session";
 import { extractData } from "@/lib/dataExtractor";
 import { parseExcelFile } from "@/lib/excelParser";
+import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
+import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
 
 const normalizeId = (value: unknown): string => {
   if (value === undefined || value === null) return "";
@@ -10,6 +12,9 @@ const normalizeId = (value: unknown): string => {
   if (Number.isNaN(parsed)) return "";
   return String(parsed);
 };
+
+const sanitizeFilename = (value: string): string =>
+  value.replace(/[<>:"/\\|?*\x00-\x1F]/g, "_").trim();
 
 const parseNumericValue = (value: string | number): number | null => {
   if (typeof value === "number") {
@@ -60,13 +65,19 @@ const setTextCell = (
 ): void => {
   const cell = sheet.cell(address);
   const trimmed = value.trim();
-  cell.value(options?.explicitText ? `'${trimmed}` : trimmed);
+  cell.value(trimmed);
   if (options?.explicitText) {
     cell.style("numberFormat", "@");
   }
   if (options?.alignLeft) {
     cell.style("horizontalAlignment", "left");
   }
+};
+
+type SkippedDetail = {
+  fileName: string;
+  fileId?: string;
+  reason: string;
 };
 
 export async function POST(request: Request) {
@@ -82,44 +93,47 @@ export async function POST(request: Request) {
       .filter((entry): entry is File => entry instanceof File);
     const singleFile = formData.get("file");
     const template = formData.get("template");
-    const tabNameRaw = formData.get("tabName");
-    const tabName =
-      typeof tabNameRaw === "string" && tabNameRaw.trim() ? tabNameRaw.trim() : null;
+    const templateId = formData.get("templateId");
+    const fileNameRaw = formData.get("fileName");
+    const divisionRaw = formData.get("division");
+    const iaRaw = formData.get("ia");
+    const requestedFileName =
+      typeof fileNameRaw === "string" && fileNameRaw.trim()
+        ? fileNameRaw.trim()
+        : "DIVISION X CONSOLIDATED";
+    const divisionValue =
+      typeof divisionRaw === "string" ? divisionRaw.replace(/[^0-9]/g, "") : "0";
+    const iaValue =
+      typeof iaRaw === "string" && iaRaw.trim() ? iaRaw.trim() : "IA";
 
     if (files.length === 0 && !(singleFile instanceof File)) {
       return NextResponse.json({ error: "No IFR Excel files uploaded" }, { status: 400 });
     }
-    if (!(template instanceof File)) {
+    if (!(template instanceof File) && !(typeof templateId === "string" && templateId.trim())) {
       return NextResponse.json(
-        { error: "No consolidation template uploaded" },
+        { error: "No consolidation template provided" },
         { status: 400 },
       );
     }
 
     const ifrFiles = files.length > 0 ? files : [singleFile as File];
 
-    const templateBuffer = Buffer.from(await template.arrayBuffer());
-    const templateWorkbook = await XlsxPopulate.fromDataAsync(templateBuffer);
-    let targetSheet: ReturnType<typeof templateWorkbook.sheet> | undefined;
-    try {
-      if (tabName) {
-        targetSheet = templateWorkbook.sheet(tabName);
+    let templateBuffer: Buffer;
+    if (template instanceof File) {
+      templateBuffer = Buffer.from(await template.arrayBuffer());
+    } else {
+      const savedTemplate = await getTemplateRecord(result.user.uid, String(templateId).trim());
+      if (!savedTemplate) {
+        return NextResponse.json({ error: "Selected template not found" }, { status: 404 });
       }
-    } catch {
-      targetSheet = undefined;
+      templateBuffer = await downloadBufferFromStorage(savedTemplate.storagePath);
     }
-    if (!targetSheet) {
-      // xlsx-populate indexing can vary by workbook; try both common indices.
-      targetSheet =
-        templateWorkbook.sheet(0) ?? templateWorkbook.sheet(1) ?? undefined;
-    }
+    const templateWorkbook = await XlsxPopulate.fromDataAsync(templateBuffer);
+    const targetSheet: ReturnType<typeof templateWorkbook.sheet> | undefined =
+      templateWorkbook.sheet(0) ?? templateWorkbook.sheet(1) ?? undefined;
     if (!targetSheet) {
       return NextResponse.json(
-        {
-          error: tabName
-            ? `Template sheet "${tabName}" not found`
-            : "Template has no readable worksheet",
-        },
+        { error: "Template has no readable worksheet" },
         { status: 404 },
       );
     }
@@ -133,26 +147,35 @@ export async function POST(request: Request) {
     }
 
     let consolidatedCount = 0;
-    const skippedIds: string[] = [];
-    const skippedFiles: string[] = [];
+    const skippedDetails: SkippedDetail[] = [];
 
     for (const file of ifrFiles) {
       const buffer = Buffer.from(await file.arrayBuffer());
       const parsedSheets = parseExcelFile(buffer);
       if (parsedSheets.length === 0) {
-        skippedFiles.push(file.name);
+        skippedDetails.push({
+          fileName: file.name,
+          reason: "No readable worksheet data found in file.",
+        });
         continue;
       }
 
       const extracted = extractData(parsedSheets, file.name);
       if (!extracted.fileId) {
-        skippedFiles.push(file.name);
+        skippedDetails.push({
+          fileName: file.name,
+          reason: "Cannot extract file ID from filename prefix.",
+        });
         continue;
       }
 
       const targetRow = rowByFileId.get(extracted.fileId);
       if (!targetRow) {
-        skippedIds.push(extracted.fileId);
+        skippedDetails.push({
+          fileName: file.name,
+          fileId: extracted.fileId,
+          reason: `No matching row in template column A for file ID ${extracted.fileId}.`,
+        });
         continue;
       }
 
@@ -180,6 +203,11 @@ export async function POST(request: Request) {
         setNumericCellWithFormat(targetSheet, `M${rowLabel}`, detail.total);
       }
 
+      setTextCell(targetSheet, `N${rowLabel}`, iaValue);
+      targetSheet
+        .cell(`O${rowLabel}`)
+        .value(Number.parseInt(divisionValue || "0", 10) || 0);
+
       consolidatedCount += 1;
     }
 
@@ -188,8 +216,7 @@ export async function POST(request: Request) {
         {
           error: "No files were consolidated",
           hint: "Check IFR filenames have numeric prefixes and template column A has matching IDs.",
-          skippedIds,
-          skippedFiles,
+          skippedDetails,
         },
         { status: 400 },
       );
@@ -200,9 +227,18 @@ export async function POST(request: Request) {
       ? output
       : Buffer.from(output as ArrayBuffer);
 
-    const baseTemplateName = template.name.replace(/\.(xlsx|xls)$/i, "") || "template";
-    const outputName = `${baseTemplateName}-consolidated-batch.xlsx`;
-    const skippedSummary = [...skippedIds, ...skippedFiles].slice(0, 50).join(",");
+    const safeFileName =
+      sanitizeFilename(requestedFileName) || "DIVISION X CONSOLIDATED";
+    const outputName = safeFileName.endsWith(".xlsx")
+      ? safeFileName
+      : `${safeFileName}.xlsx`;
+    const skippedItems = skippedDetails.map((item) =>
+      item.fileId ? `${item.fileName} (${item.fileId})` : item.fileName,
+    );
+    const skippedSummary = skippedItems.slice(0, 50).join(",");
+    const skippedDetailsHeader = encodeURIComponent(
+      JSON.stringify(skippedDetails.slice(0, 200)),
+    );
 
     return new NextResponse(new Uint8Array(outputBuffer), {
       headers: {
@@ -210,8 +246,9 @@ export async function POST(request: Request) {
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="${outputName}"`,
         "X-Consolidated-Count": String(consolidatedCount),
-        "X-Skipped-Count": String(skippedIds.length + skippedFiles.length),
+        "X-Skipped-Count": String(skippedDetails.length),
         "X-Skipped-Items": skippedSummary,
+        "X-Skipped-Details": skippedDetailsHeader,
       },
     });
   } catch (error) {

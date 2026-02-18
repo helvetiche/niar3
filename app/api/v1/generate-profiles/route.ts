@@ -4,6 +4,8 @@ import { getSession } from "@/lib/auth/get-session";
 import { parseExcelFile } from "@/lib/excelParser";
 import { processMastersList } from "@/lib/mastersListProcessor";
 import { generateProfileBuffer } from "@/lib/profileGenerator";
+import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
+import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
 
 export async function POST(request: Request) {
   const result = await getSession();
@@ -15,6 +17,7 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file");
     const template = formData.get("template");
+    const templateId = formData.get("templateId");
 
     if (!(file instanceof File)) {
       return NextResponse.json(
@@ -40,8 +43,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const templateBuffer =
-      template instanceof File ? Buffer.from(await template.arrayBuffer()) : undefined;
+    let templateBuffer: Buffer | undefined;
+    if (template instanceof File) {
+      templateBuffer = Buffer.from(await template.arrayBuffer());
+    } else if (typeof templateId === "string" && templateId.trim()) {
+      const savedTemplate = await getTemplateRecord(result.user.uid, templateId.trim());
+      if (!savedTemplate) {
+        return NextResponse.json({ error: "Selected template not found" }, { status: 404 });
+      }
+      templateBuffer = await downloadBufferFromStorage(savedTemplate.storagePath);
+    }
 
     const zip = new JSZip();
     for (let i = 0; i < lotGroups.length; i += 1) {

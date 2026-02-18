@@ -1,20 +1,35 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { DownloadSimpleIcon, FileXlsIcon } from "@phosphor-icons/react";
+import {
+  DownloadSimpleIcon,
+  FileXlsIcon,
+  UploadSimpleIcon,
+} from "@phosphor-icons/react";
 import { generateProfilesZip } from "@/lib/api/farmer-profiles";
+import { TemplateManager } from "@/components/TemplateManager";
 
 const defaultZipName = "farmer-profiles";
 
 export function GenerateProfilesTool() {
   const [mastersFile, setMastersFile] = useState<File | null>(null);
   const [templateFile, setTemplateFile] = useState<File | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [zipName, setZipName] = useState(defaultZipName);
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState("");
 
   const mastersInputRef = useRef<HTMLInputElement | null>(null);
   const templateInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleMastersSelection = (incoming: FileList | null) => {
+    setMastersFile(incoming?.[0] ?? null);
+  };
+
+  const handleTemplateSelection = (incoming: FileList | null) => {
+    setTemplateFile(incoming?.[0] ?? null);
+    setSelectedTemplateId("");
+  };
 
   const handleGenerateProfiles = async () => {
     if (!mastersFile) {
@@ -26,7 +41,11 @@ export function GenerateProfilesTool() {
     setMessage("Generating profile files...");
 
     try {
-      const blob = await generateProfilesZip(mastersFile, templateFile);
+      const blob = await generateProfilesZip(
+        mastersFile,
+        templateFile,
+        selectedTemplateId,
+      );
       const objectUrl = URL.createObjectURL(blob);
       const downloadLink = document.createElement("a");
       const outputName = zipName.trim() || defaultZipName;
@@ -54,13 +73,14 @@ export function GenerateProfilesTool() {
   const handleClearFiles = () => {
     setMastersFile(null);
     setTemplateFile(null);
+    setSelectedTemplateId("");
     setMessage("");
     if (mastersInputRef.current) mastersInputRef.current.value = "";
     if (templateInputRef.current) templateInputRef.current.value = "";
   };
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+    <section className="flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
       <div className="mb-6">
         <h2 className="text-xl font-medium text-zinc-900">Generate Farmer Profiles</h2>
         <p className="mt-2 text-sm text-zinc-600">
@@ -69,11 +89,12 @@ export function GenerateProfilesTool() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="block" htmlFor="masters-list-input">
+        <div className="block">
           <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
             <FileXlsIcon size={18} />
             Master&apos;s List (Required)
           </span>
+
           <input
             id="masters-list-input"
             ref={mastersInputRef}
@@ -81,13 +102,40 @@ export function GenerateProfilesTool() {
             accept=".xlsx,.xls"
             aria-label="Upload master's list Excel file"
             onChange={(event) => {
-              setMastersFile(event.target.files?.[0] ?? null);
+              handleMastersSelection(event.target.files);
             }}
-            className="block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 file:mr-3 file:rounded-md file:border-0 file:bg-emerald-700 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-emerald-800"
+            className="hidden"
           />
-        </label>
 
-        <label className="block" htmlFor="template-input">
+          <button
+            type="button"
+            aria-label="Choose master's list Excel file"
+            onClick={() => mastersInputRef.current?.click()}
+            onDragOver={(event) => {
+              event.preventDefault();
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              handleMastersSelection(event.dataTransfer.files);
+            }}
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-base text-zinc-700 transition hover:border-emerald-600 hover:bg-emerald-50"
+          >
+            <UploadSimpleIcon size={34} className="text-emerald-700" />
+            <span className="font-medium">
+              Drag and drop master&apos;s list, or click to browse
+            </span>
+          </button>
+
+          <p className="mt-2 text-xs text-zinc-600">
+            Upload the official master&apos;s list in .xlsx or .xls format. Use the
+            drag-and-drop area for faster selection or click to browse manually.
+            This file is required and drives the profile generation process,
+            including lot grouping and filename output. Ensure the spreadsheet
+            structure matches your expected encoding columns.
+          </p>
+        </div>
+
+        <div className="block">
           <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
             <FileXlsIcon size={18} />
             Template (Optional)
@@ -99,11 +147,38 @@ export function GenerateProfilesTool() {
             accept=".xlsx,.xls"
             aria-label="Upload optional Excel template file"
             onChange={(event) => {
-              setTemplateFile(event.target.files?.[0] ?? null);
+              handleTemplateSelection(event.target.files);
             }}
-            className="block w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 file:mr-3 file:rounded-md file:border-0 file:bg-zinc-700 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-800"
+            className="hidden"
           />
-        </label>
+
+          <button
+            type="button"
+            aria-label="Choose optional template file"
+            onClick={() => templateInputRef.current?.click()}
+            onDragOver={(event) => {
+              event.preventDefault();
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              handleTemplateSelection(event.dataTransfer.files);
+            }}
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-base text-zinc-700 transition hover:border-zinc-500 hover:bg-zinc-100"
+          >
+            <UploadSimpleIcon size={34} className="text-zinc-700" />
+            <span className="font-medium">
+              Drag and drop optional template, or click to browse
+            </span>
+          </button>
+
+          <p className="mt-2 text-xs text-zinc-600">
+            Provide a one-time template only when you need to override your saved
+            default layout for this run. If left empty, the selected template from
+            Template Manager is used automatically. Keep sheet names and target
+            cells consistent so generated profiles preserve formatting and write
+            values to the correct locations.
+          </p>
+        </div>
       </div>
 
       <label className="mt-4 block" htmlFor="zip-name-input">
@@ -118,6 +193,16 @@ export function GenerateProfilesTool() {
           placeholder={defaultZipName}
         />
       </label>
+
+      <TemplateManager
+        scope="ifr-scanner"
+        selectedTemplateId={selectedTemplateId}
+        onSelectedTemplateIdChange={(id) => {
+          setSelectedTemplateId(id);
+          setTemplateFile(null);
+          if (templateInputRef.current) templateInputRef.current.value = "";
+        }}
+      />
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <button

@@ -3,11 +3,15 @@
 export const generateProfilesZip = async (
   mastersFile: File,
   templateFile?: File | null,
+  templateId?: string,
 ): Promise<Blob> => {
   const formData = new FormData();
   formData.append("file", mastersFile);
   if (templateFile) {
     formData.append("template", templateFile);
+  }
+  if (!templateFile && templateId?.trim()) {
+    formData.append("templateId", templateId.trim());
   }
 
   const response = await fetch("/api/v1/generate-profiles", {

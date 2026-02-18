@@ -63,3 +63,84 @@ export async function setCalendarNotesForDate(
   const ref = getDb().doc(`users/${uid}/calendar_notes/${dateKey}`);
   await ref.set({ items }, { merge: true });
 }
+
+export type TemplateScope = "ifr-scanner" | "consolidate-ifr";
+
+export type StoredTemplate = {
+  id: string;
+  name: string;
+  scope: TemplateScope;
+  storagePath: string;
+  contentType: string;
+  sizeBytes: number;
+  createdAt: number;
+};
+
+const isTemplateScope = (value: unknown): value is TemplateScope =>
+  value === "ifr-scanner" || value === "consolidate-ifr";
+
+function templateCollection(uid: string) {
+  return getDb().collection("users").doc(uid).collection("templates");
+}
+
+function asStoredTemplate(
+  id: string,
+  data: Record<string, unknown> | undefined,
+): StoredTemplate | null {
+  if (!data) return null;
+  const scope = data.scope;
+  if (!isTemplateScope(scope)) return null;
+  return {
+    id,
+    name: typeof data.name === "string" ? data.name : "",
+    scope,
+    storagePath: typeof data.storagePath === "string" ? data.storagePath : "",
+    contentType:
+      typeof data.contentType === "string"
+        ? data.contentType
+        : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    sizeBytes: typeof data.sizeBytes === "number" ? data.sizeBytes : 0,
+    createdAt: typeof data.createdAt === "number" ? data.createdAt : Date.now(),
+  };
+}
+
+export async function listTemplates(
+  uid: string,
+  scope?: TemplateScope,
+): Promise<StoredTemplate[]> {
+  const snap = await templateCollection(uid).get();
+  const items = snap.docs
+    .map((doc) => asStoredTemplate(doc.id, doc.data()))
+    .filter((item): item is StoredTemplate => Boolean(item));
+
+  const filtered = scope ? items.filter((item) => item.scope === scope) : items;
+  return filtered.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export async function createTemplateRecord(
+  uid: string,
+  template: Omit<StoredTemplate, "id" | "createdAt"> & { id: string },
+): Promise<StoredTemplate> {
+  const record: StoredTemplate = {
+    ...template,
+    createdAt: Date.now(),
+  };
+  await templateCollection(uid).doc(record.id).set(record);
+  return record;
+}
+
+export async function getTemplateRecord(
+  uid: string,
+  templateId: string,
+): Promise<StoredTemplate | null> {
+  const snap = await templateCollection(uid).doc(templateId).get();
+  if (!snap.exists) return null;
+  return asStoredTemplate(snap.id, snap.data());
+}
+
+export async function deleteTemplateRecord(
+  uid: string,
+  templateId: string,
+): Promise<void> {
+  await templateCollection(uid).doc(templateId).delete();
+}
