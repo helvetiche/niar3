@@ -3,10 +3,20 @@ import { getSession } from "@/lib/auth/get-session";
 import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
 import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
 import { buildConsolidatedWorkbook } from "@/lib/consolidation";
+import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 
 export async function POST(request: Request) {
   const result = await getSession();
   if (!result.user) {
+    await logAuditTrailEntry({
+      action: "consolidate-ifr.post",
+      status: "rejected",
+      route: "/api/v1/consolidate-ifr",
+      method: "POST",
+      request,
+      httpStatus: 401,
+      details: { reason: "unauthorized" },
+    });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -31,9 +41,29 @@ export async function POST(request: Request) {
       typeof iaRaw === "string" && iaRaw.trim() ? iaRaw.trim() : "IA";
 
     if (files.length === 0 && !(singleFile instanceof File)) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "consolidate-ifr.post",
+        status: "rejected",
+        route: "/api/v1/consolidate-ifr",
+        method: "POST",
+        request,
+        httpStatus: 400,
+        details: { reason: "no-ifr-files" },
+      });
       return NextResponse.json({ error: "No IFR Excel files uploaded" }, { status: 400 });
     }
     if (!(template instanceof File) && !(typeof templateId === "string" && templateId.trim())) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "consolidate-ifr.post",
+        status: "rejected",
+        route: "/api/v1/consolidate-ifr",
+        method: "POST",
+        request,
+        httpStatus: 400,
+        details: { reason: "missing-template" },
+      });
       return NextResponse.json(
         { error: "No consolidation template provided" },
         { status: 400 },
@@ -48,6 +78,16 @@ export async function POST(request: Request) {
     } else {
       const savedTemplate = await getTemplateRecord(result.user.uid, String(templateId).trim());
       if (!savedTemplate) {
+        await logAuditTrailEntry({
+          uid: result.user.uid,
+          action: "consolidate-ifr.post",
+          status: "rejected",
+          route: "/api/v1/consolidate-ifr",
+          method: "POST",
+          request,
+          httpStatus: 404,
+          details: { reason: "template-not-found", templateId: String(templateId).trim() },
+        });
         return NextResponse.json({ error: "Selected template not found" }, { status: 404 });
       }
       templateBuffer = await downloadBufferFromStorage(savedTemplate.storagePath);
@@ -77,6 +117,22 @@ export async function POST(request: Request) {
       JSON.stringify(skippedDetails.slice(0, 200)),
     );
 
+    await logAuditTrailEntry({
+      uid: result.user.uid,
+      action: "consolidate-ifr.post",
+      status: "success",
+      route: "/api/v1/consolidate-ifr",
+      method: "POST",
+      request,
+      httpStatus: 200,
+      details: {
+        inputFileCount: ifrFiles.length,
+        consolidatedCount,
+        skippedCount: skippedDetails.length,
+        outputName,
+      },
+    });
+
     return new NextResponse(new Uint8Array(outputBuffer), {
       headers: {
         "Content-Type":
@@ -93,6 +149,16 @@ export async function POST(request: Request) {
     const message =
       error instanceof Error ? error.message : "Failed to consolidate IFR file";
     const isNoConsolidation = message.includes("No files were consolidated");
+    await logAuditTrailEntry({
+      uid: result.user.uid,
+      action: "consolidate-ifr.post",
+      status: "error",
+      route: "/api/v1/consolidate-ifr",
+      method: "POST",
+      request,
+      httpStatus: isNoConsolidation ? 400 : 500,
+      errorMessage: message,
+    });
     if (isNoConsolidation) {
       return NextResponse.json({ error: message }, { status: 400 });
     }

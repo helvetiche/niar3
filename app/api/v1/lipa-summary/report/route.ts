@@ -6,6 +6,7 @@ import {
   buildLipaReportDataFromScannedFiles,
   type LipaScannedFile,
 } from "@/lib/lipa-summary";
+import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 
 const scannedFileSchema = z.object({
   fileName: z.string().min(1),
@@ -33,6 +34,15 @@ const bodySchema = z.object({
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session.user) {
+    await logAuditTrailEntry({
+      action: "lipa-summary.report.post",
+      status: "rejected",
+      route: "/api/v1/lipa-summary/report",
+      method: "POST",
+      request,
+      httpStatus: 401,
+      details: { reason: "unauthorized" },
+    });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -50,6 +60,23 @@ export async function POST(request: Request) {
       outputFileName: parsed.outputFileName,
     });
 
+    await logAuditTrailEntry({
+      uid: session.user.uid,
+      action: "lipa-summary.report.post",
+      status: "success",
+      route: "/api/v1/lipa-summary/report",
+      method: "POST",
+      request,
+      httpStatus: 200,
+      details: {
+        scannedFiles: data.scannedFiles,
+        extractedAssociations: data.extractedAssociations,
+        averageConfidence: data.averageConfidence,
+        estimatedCostUsd: data.estimatedCostUsd,
+        outputName,
+      },
+    });
+
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type":
@@ -65,6 +92,16 @@ export async function POST(request: Request) {
     console.error("[api/lipa-summary/report POST]", error);
     const message =
       error instanceof Error ? error.message : "Failed to build LIPA report output";
+    await logAuditTrailEntry({
+      uid: session.user.uid,
+      action: "lipa-summary.report.post",
+      status: "error",
+      route: "/api/v1/lipa-summary/report",
+      method: "POST",
+      request,
+      httpStatus: 500,
+      errorMessage: message,
+    });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

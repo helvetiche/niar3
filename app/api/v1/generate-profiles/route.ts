@@ -7,6 +7,7 @@ import { generateProfileBuffer } from "@/lib/profileGenerator";
 import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
 import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
 import { buildConsolidatedWorkbook } from "@/lib/consolidation";
+import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 
 const sanitizeFolderName = (value: string): string =>
   value
@@ -94,6 +95,15 @@ const parseTextMap = (
 export async function POST(request: Request) {
   const result = await getSession();
   if (!result.user) {
+    await logAuditTrailEntry({
+      action: "generate-profiles.post",
+      status: "rejected",
+      route: "/api/v1/generate-profiles",
+      method: "POST",
+      request,
+      httpStatus: 401,
+      details: { reason: "unauthorized" },
+    });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -145,18 +155,48 @@ export async function POST(request: Request) {
     const sourceFiles = files.length > 0 ? files : singleFile instanceof File ? [singleFile] : [];
 
     if (sourceFiles.length === 0) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "generate-profiles.post",
+        status: "rejected",
+        route: "/api/v1/generate-profiles",
+        method: "POST",
+        request,
+        httpStatus: 400,
+        details: { reason: "no-source-files" },
+      });
       return NextResponse.json(
         { error: "No source Excel files uploaded" },
         { status: 400 },
       );
     }
     if (!(template instanceof File) && !(typeof templateId === "string" && templateId.trim())) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "generate-profiles.post",
+        status: "rejected",
+        route: "/api/v1/generate-profiles",
+        method: "POST",
+        request,
+        httpStatus: 400,
+        details: { reason: "missing-template" },
+      });
       return NextResponse.json(
         { error: "Template is required. Upload a template or select a saved template." },
         { status: 400 },
       );
     }
     if (createConsolidation && !consolidationTemplateId) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "generate-profiles.post",
+        status: "rejected",
+        route: "/api/v1/generate-profiles",
+        method: "POST",
+        request,
+        httpStatus: 400,
+        details: { reason: "missing-consolidation-template" },
+      });
       return NextResponse.json(
         { error: "Consolidation template is required when create consolidation is enabled." },
         { status: 400 },
@@ -169,6 +209,16 @@ export async function POST(request: Request) {
     } else if (typeof templateId === "string" && templateId.trim()) {
       const savedTemplate = await getTemplateRecord(result.user.uid, templateId.trim());
       if (!savedTemplate) {
+        await logAuditTrailEntry({
+          uid: result.user.uid,
+          action: "generate-profiles.post",
+          status: "rejected",
+          route: "/api/v1/generate-profiles",
+          method: "POST",
+          request,
+          httpStatus: 404,
+          details: { reason: "template-not-found", templateId: templateId.trim() },
+        });
         return NextResponse.json({ error: "Selected template not found" }, { status: 404 });
       }
       templateBuffer = await downloadBufferFromStorage(savedTemplate.storagePath);
@@ -190,6 +240,19 @@ export async function POST(request: Request) {
         consolidationTemplateId,
       );
       if (!consolidationTemplate) {
+        await logAuditTrailEntry({
+          uid: result.user.uid,
+          action: "generate-profiles.post",
+          status: "rejected",
+          route: "/api/v1/generate-profiles",
+          method: "POST",
+          request,
+          httpStatus: 404,
+          details: {
+            reason: "consolidation-template-not-found",
+            consolidationTemplateId,
+          },
+        });
         return NextResponse.json(
           { error: "Selected consolidation template not found." },
           { status: 404 },
@@ -260,6 +323,16 @@ export async function POST(request: Request) {
     }
 
     if (totalGeneratedProfiles === 0) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "generate-profiles.post",
+        status: "rejected",
+        route: "/api/v1/generate-profiles",
+        method: "POST",
+        request,
+        httpStatus: 400,
+        details: { reason: "no-lot-records-found" },
+      });
       return NextResponse.json(
         {
           error:
@@ -275,6 +348,21 @@ export async function POST(request: Request) {
       compressionOptions: { level: 6 },
     });
 
+    await logAuditTrailEntry({
+      uid: result.user.uid,
+      action: "generate-profiles.post",
+      status: "success",
+      route: "/api/v1/generate-profiles",
+      method: "POST",
+      request,
+      httpStatus: 200,
+      details: {
+        sourceFileCount: sourceFiles.length,
+        totalGeneratedProfiles,
+        createConsolidation,
+      },
+    });
+
     return new NextResponse(new Uint8Array(zipBuffer), {
       headers: {
         "Content-Type": "application/zip",
@@ -285,6 +373,16 @@ export async function POST(request: Request) {
     console.error("[api/generate-profiles POST]", error);
     const message =
       error instanceof Error ? error.message : "Failed to generate profiles";
+    await logAuditTrailEntry({
+      uid: result.user.uid,
+      action: "generate-profiles.post",
+      status: "error",
+      route: "/api/v1/generate-profiles",
+      method: "POST",
+      request,
+      httpStatus: 500,
+      errorMessage: message,
+    });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

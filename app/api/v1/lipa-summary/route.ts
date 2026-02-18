@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSession } from "@/lib/auth/get-session";
 import { buildLipaReportData } from "@/lib/lipa-summary";
 import { generateLipaReportWorkbook } from "@/lib/lipa-report-generator";
+import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 
 const fileMappingSchema = z.object({
   fileIndex: z.number().int().nonnegative(),
@@ -25,6 +26,15 @@ const parseMappings = (
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session.user) {
+    await logAuditTrailEntry({
+      action: "lipa-summary.post",
+      status: "rejected",
+      route: "/api/v1/lipa-summary",
+      method: "POST",
+      request,
+      httpStatus: 401,
+      details: { reason: "unauthorized" },
+    });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -39,6 +49,16 @@ export async function POST(request: Request) {
     const outputFileNameRaw = formData.get("outputFileName");
 
     if (files.length === 0) {
+      await logAuditTrailEntry({
+        uid: session.user.uid,
+        action: "lipa-summary.post",
+        status: "rejected",
+        route: "/api/v1/lipa-summary",
+        method: "POST",
+        request,
+        httpStatus: 400,
+        details: { reason: "no-files" },
+      });
       return NextResponse.json(
         { error: "Please upload at least one PDF file." },
         { status: 400 },
@@ -46,6 +66,20 @@ export async function POST(request: Request) {
     }
 
     if (mappings.length !== files.length) {
+      await logAuditTrailEntry({
+        uid: session.user.uid,
+        action: "lipa-summary.post",
+        status: "rejected",
+        route: "/api/v1/lipa-summary",
+        method: "POST",
+        request,
+        httpStatus: 400,
+        details: {
+          reason: "mappings-mismatch",
+          mappingCount: mappings.length,
+          fileCount: files.length,
+        },
+      });
       return NextResponse.json(
         { error: "Each uploaded file must have a mapped division and page number." },
         { status: 400 },
@@ -92,6 +126,24 @@ export async function POST(request: Request) {
       outputFileName,
     });
 
+    await logAuditTrailEntry({
+      uid: session.user.uid,
+      action: "lipa-summary.post",
+      status: "success",
+      route: "/api/v1/lipa-summary",
+      method: "POST",
+      request,
+      httpStatus: 200,
+      details: {
+        fileCount: files.length,
+        scannedFiles: data.scannedFiles,
+        extractedAssociations: data.extractedAssociations,
+        averageConfidence: data.averageConfidence,
+        estimatedCostUsd: data.estimatedCostUsd,
+        outputName,
+      },
+    });
+
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type":
@@ -113,6 +165,16 @@ export async function POST(request: Request) {
       lower.includes("too many requests") ||
       lower.includes("rate limit") ||
       lower.includes("429");
+    await logAuditTrailEntry({
+      uid: session.user.uid,
+      action: "lipa-summary.post",
+      status: "error",
+      route: "/api/v1/lipa-summary",
+      method: "POST",
+      request,
+      httpStatus: isQuotaOrRateLimit ? 429 : 500,
+      errorMessage: message,
+    });
     return NextResponse.json(
       { error: message },
       { status: isQuotaOrRateLimit ? 429 : 500 },
