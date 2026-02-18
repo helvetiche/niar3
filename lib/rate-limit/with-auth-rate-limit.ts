@@ -1,6 +1,10 @@
-import { NextResponse } from 'next/server'
-import { applySecurityHeaders } from '@/lib/security-headers'
-import { authRateLimit, getClientIdentifier, isRateLimitEnabled } from './index'
+import { NextResponse } from "next/server";
+import { applySecurityHeaders } from "@/lib/security-headers";
+import {
+  authRateLimit,
+  getClientIdentifier,
+  isRateLimitEnabled,
+} from "./index";
 
 /**
  * Use on auth endpoints (login, signup, forgot-password) for stricter limits.
@@ -14,24 +18,24 @@ import { authRateLimit, getClientIdentifier, isRateLimitEnabled } from './index'
  * }
  */
 export async function withAuthRateLimit(
-  request: Request
+  request: Request,
 ): Promise<NextResponse | null> {
   if (!isRateLimitEnabled() || !authRateLimit) {
-    return null
+    return null;
   }
-  const identifier = getClientIdentifier(request)
-  const { success, reset } = await authRateLimit.limit(identifier)
+  const identifier = getClientIdentifier(request);
+  const { success, reset } = await authRateLimit.limit(identifier);
   if (!success) {
     const response = NextResponse.json(
-      { error: 'Too many authentication attempts. Try again later.' },
+      { error: "Too many authentication attempts. Try again later." },
       {
         status: 429,
         headers: {
-          'Retry-After': String(Math.ceil((reset - Date.now()) / 1000)),
+          "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)),
         },
-      }
-    )
-    return applySecurityHeaders(response)
+      },
+    );
+    return applySecurityHeaders(response);
   }
-  return null
+  return null;
 }

@@ -12,13 +12,17 @@ export type StoredTemplate = {
   createdAt: number;
 };
 
-export async function listTemplates(scope: TemplateScope): Promise<StoredTemplate[]> {
+export async function listTemplates(
+  scope: TemplateScope,
+): Promise<StoredTemplate[]> {
   const response = await fetch(`/api/v1/templates?scope=${scope}`, {
     credentials: "include",
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error((data as { error?: string }).error ?? "Failed to load templates");
+    throw new Error(
+      (data as { error?: string }).error ?? "Failed to load templates",
+    );
   }
   const data = (await response.json()) as { templates?: StoredTemplate[] };
   return data.templates ?? [];
@@ -43,7 +47,9 @@ export async function uploadTemplate(
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error((data as { error?: string }).error ?? "Failed to upload template");
+    throw new Error(
+      (data as { error?: string }).error ?? "Failed to upload template",
+    );
   }
   return response.json() as Promise<StoredTemplate>;
 }
@@ -55,6 +61,8 @@ export async function deleteTemplate(templateId: string): Promise<void> {
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error((data as { error?: string }).error ?? "Failed to delete template");
+    throw new Error(
+      (data as { error?: string }).error ?? "Failed to delete template",
+    );
   }
 }

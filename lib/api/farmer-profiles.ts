@@ -29,14 +29,20 @@ export const generateProfilesZip = async (
   if (options.createConsolidation) {
     formData.append("createConsolidation", "true");
     if (options.consolidationTemplateId?.trim()) {
-      formData.append("consolidationTemplateId", options.consolidationTemplateId.trim());
+      formData.append(
+        "consolidationTemplateId",
+        options.consolidationTemplateId.trim(),
+      );
     }
   }
   if (options.profileFolderName?.trim()) {
     formData.append("profileFolderName", options.profileFolderName.trim());
   }
   if (options.sourceFolderNames) {
-    formData.append("sourceFolderNames", JSON.stringify(options.sourceFolderNames));
+    formData.append(
+      "sourceFolderNames",
+      JSON.stringify(options.sourceFolderNames),
+    );
   }
   if (options.sourceConsolidationDivisions) {
     formData.append(
@@ -45,7 +51,10 @@ export const generateProfilesZip = async (
     );
   }
   if (options.sourceConsolidationIAs) {
-    formData.append("sourceConsolidationIAs", JSON.stringify(options.sourceConsolidationIAs));
+    formData.append(
+      "sourceConsolidationIAs",
+      JSON.stringify(options.sourceConsolidationIAs),
+    );
   }
 
   const response = await fetch("/api/v1/generate-profiles", {

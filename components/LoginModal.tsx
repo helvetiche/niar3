@@ -108,7 +108,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <h3 className="text-base font-semibold text-white">
                 {view === "login" ? "Login" : "Reset password"}
               </h3>
-              <p className="text-xs text-white/70">NIA Region 3 — Employee Portal</p>
+              <p className="text-xs text-white/70">
+                NIA Region 3 — Employee Portal
+              </p>
             </div>
           </div>
           <button
@@ -127,8 +129,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         </p>
         {view === "forgot-password" && (
           <p className="mb-4 text-xs text-white/60">
-            After submitting, you&apos;ll receive the reset link at the email you provide.
-            If you don&apos;t see it within a few minutes, check your spam or junk folder—it may have been filtered there.
+            After submitting, you&apos;ll receive the reset link at the email
+            you provide. If you don&apos;t see it within a few minutes, check
+            your spam or junk folder—it may have been filtered there.
           </p>
         )}
 
@@ -139,8 +142,12 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               e.preventDefault();
               setError(null);
               const form = e.currentTarget;
-              const email = (form.querySelector('#email') as HTMLInputElement)?.value?.trim();
-              const password = (form.querySelector('#password') as HTMLInputElement)?.value;
+              const email = (
+                form.querySelector("#email") as HTMLInputElement
+              )?.value?.trim();
+              const password = (
+                form.querySelector("#password") as HTMLInputElement
+              )?.value;
               if (!email || !password) {
                 setError("Please enter email and password.");
                 return;
@@ -148,9 +155,14 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               setIsSubmitting(true);
               try {
                 const { getClientAuth } = await import("@/lib/firebase/config");
-                const { signInWithEmailAndPassword } = await import("firebase/auth");
+                const { signInWithEmailAndPassword } =
+                  await import("firebase/auth");
                 const auth = getClientAuth();
-                const cred = await signInWithEmailAndPassword(auth, email, password);
+                const cred = await signInWithEmailAndPassword(
+                  auth,
+                  email,
+                  password,
+                );
                 const token = await cred.user.getIdToken();
                 const res = await fetch("/api/v1/auth/session", {
                   method: "POST",
@@ -165,8 +177,14 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 router.push("/workspace");
               } catch (err) {
                 const code = (err as { code?: string }).code ?? "";
-                const msg = err instanceof Error ? err.message : "Sign in failed";
-                if (code.startsWith("auth/") && (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found"))) {
+                const msg =
+                  err instanceof Error ? err.message : "Sign in failed";
+                if (
+                  code.startsWith("auth/") &&
+                  (code.includes("invalid-credential") ||
+                    code.includes("wrong-password") ||
+                    code.includes("user-not-found"))
+                ) {
                   setError("Invalid email or password.");
                 } else if (msg.includes("Firebase") || msg.includes("config")) {
                   setError("Sign-in is not configured. Add Firebase env vars.");
@@ -178,9 +196,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               }
             }}
           >
-            {error && (
-              <p className="text-sm text-red-300">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-300">{error}</p>}
             <input
               id="email"
               name="email"

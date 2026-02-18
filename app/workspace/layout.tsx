@@ -15,9 +15,9 @@ export default async function WorkspaceLayout({
   const user = await requirePermission(PERMISSIONS.WORKSPACE_READ);
   return (
     <WorkspaceProvider user={user}>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen flex-col lg:flex-row">
         <WorkspaceSidebar user={user} />
-        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
       </div>
     </WorkspaceProvider>
   );

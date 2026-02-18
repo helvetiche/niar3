@@ -20,6 +20,9 @@ const getDefaultRealtimeDatabaseUrl = (): string => {
 
 export function getAdminRealtimeDatabase(): Database {
   if (database) return database;
-  database = getDatabase(getFirebaseAdminApp(), getDefaultRealtimeDatabaseUrl());
+  database = getDatabase(
+    getFirebaseAdminApp(),
+    getDefaultRealtimeDatabaseUrl(),
+  );
   return database;
 }

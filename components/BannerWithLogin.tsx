@@ -8,14 +8,13 @@ import { LoginModal } from "./LoginModal";
 export function BannerWithLogin() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const shouldAutoOpen = searchParams.get("login") === "1";
+  const [isModalOpen, setIsModalOpen] = useState(shouldAutoOpen);
 
   useEffect(() => {
-    if (searchParams.get("login") === "1") {
-      setIsModalOpen(true);
-      router.replace("/", { scroll: false });
-    }
-  }, [searchParams, router]);
+    if (!shouldAutoOpen) return;
+    router.replace("/", { scroll: false });
+  }, [shouldAutoOpen, router]);
 
   return (
     <>

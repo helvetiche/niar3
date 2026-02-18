@@ -170,8 +170,7 @@ export function MasonryModal({
 
   if (!isOpen) return null;
 
-  const content =
-    typeof children === "function" ? children(handleClose) : children;
+  const content = typeof children === "function" ? children(onClose) : children;
 
   return (
     <div

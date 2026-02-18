@@ -27,5 +27,7 @@ export const getCellByAddress = (
 ): string | number | undefined => {
   const cell = worksheet[address];
   if (!cell || cell.v === undefined || cell.v === null) return undefined;
-  return typeof cell.v === "number" ? cell.v : String(cell.v).trim() || undefined;
+  return typeof cell.v === "number"
+    ? cell.v
+    : String(cell.v).trim() || undefined;
 };

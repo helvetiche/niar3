@@ -73,7 +73,8 @@ export function ConsolidateIfrTool() {
         `Success. Consolidated ${String(result.consolidatedCount)} file(s).${skippedMessage}`,
       );
     } catch (error) {
-      const text = error instanceof Error ? error.message : "Failed to consolidate IFR.";
+      const text =
+        error instanceof Error ? error.message : "Failed to consolidate IFR.";
       setMessage(text);
     } finally {
       setIsSubmitting(false);
@@ -99,24 +100,37 @@ export function ConsolidateIfrTool() {
   }
 
   return (
-    <section className="flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-6 shadow-xl shadow-emerald-950/30">
       <div className="mb-6">
-        <h2 className="flex items-center gap-2 text-xl font-medium text-zinc-900">
-          <ArrowsMergeIcon size={22} className="text-emerald-700" />
+        <h2 className="flex items-center gap-2 text-xl font-medium text-white">
+          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+            <ArrowsMergeIcon size={18} className="text-white" />
+          </span>
           Consolidate Land Profile
         </h2>
-        <p className="mt-2 text-sm text-zinc-600">
-          Upload one or more IFR workbooks, choose a saved template from Template
-          Manager, set your output file name, DIVISION, and IA values, then run
-          consolidation to generate and download a single updated template file with
-          all matched rows filled automatically.
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <FileXlsIcon size={12} className="text-white" />
+            IFR Consolidation
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <DownloadSimpleIcon size={12} className="text-white" />
+            Template Output
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-white/85">
+          Upload one or more IFR workbooks, choose a saved template, and set
+          output naming with DIVISION and IA values. The tool maps matched
+          records into a single consolidated file, keeps formatting aligned with
+          your template, and produces a ready-to-download workbook for faster
+          validation, submission, and team handoff across monthly reporting.
         </p>
       </div>
 
       <div className="grid gap-4">
         <div className="block">
-          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
-            <FileXlsIcon size={18} />
+          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+            <FileXlsIcon size={18} className="text-white" />
             IFR Excel Files
           </span>
 
@@ -144,26 +158,34 @@ export function ConsolidateIfrTool() {
               event.preventDefault();
               handleIfrFileSelection(event.dataTransfer.files);
             }}
-            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-base text-zinc-700 transition hover:border-emerald-600 hover:bg-emerald-50"
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/10 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/15"
           >
-            <UploadSimpleIcon size={34} className="text-emerald-700" />
+            <UploadSimpleIcon size={34} className="text-white" />
             <span className="font-medium">
               Drag and drop IFR files here, or click to browse
             </span>
           </button>
 
-          <p className="mt-2 text-xs text-zinc-600">
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+              <FileXlsIcon size={12} className="text-white" />
+              Supported: .xlsx, .xls
+            </span>
+          </div>
+
+          <p className="mt-2 text-xs text-white/80">
             Upload one or many IFR Excel files in .xlsx or .xls format. You can
             drag files directly into the box or click to open your file browser.
-            After selection, confirm your saved template in Template Manager, then
-            run consolidation to merge all matched records in one generated output.
+            After selection, confirm your saved template in Template Manager,
+            then run consolidation to merge all matched records in one generated
+            output.
           </p>
         </div>
       </div>
 
       {files.length > 0 && (
-        <p className="mt-3 flex items-center gap-2 text-sm text-zinc-600">
-          <FileXlsIcon size={16} className="text-emerald-700" />
+        <p className="mt-3 flex items-center gap-2 text-sm text-white/85">
+          <FileXlsIcon size={16} className="text-white" />
           Selected IFR files: {String(files.length)}
         </p>
       )}
@@ -178,8 +200,8 @@ export function ConsolidateIfrTool() {
 
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         <label className="block" htmlFor="output-file-name-input">
-          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
-            <DownloadSimpleIcon size={16} className="text-emerald-700" />
+          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+            <DownloadSimpleIcon size={16} className="text-white" />
             File Name
           </span>
           <input
@@ -188,18 +210,18 @@ export function ConsolidateIfrTool() {
             aria-label="Input output file name"
             value={fileName}
             onChange={(event) => setFileName(event.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+            className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
             placeholder={defaultOutputFileName}
           />
-          <span className="mt-2 block text-xs leading-5 text-zinc-600">
-            Sets the downloaded consolidated workbook name. Keep it descriptive so
-            your team can identify the correct batch quickly.
+          <span className="mt-2 block text-xs leading-5 text-white/80">
+            Sets the downloaded consolidated workbook name. Keep it descriptive
+            so your team can identify the correct batch quickly.
           </span>
         </label>
 
         <label className="block" htmlFor="division-input">
-          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
-            <ArrowsMergeIcon size={16} className="text-emerald-700" />
+          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+            <ArrowsMergeIcon size={16} className="text-white" />
             DIVISION
           </span>
           <input
@@ -213,18 +235,18 @@ export function ConsolidateIfrTool() {
             onChange={(event) =>
               setDivision(event.target.value.replace(/[^0-9]/g, ""))
             }
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+            className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
             placeholder={defaultDivision}
           />
-          <span className="mt-2 block text-xs leading-5 text-zinc-600">
+          <span className="mt-2 block text-xs leading-5 text-white/80">
             Numeric division value written to column O for every processed row.
             Use whole numbers only.
           </span>
         </label>
 
         <label className="block" htmlFor="ia-input">
-          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
-            <FileXlsIcon size={16} className="text-emerald-700" />
+          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+            <FileXlsIcon size={16} className="text-white" />
             IA
           </span>
           <input
@@ -233,10 +255,10 @@ export function ConsolidateIfrTool() {
             aria-label="Input IA"
             value={ia}
             onChange={(event) => setIA(event.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+            className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
             placeholder={defaultIA}
           />
-          <span className="mt-2 block text-xs leading-5 text-zinc-600">
+          <span className="mt-2 block text-xs leading-5 text-white/80">
             Irrigation Association code written to column N for every processed
             row in the consolidated template.
           </span>
@@ -251,7 +273,7 @@ export function ConsolidateIfrTool() {
             void handleConsolidate();
           }}
           disabled={isSubmitting || files.length === 0 || !selectedTemplateId}
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+          className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80"
         >
           <ArrowsMergeIcon size={18} />
           {isSubmitting ? "Consolidating..." : "Consolidate"}
@@ -262,15 +284,17 @@ export function ConsolidateIfrTool() {
           aria-label="Reset IFR file input"
           onClick={handleReset}
           disabled={isSubmitting}
-          className="inline-flex items-center rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
+          className="inline-flex items-center rounded-lg border border-white/40 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:text-white/60"
         >
           Reset
         </button>
       </div>
       {missingRequirements.length > 0 && (
-        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-medium text-red-700">Requirements before consolidate:</p>
-          <p className="mt-1 whitespace-pre-line text-sm text-red-700">
+        <div className="mt-3 rounded-lg border border-white/50 bg-white/20 px-4 py-3 shadow-lg shadow-black/10 backdrop-blur-md">
+          <p className="text-sm font-medium text-white">
+            Requirements before consolidate:
+          </p>
+          <p className="mt-1 whitespace-pre-line text-sm text-white/90">
             {missingRequirements.map((item) => `- ${item}`).join("\n")}
           </p>
         </div>
@@ -278,7 +302,7 @@ export function ConsolidateIfrTool() {
 
       {message && (
         <p
-          className="mt-4 whitespace-pre-line rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700"
+          className="mt-4 whitespace-pre-line rounded-lg border border-white/35 bg-white/10 px-4 py-3 text-sm text-white"
           aria-live="polite"
         >
           {message}

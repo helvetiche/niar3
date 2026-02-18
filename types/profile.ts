@@ -1,8 +1,8 @@
 export interface UserProfile {
-  first: string
-  middle: string
-  last: string
-  birthday: string
+  first: string;
+  middle: string;
+  last: string;
+  birthday: string;
 }
 
 export const defaultProfile: UserProfile = {
@@ -10,4 +10,4 @@ export const defaultProfile: UserProfile = {
   middle: "",
   last: "",
   birthday: "",
-}
+};

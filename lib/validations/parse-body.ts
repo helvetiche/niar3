@@ -1,6 +1,6 @@
-import { z } from 'zod'
-import { NextResponse } from 'next/server'
-import { applySecurityHeaders } from '@/lib/security-headers'
+import { z } from "zod";
+import { NextResponse } from "next/server";
+import { applySecurityHeaders } from "@/lib/security-headers";
 
 /**
  * Parse and validate request body with Zod. Use in API Route Handlers and Server Actions.
@@ -12,28 +12,28 @@ import { applySecurityHeaders } from '@/lib/security-headers'
  */
 export async function parseBody<T extends z.ZodType>(
   request: Request,
-  schema: T
+  schema: T,
 ): Promise<z.infer<T> | NextResponse> {
-  let json: unknown
+  let json: unknown;
   try {
-    json = await request.json()
+    json = await request.json();
   } catch {
     const response = NextResponse.json(
-      { error: 'Invalid JSON body' },
-      { status: 400 }
-    )
-    return applySecurityHeaders(response)
+      { error: "Invalid JSON body" },
+      { status: 400 },
+    );
+    return applySecurityHeaders(response);
   }
-  const result = schema.safeParse(json)
+  const result = schema.safeParse(json);
   if (!result.success) {
     const response = NextResponse.json(
       {
-        error: 'Validation failed',
+        error: "Validation failed",
         details: result.error.flatten().fieldErrors,
       },
-      { status: 400 }
-    )
-    return applySecurityHeaders(response)
+      { status: 400 },
+    );
+    return applySecurityHeaders(response);
   }
-  return result.data
+  return result.data;
 }

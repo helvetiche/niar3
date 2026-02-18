@@ -91,7 +91,9 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[api/lipa-summary/report POST]", error);
     const message =
-      error instanceof Error ? error.message : "Failed to build LIPA report output";
+      error instanceof Error
+        ? error.message
+        : "Failed to build LIPA report output";
     await logAuditTrailEntry({
       uid: session.user.uid,
       action: "lipa-summary.report.post",

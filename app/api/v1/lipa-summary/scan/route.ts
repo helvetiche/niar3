@@ -40,9 +40,15 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "missing-file" },
       });
-      return NextResponse.json({ error: "PDF file is required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "PDF file is required." },
+        { status: 400 },
+      );
     }
-    if (!file.type.includes("pdf") && !file.name.toLowerCase().endsWith(".pdf")) {
+    if (
+      !file.type.includes("pdf") &&
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
       await logAuditTrailEntry({
         uid: session.user.uid,
         action: "lipa-summary.scan.post",
@@ -51,9 +57,16 @@ export async function POST(request: Request) {
         method: "POST",
         request,
         httpStatus: 400,
-        details: { reason: "invalid-file-type", fileName: file.name, fileType: file.type },
+        details: {
+          reason: "invalid-file-type",
+          fileName: file.name,
+          fileType: file.type,
+        },
       });
-      return NextResponse.json({ error: "Only PDF files are supported." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Only PDF files are supported." },
+        { status: 400 },
+      );
     }
     if (typeof payloadRaw !== "string" || !payloadRaw.trim()) {
       await logAuditTrailEntry({
@@ -101,7 +114,9 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[api/lipa-summary/scan POST]", error);
     const message =
-      error instanceof Error ? error.message : "Failed to scan PDF for LIPA summary";
+      error instanceof Error
+        ? error.message
+        : "Failed to scan PDF for LIPA summary";
     const lower = message.toLowerCase();
     const isQuotaOrRateLimit =
       lower.includes("quota") ||

@@ -81,18 +81,28 @@ export async function POST(request: Request) {
         },
       });
       return NextResponse.json(
-        { error: "Each uploaded file must have a mapped division and page number." },
+        {
+          error:
+            "Each uploaded file must have a mapped division and page number.",
+        },
         { status: 400 },
       );
     }
 
     const fileByIndex = files.map((file, index) => ({ file, index }));
-    const mappingByIndex = new Map(mappings.map((mapping) => [mapping.fileIndex, mapping]));
+    const mappingByIndex = new Map(
+      mappings.map((mapping) => [mapping.fileIndex, mapping]),
+    );
 
     const inputFiles = await Promise.all(
       fileByIndex.map(async ({ file, index }) => {
-        if (!file.type.includes("pdf") && !file.name.toLowerCase().endsWith(".pdf")) {
-          throw new Error(`Only PDF files are supported. Invalid file: ${file.name}`);
+        if (
+          !file.type.includes("pdf") &&
+          !file.name.toLowerCase().endsWith(".pdf")
+        ) {
+          throw new Error(
+            `Only PDF files are supported. Invalid file: ${file.name}`,
+          );
         }
         const mapping = mappingByIndex.get(index);
         if (!mapping || !mapping.divisionName.trim()) {
@@ -158,7 +168,9 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[api/lipa-summary POST]", error);
     const message =
-      error instanceof Error ? error.message : "Failed to generate LIPA summary report";
+      error instanceof Error
+        ? error.message
+        : "Failed to generate LIPA summary report";
     const lower = message.toLowerCase();
     const isQuotaOrRateLimit =
       lower.includes("quota") ||

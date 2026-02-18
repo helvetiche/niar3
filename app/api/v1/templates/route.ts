@@ -72,7 +72,10 @@ export async function GET(request: Request) {
       httpStatus: 500,
       errorMessage: "Failed to list templates",
     });
-    return NextResponse.json({ error: "Failed to list templates" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to list templates" },
+      { status: 500 },
+    );
   }
 }
 
@@ -108,7 +111,10 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "missing-file" },
       });
-      return NextResponse.json({ error: "Template file is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Template file is required" },
+        { status: 400 },
+      );
     }
     if (!isScope(scope)) {
       await logAuditTrailEntry({
@@ -121,7 +127,10 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "invalid-scope", scope },
       });
-      return NextResponse.json({ error: "Invalid template scope" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid template scope" },
+        { status: 400 },
+      );
     }
 
     const id = randomUUID();
@@ -130,7 +139,8 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const contentType =
-      file.type || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      file.type ||
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     await uploadBufferToStorage(storagePath, buffer, contentType);
     const saved = await createTemplateRecord(result.user.uid, {
@@ -173,6 +183,9 @@ export async function POST(request: Request) {
       httpStatus: 500,
       errorMessage: "Failed to save template",
     });
-    return NextResponse.json({ error: "Failed to save template" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to save template" },
+      { status: 500 },
+    );
   }
 }

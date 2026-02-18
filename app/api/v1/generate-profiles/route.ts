@@ -76,7 +76,8 @@ const parseTextMap = (
   if (typeof value !== "string" || !value.trim()) return {};
   try {
     const parsed = JSON.parse(value) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+      return {};
 
     const map: Record<string, string> = {};
     Object.entries(parsed as Record<string, unknown>).forEach(([key, raw]) => {
@@ -121,7 +122,9 @@ export async function POST(request: Request) {
     const consolidationIARaw = formData.get("consolidationIA");
     const profileFolderNameRaw = formData.get("profileFolderName");
     const sourceFolderNamesRaw = formData.get("sourceFolderNames");
-    const sourceConsolidationDivisionsRaw = formData.get("sourceConsolidationDivisions");
+    const sourceConsolidationDivisionsRaw = formData.get(
+      "sourceConsolidationDivisions",
+    );
     const sourceConsolidationIAsRaw = formData.get("sourceConsolidationIAs");
 
     const createConsolidation =
@@ -143,16 +146,21 @@ export async function POST(request: Request) {
       typeof profileFolderNameRaw === "string" && profileFolderNameRaw.trim()
         ? sanitizeFolderName(profileFolderNameRaw)
         : "land account";
-    const sourceFolderNames = parseTextMap(sourceFolderNamesRaw, sanitizeFolderName);
+    const sourceFolderNames = parseTextMap(
+      sourceFolderNamesRaw,
+      sanitizeFolderName,
+    );
     const sourceConsolidationDivisions = parseTextMap(
       sourceConsolidationDivisionsRaw,
       (value) => value.replace(/[^0-9]/g, ""),
     );
-    const sourceConsolidationIAs = parseTextMap(sourceConsolidationIAsRaw, (value) =>
-      value.trim(),
+    const sourceConsolidationIAs = parseTextMap(
+      sourceConsolidationIAsRaw,
+      (value) => value.trim(),
     );
 
-    const sourceFiles = files.length > 0 ? files : singleFile instanceof File ? [singleFile] : [];
+    const sourceFiles =
+      files.length > 0 ? files : singleFile instanceof File ? [singleFile] : [];
 
     if (sourceFiles.length === 0) {
       await logAuditTrailEntry({
@@ -170,7 +178,10 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (!(template instanceof File) && !(typeof templateId === "string" && templateId.trim())) {
+    if (
+      !(template instanceof File) &&
+      !(typeof templateId === "string" && templateId.trim())
+    ) {
       await logAuditTrailEntry({
         uid: result.user.uid,
         action: "generate-profiles.post",
@@ -182,7 +193,10 @@ export async function POST(request: Request) {
         details: { reason: "missing-template" },
       });
       return NextResponse.json(
-        { error: "Template is required. Upload a template or select a saved template." },
+        {
+          error:
+            "Template is required. Upload a template or select a saved template.",
+        },
         { status: 400 },
       );
     }
@@ -198,7 +212,10 @@ export async function POST(request: Request) {
         details: { reason: "missing-consolidation-template" },
       });
       return NextResponse.json(
-        { error: "Consolidation template is required when create consolidation is enabled." },
+        {
+          error:
+            "Consolidation template is required when create consolidation is enabled.",
+        },
         { status: 400 },
       );
     }
@@ -207,7 +224,10 @@ export async function POST(request: Request) {
     if (template instanceof File) {
       templateBuffer = Buffer.from(await template.arrayBuffer());
     } else if (typeof templateId === "string" && templateId.trim()) {
-      const savedTemplate = await getTemplateRecord(result.user.uid, templateId.trim());
+      const savedTemplate = await getTemplateRecord(
+        result.user.uid,
+        templateId.trim(),
+      );
       if (!savedTemplate) {
         await logAuditTrailEntry({
           uid: result.user.uid,
@@ -217,14 +237,25 @@ export async function POST(request: Request) {
           method: "POST",
           request,
           httpStatus: 404,
-          details: { reason: "template-not-found", templateId: templateId.trim() },
+          details: {
+            reason: "template-not-found",
+            templateId: templateId.trim(),
+          },
         });
-        return NextResponse.json({ error: "Selected template not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Selected template not found" },
+          { status: 404 },
+        );
       }
-      templateBuffer = await downloadBufferFromStorage(savedTemplate.storagePath);
+      templateBuffer = await downloadBufferFromStorage(
+        savedTemplate.storagePath,
+      );
     } else {
       return NextResponse.json(
-        { error: "Template is required. Upload a template or select a saved template." },
+        {
+          error:
+            "Template is required. Upload a template or select a saved template.",
+        },
         { status: 400 },
       );
     }
@@ -276,7 +307,8 @@ export async function POST(request: Request) {
       }
 
       const divisionFolderName = getUniqueFolderName(
-        sourceFolderNames[getSourceFileKey(sourceFile)] ?? getFileBaseName(sourceFile.name),
+        sourceFolderNames[getSourceFileKey(sourceFile)] ??
+          getFileBaseName(sourceFile.name),
         seenDivisionFolders,
       );
       const divisionFolder = zip.folder(divisionFolderName);
@@ -284,16 +316,24 @@ export async function POST(request: Request) {
         throw new Error(`Unable to create folder: ${divisionFolderName}`);
       }
 
-      const profilesFolder = divisionFolder.folder(profileFolderName || "land account");
+      const profilesFolder = divisionFolder.folder(
+        profileFolderName || "land account",
+      );
       if (!profilesFolder) {
-        throw new Error(`Unable to create folder: ${divisionFolderName}/${profileFolderName}`);
+        throw new Error(
+          `Unable to create folder: ${divisionFolderName}/${profileFolderName}`,
+        );
       }
 
       const generatedProfileFiles: { fileName: string; buffer: Buffer }[] = [];
       for (const [index, lotGroup] of lotGroups.entries()) {
-        const { buffer, filename } = await generateProfileBuffer(lotGroup, index + 1, {
-          templateBuffer,
-        });
+        const { buffer, filename } = await generateProfileBuffer(
+          lotGroup,
+          index + 1,
+          {
+            templateBuffer,
+          },
+        );
         generatedProfileFiles.push({ fileName: filename, buffer });
         profilesFolder.file(filename, buffer);
       }
@@ -309,8 +349,14 @@ export async function POST(request: Request) {
           consolidationDivision ??
           "0";
         const sourceIA =
-          sourceConsolidationIAs[sourceFileKey] ?? detected.ia ?? consolidationIA ?? "IA";
-        const consolidationFileName = buildConsolidationFileName(sourceDivision, sourceIA);
+          sourceConsolidationIAs[sourceFileKey] ??
+          detected.ia ??
+          consolidationIA ??
+          "IA";
+        const consolidationFileName = buildConsolidationFileName(
+          sourceDivision,
+          sourceIA,
+        );
         const consolidated = await buildConsolidatedWorkbook({
           templateBuffer: consolidationTemplateBuffer,
           inputFiles: generatedProfileFiles,

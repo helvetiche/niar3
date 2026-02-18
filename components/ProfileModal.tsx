@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { gsap } from "gsap";
 import toast from "react-hot-toast";
 import {
@@ -30,8 +31,13 @@ export function ProfileModal({
 }) {
   const [profile, setProfile] = useState(initialProfile);
   const [changePasswordSent, setChangePasswordSent] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     setProfile(initialProfile);
@@ -111,12 +117,12 @@ export function ProfileModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !isMounted) return null;
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 bg-black/50 opacity-0"
+      className="fixed inset-0 z-[200] bg-black/50 opacity-0"
       onClick={handleClose}
       role="dialog"
       aria-modal="true"
@@ -124,7 +130,7 @@ export function ProfileModal({
     >
       <div
         ref={panelRef}
-        className="absolute bottom-0 left-1/2 w-full min-w-[280px] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-y-auto rounded-t-2xl bg-emerald-900 p-6 shadow-xl sm:max-w-2xl"
+        className="absolute bottom-0 left-1/2 z-[201] w-full min-w-[280px] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-y-auto rounded-t-2xl bg-emerald-900 p-6 shadow-xl sm:max-w-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-6 flex items-center justify-between">
@@ -276,6 +282,7 @@ export function ProfileModal({
           Save changes
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

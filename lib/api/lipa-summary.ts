@@ -116,7 +116,8 @@ export const generateLipaSummary = async (
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     throw new Error(
-      (data as { error?: string }).error ?? "Failed to generate LIPA summary report",
+      (data as { error?: string }).error ??
+        "Failed to generate LIPA summary report",
     );
   }
 
@@ -161,7 +162,9 @@ export const scanLipaFile = async (
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error((data as { error?: string }).error ?? "Failed to scan LIPA PDF");
+    throw new Error(
+      (data as { error?: string }).error ?? "Failed to scan LIPA PDF",
+    );
   }
 
   const data = (await response.json()) as { scanned: LipaScannedFileResult };
@@ -188,7 +191,8 @@ export const buildLipaSummaryReport = async (
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     throw new Error(
-      (data as { error?: string }).error ?? "Failed to generate LIPA summary report",
+      (data as { error?: string }).error ??
+        "Failed to generate LIPA summary report",
     );
   }
 

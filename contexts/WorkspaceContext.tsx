@@ -4,6 +4,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import type { AuthUser } from "@/types/auth";
 
 export const WORKSPACE_TABS = [
+  "hub",
   "lipa-summary",
   "consolidate-ifr",
   "merge-files",
@@ -26,7 +27,7 @@ export function WorkspaceProvider({
   user: AuthUser;
   children: ReactNode;
 }) {
-  const [selectedTab, setSelectedTab] = useState<WorkspaceTab>("ifr-scanner");
+  const [selectedTab, setSelectedTab] = useState<WorkspaceTab>("hub");
   return (
     <WorkspaceContext.Provider value={{ user, selectedTab, setSelectedTab }}>
       {children}

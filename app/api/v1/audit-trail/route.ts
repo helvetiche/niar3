@@ -16,6 +16,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ entries });
   } catch (error) {
     console.error("[api/audit-trail GET]", error);
-    return NextResponse.json({ error: "Failed to fetch audit trail" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch audit trail" },
+      { status: 500 },
+    );
   }
 }

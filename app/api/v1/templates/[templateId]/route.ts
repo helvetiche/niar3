@@ -41,7 +41,10 @@ export async function DELETE(
         httpStatus: 404,
         details: { reason: "template-not-found", templateId },
       });
-      return NextResponse.json({ error: "Template not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Template not found" },
+        { status: 404 },
+      );
     }
 
     await deleteFromStorage(template.storagePath);
@@ -70,6 +73,9 @@ export async function DELETE(
       errorMessage: "Failed to delete template",
       details: { templateId },
     });
-    return NextResponse.json({ error: "Failed to delete template" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete template" },
+      { status: 500 },
+    );
   }
 }

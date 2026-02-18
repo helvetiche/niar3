@@ -36,9 +36,10 @@ export async function POST(request: Request) {
         ? fileNameRaw.trim()
         : "DIVISION X CONSOLIDATED";
     const division =
-      typeof divisionRaw === "string" ? divisionRaw.replace(/[^0-9]/g, "") : "0";
-    const ia =
-      typeof iaRaw === "string" && iaRaw.trim() ? iaRaw.trim() : "IA";
+      typeof divisionRaw === "string"
+        ? divisionRaw.replace(/[^0-9]/g, "")
+        : "0";
+    const ia = typeof iaRaw === "string" && iaRaw.trim() ? iaRaw.trim() : "IA";
 
     if (files.length === 0 && !(singleFile instanceof File)) {
       await logAuditTrailEntry({
@@ -51,9 +52,15 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "no-ifr-files" },
       });
-      return NextResponse.json({ error: "No IFR Excel files uploaded" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No IFR Excel files uploaded" },
+        { status: 400 },
+      );
     }
-    if (!(template instanceof File) && !(typeof templateId === "string" && templateId.trim())) {
+    if (
+      !(template instanceof File) &&
+      !(typeof templateId === "string" && templateId.trim())
+    ) {
       await logAuditTrailEntry({
         uid: result.user.uid,
         action: "consolidate-ifr.post",
@@ -76,7 +83,10 @@ export async function POST(request: Request) {
     if (template instanceof File) {
       templateBuffer = Buffer.from(await template.arrayBuffer());
     } else {
-      const savedTemplate = await getTemplateRecord(result.user.uid, String(templateId).trim());
+      const savedTemplate = await getTemplateRecord(
+        result.user.uid,
+        String(templateId).trim(),
+      );
       if (!savedTemplate) {
         await logAuditTrailEntry({
           uid: result.user.uid,
@@ -86,11 +96,19 @@ export async function POST(request: Request) {
           method: "POST",
           request,
           httpStatus: 404,
-          details: { reason: "template-not-found", templateId: String(templateId).trim() },
+          details: {
+            reason: "template-not-found",
+            templateId: String(templateId).trim(),
+          },
         });
-        return NextResponse.json({ error: "Selected template not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Selected template not found" },
+          { status: 404 },
+        );
       }
-      templateBuffer = await downloadBufferFromStorage(savedTemplate.storagePath);
+      templateBuffer = await downloadBufferFromStorage(
+        savedTemplate.storagePath,
+      );
     }
     const inputFiles = await Promise.all(
       ifrFiles.map(async (file) => ({
@@ -107,8 +125,12 @@ export async function POST(request: Request) {
       ia,
     });
 
-    const { buffer: outputBuffer, outputName, consolidatedCount, skippedDetails } =
-      resultWorkbook;
+    const {
+      buffer: outputBuffer,
+      outputName,
+      consolidatedCount,
+      skippedDetails,
+    } = resultWorkbook;
     const skippedItems = skippedDetails.map((item) =>
       item.fileId ? `${item.fileName} (${item.fileId})` : item.fileName,
     );

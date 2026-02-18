@@ -95,7 +95,9 @@ const setTextCell = (
 export async function buildConsolidatedWorkbook(
   args: BuildConsolidationArgs,
 ): Promise<BuildConsolidationResult> {
-  const templateWorkbook = await XlsxPopulate.fromDataAsync(args.templateBuffer);
+  const templateWorkbook = await XlsxPopulate.fromDataAsync(
+    args.templateBuffer,
+  );
   const targetSheet: ReturnType<typeof templateWorkbook.sheet> | undefined =
     templateWorkbook.sheet(0) ?? templateWorkbook.sheet(1) ?? undefined;
   if (!targetSheet) {
@@ -169,7 +171,9 @@ export async function buildConsolidatedWorkbook(
     }
 
     setTextCell(targetSheet, `N${rowLabel}`, iaValue);
-    targetSheet.cell(`O${rowLabel}`).value(Number.parseInt(divisionValue, 10) || 0);
+    targetSheet
+      .cell(`O${rowLabel}`)
+      .value(Number.parseInt(divisionValue, 10) || 0);
     consolidatedCount += 1;
   }
 

@@ -48,18 +48,23 @@ export const consolidateIfrFile = async (
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error((data as { error?: string }).error ?? "Failed to consolidate file");
+    throw new Error(
+      (data as { error?: string }).error ?? "Failed to consolidate file",
+    );
   }
 
   const blob = await response.blob();
-  const consolidatedCount = Number(response.headers.get("X-Consolidated-Count") ?? "0");
+  const consolidatedCount = Number(
+    response.headers.get("X-Consolidated-Count") ?? "0",
+  );
   const skippedCount = Number(response.headers.get("X-Skipped-Count") ?? "0");
   const skippedItemsHeader = response.headers.get("X-Skipped-Items") ?? "";
   const skippedItems = skippedItemsHeader
     ? skippedItemsHeader.split(",").filter(Boolean)
     : [];
   const skippedDetailsHeader = response.headers.get("X-Skipped-Details") ?? "";
-  let skippedDetails: { fileName: string; fileId?: string; reason: string }[] = [];
+  let skippedDetails: { fileName: string; fileId?: string; reason: string }[] =
+    [];
   if (skippedDetailsHeader) {
     try {
       skippedDetails = JSON.parse(
@@ -70,5 +75,11 @@ export const consolidateIfrFile = async (
     }
   }
 
-  return { blob, consolidatedCount, skippedCount, skippedItems, skippedDetails };
+  return {
+    blob,
+    consolidatedCount,
+    skippedCount,
+    skippedItems,
+    skippedDetails,
+  };
 };

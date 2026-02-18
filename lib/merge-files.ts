@@ -118,10 +118,14 @@ export const mergePdfBuffers = async ({
   }
 
   const uniqueKeys = new Set(
-    finalOrder.map((entry) => `${String(entry.fileIndex)}:${String(entry.pageIndex)}`),
+    finalOrder.map(
+      (entry) => `${String(entry.fileIndex)}:${String(entry.pageIndex)}`,
+    ),
   );
   if (uniqueKeys.size !== totalPages) {
-    throw new Error("Page order must include each uploaded PDF page exactly once.");
+    throw new Error(
+      "Page order must include each uploaded PDF page exactly once.",
+    );
   }
 
   const merged = await PDFDocument.create();
@@ -162,7 +166,7 @@ export const mergeExcelBuffers = async ({
   const usedSheetNames = new Set<string>();
   let mergedSheetCount = 0;
 
-  const cloneValue = <T,>(value: T): T => {
+  const cloneValue = <T>(value: T): T => {
     if (value === null || value === undefined) return value;
     if (value instanceof Date) return new Date(value.getTime()) as T;
     if (typeof value === "object") {
@@ -171,12 +175,12 @@ export const mergeExcelBuffers = async ({
     return value;
   };
 
-  const cloneValueOrUndefined = <T,>(value: T): T => {
+  const cloneValueOrUndefined = <T>(value: T): T => {
     if (!value) return value;
     return structuredClone(value);
   };
 
-  const cloneJsonValue = <T,>(value: T): T => {
+  const cloneJsonValue = <T>(value: T): T => {
     if (value === undefined || value === null) return value;
     return JSON.parse(JSON.stringify(value)) as T;
   };
@@ -206,7 +210,8 @@ export const mergeExcelBuffers = async ({
     targetSheet.pageSetup =
       cloneValueOrUndefined(sourceSheet.pageSetup) ?? targetSheet.pageSetup;
     targetSheet.headerFooter =
-      cloneValueOrUndefined(sourceSheet.headerFooter) ?? targetSheet.headerFooter;
+      cloneValueOrUndefined(sourceSheet.headerFooter) ??
+      targetSheet.headerFooter;
     targetSheet.views = cloneValueOrUndefined(sourceSheet.views) ?? [];
     targetSheet.autoFilter = cloneValueOrUndefined(sourceSheet.autoFilter) as
       | ExcelJS.AutoFilter
@@ -216,14 +221,16 @@ export const mergeExcelBuffers = async ({
       const targetColumn = targetSheet.getColumn(index + 1);
       if (column.width !== undefined) targetColumn.width = column.width;
       if (column.hidden !== undefined) targetColumn.hidden = column.hidden;
-      if (column.outlineLevel !== undefined) targetColumn.outlineLevel = column.outlineLevel;
+      if (column.outlineLevel !== undefined)
+        targetColumn.outlineLevel = column.outlineLevel;
     });
 
     sourceSheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
       const targetRow = targetSheet.getRow(rowNumber);
       if (row.height !== undefined) targetRow.height = row.height;
       if (row.hidden !== undefined) targetRow.hidden = row.hidden;
-      if (row.outlineLevel !== undefined) targetRow.outlineLevel = row.outlineLevel;
+      if (row.outlineLevel !== undefined)
+        targetRow.outlineLevel = row.outlineLevel;
 
       row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
         const targetCell = targetRow.getCell(colNumber);
@@ -240,7 +247,11 @@ export const mergeExcelBuffers = async ({
           targetCell.alignment = alignment as ExcelJS.Alignment;
         }
         const fill = pruneEmpty(cloneJsonValue(cell.fill));
-        if (fill && typeof fill === "object" && "type" in (fill as Record<string, unknown>)) {
+        if (
+          fill &&
+          typeof fill === "object" &&
+          "type" in (fill as Record<string, unknown>)
+        ) {
           targetCell.fill = fill as ExcelJS.Fill;
         }
         const border = pruneEmpty(cloneJsonValue(cell.border));
@@ -269,14 +280,21 @@ export const mergeExcelBuffers = async ({
     await workbook.xlsx.load(bufferForLoad);
     const customPageName = excelPageNames?.[fileIndex]?.trim() ?? "";
 
-    for (let sheetIndex = 0; sheetIndex < workbook.worksheets.length; sheetIndex += 1) {
+    for (
+      let sheetIndex = 0;
+      sheetIndex < workbook.worksheets.length;
+      sheetIndex += 1
+    ) {
       const sourceSheet = workbook.worksheets[sheetIndex];
       const desiredSheetName = customPageName
         ? workbook.worksheets.length === 1
           ? customPageName
           : `${customPageName} ${String(sheetIndex + 1)}`
         : sourceSheet.name;
-      const uniqueSheetName = createUniqueSheetName(desiredSheetName, usedSheetNames);
+      const uniqueSheetName = createUniqueSheetName(
+        desiredSheetName,
+        usedSheetNames,
+      );
       const targetSheet = mergedWorkbook.addWorksheet(uniqueSheetName);
       copyWorksheet(sourceSheet, targetSheet);
       mergedSheetCount += 1;

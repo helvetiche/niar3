@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { fetchProfile } from "@/lib/api/profile";
 import {
+  HouseIcon,
   FileTextIcon,
   StackIcon,
   ArrowsMergeIcon,
@@ -41,6 +42,13 @@ function saveSidebarCollapsed(collapsed: boolean) {
 
 const TOOLS = [
   {
+    id: "hub" as const,
+    name: "HUB",
+    description:
+      "Central workspace hub for quick access to all productivity tools.",
+    icon: HouseIcon,
+  },
+  {
     id: "lipa-summary" as const,
     name: "LIPA SUMMARY",
     description: "Generate summary reports for LIPA documents and records.",
@@ -49,7 +57,8 @@ const TOOLS = [
   {
     id: "consolidate-ifr" as const,
     name: "CONSOLIDATE LAND PROFILE",
-    description: "Merge and consolidate land profile documents into a single file.",
+    description:
+      "Merge and consolidate land profile documents into a single file.",
     icon: StackIcon,
   },
   {
@@ -88,7 +97,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
     birthday: "",
   });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(loadSidebarCollapsed);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   useEffect(() => {
@@ -105,10 +114,6 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
       cancelled = true;
     };
   }, [user.uid]);
-
-  useEffect(() => {
-    setCollapsed(loadSidebarCollapsed());
-  }, []);
 
   useEffect(() => {
     saveSidebarCollapsed(collapsed);

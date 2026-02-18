@@ -32,7 +32,11 @@ const getBaseName = (fileName: string): string => {
   return trimmed.slice(0, dotIndex);
 };
 
-const reorderItems = <T,>(items: T[], fromIndex: number, toIndex: number): T[] => {
+const reorderItems = <T,>(
+  items: T[],
+  fromIndex: number,
+  toIndex: number,
+): T[] => {
   if (fromIndex === toIndex) return items;
   const nextItems = [...items];
   const [movedItem] = nextItems.splice(fromIndex, 1);
@@ -48,7 +52,9 @@ export function MergeFilesTool() {
   const [mode, setMode] = useState<MergeMode>("pdf");
   const [files, setFiles] = useState<File[]>([]);
   const [pdfPages, setPdfPages] = useState<PdfPageItem[]>([]);
-  const [excelPageNames, setExcelPageNames] = useState<Record<string, string>>({});
+  const [excelPageNames, setExcelPageNames] = useState<Record<string, string>>(
+    {},
+  );
   const [fileName, setFileName] = useState(pdfDefaultName);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,7 +78,9 @@ export function MergeFilesTool() {
     clearSelections();
   };
 
-  const buildPdfPages = async (incomingFiles: File[]): Promise<PdfPageItem[]> => {
+  const buildPdfPages = async (
+    incomingFiles: File[],
+  ): Promise<PdfPageItem[]> => {
     const pages: PdfPageItem[] = [];
 
     for (let fileIndex = 0; fileIndex < incomingFiles.length; fileIndex += 1) {
@@ -187,7 +195,9 @@ export function MergeFilesTool() {
         fileName: fileName.trim(),
         excelPageNames:
           mode === "excel"
-            ? files.map((file) => excelPageNames[getFileKey(file)]?.trim() ?? "")
+            ? files.map(
+                (file) => excelPageNames[getFileKey(file)]?.trim() ?? "",
+              )
             : undefined,
         pageOrder:
           mode === "pdf"
@@ -212,7 +222,8 @@ export function MergeFilesTool() {
         `Success. Merged ${String(result.mergedCount)} ${outputTypeLabel} into ${result.fileName}.`,
       );
     } catch (error) {
-      const text = error instanceof Error ? error.message : "Failed to merge files.";
+      const text =
+        error instanceof Error ? error.message : "Failed to merge files.";
       setMessage(text);
     } finally {
       setIsSubmitting(false);
@@ -229,32 +240,49 @@ export function MergeFilesTool() {
   };
 
   return (
-    <section className="flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-6 shadow-xl shadow-emerald-950/30">
       <div className="mb-6">
-        <h2 className="flex items-center gap-2 text-xl font-medium text-zinc-900">
-          <ArrowsMergeIcon size={22} className="text-emerald-700" />
+        <h2 className="flex items-center gap-2 text-xl font-medium text-white">
+          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+            <ArrowsMergeIcon size={18} className="text-white" />
+          </span>
           Merge Files
         </h2>
-        <p className="mt-2 text-sm text-zinc-600">
-          Merge PDF files with drag-and-drop page sequence control, or combine
-          multiple Excel files into one workbook where each source worksheet is kept
-          as its own separate page (sheet).
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <FilePdfIcon size={12} className="text-white" />
+            PDF Page Ordering
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <FileXlsIcon size={12} className="text-white" />
+            Excel Workbook Merge
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-white/85">
+          Merge multiple PDFs with precise drag-and-drop page sequencing, or
+          combine Excel workbooks into one organized file while preserving each
+          source sheet. Set a clear output filename, review your selected files,
+          then download instantly. The tool is optimized for quick batch
+          processing, cleaner handoffs, and consistent document packaging across
+          teams daily.
         </p>
       </div>
 
       <div className="mb-4">
         <div className="grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-end">
           <div>
-            <span className="mb-1 block text-sm font-medium text-zinc-800">Mode</span>
-            <div className="inline-flex rounded-lg border border-zinc-300 p-1">
+            <span className="mb-1 block text-sm font-medium text-white/90">
+              Mode
+            </span>
+            <div className="inline-flex rounded-lg border border-white/35 bg-white/10 p-1 backdrop-blur-sm">
               <button
                 type="button"
                 aria-label="Switch to PDF merge mode"
                 onClick={() => handleModeChange("pdf")}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                   mode === "pdf"
-                    ? "bg-emerald-700 text-white"
-                    : "text-zinc-700 hover:bg-zinc-100"
+                    ? "bg-white text-emerald-900"
+                    : "text-white hover:bg-white/15"
                 }`}
               >
                 Combine PDF
@@ -265,8 +293,8 @@ export function MergeFilesTool() {
                 onClick={() => handleModeChange("excel")}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                   mode === "excel"
-                    ? "bg-emerald-700 text-white"
-                    : "text-zinc-700 hover:bg-zinc-100"
+                    ? "bg-white text-emerald-900"
+                    : "text-white hover:bg-white/15"
                 }`}
               >
                 Combine Excel
@@ -275,8 +303,8 @@ export function MergeFilesTool() {
           </div>
 
           <label className="min-w-0" htmlFor="merge-output-file-name-input">
-            <span className="mb-1 flex items-center gap-2 text-sm font-medium text-zinc-800">
-              <DownloadSimpleIcon size={16} className="text-emerald-700" />
+            <span className="mb-1 flex items-center gap-2 text-sm font-medium text-white/90">
+              <DownloadSimpleIcon size={16} className="text-white" />
               Output File Name
             </span>
             <input
@@ -285,34 +313,35 @@ export function MergeFilesTool() {
               aria-label="Input output file name"
               value={fileName}
               onChange={(event) => setFileName(event.target.value)}
-              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+              className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
               placeholder={defaultFileName}
             />
           </label>
         </div>
 
         <div className="mt-2 grid gap-2 lg:grid-cols-2">
-          <p className="text-xs leading-5 text-zinc-600">
-            Use <span className="font-medium">Combine PDF</span> when you need one
-            final PDF with custom page order. Use{" "}
+          <p className="text-xs leading-5 text-white/80">
+            Use <span className="font-medium">Combine PDF</span> when you need
+            one final PDF with custom page order. Use{" "}
             <span className="font-medium">Combine Excel</span> to merge multiple
             workbooks where each worksheet remains separate.
           </p>
-          <p className="text-xs leading-5 text-zinc-600">
-            This value becomes your downloaded output filename. Keep it short and
-            clear (for example: <span className="font-medium">Week 7 PDF Batch</span>{" "}
-            or <span className="font-medium">Division 3 Excel Merge</span>).
+          <p className="text-xs leading-5 text-white/80">
+            This value becomes your downloaded output filename. Keep it short
+            and clear (for example:{" "}
+            <span className="font-medium">Week 7 PDF Batch</span> or{" "}
+            <span className="font-medium">Division 3 Excel Merge</span>).
           </p>
         </div>
       </div>
 
       <div className="grid gap-4">
         <div className="block">
-          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
+          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
             {mode === "pdf" ? (
-              <FilePdfIcon size={18} className="text-emerald-700" />
+              <FilePdfIcon size={18} className="text-white" />
             ) : (
-              <FileXlsIcon size={18} className="text-emerald-700" />
+              <FileXlsIcon size={18} className="text-white" />
             )}
             {mode === "pdf" ? "PDF Files" : "Excel Files"}
           </span>
@@ -347,55 +376,67 @@ export function MergeFilesTool() {
               event.preventDefault();
               void handleIncomingFiles(event.dataTransfer.files);
             }}
-            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-base text-zinc-700 transition hover:border-emerald-600 hover:bg-emerald-50"
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/10 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/15"
           >
-            <UploadSimpleIcon size={34} className="text-emerald-700" />
+            <UploadSimpleIcon size={34} className="text-white" />
             <span className="font-medium">
               {mode === "pdf"
                 ? "Drag and drop PDF files here, or click to browse"
                 : "Drag and drop Excel files here, or click to browse"}
             </span>
           </button>
-          <p className="mt-2 text-xs leading-5 text-zinc-600">
-            Upload at least two files. For PDF mode, only <span className="font-medium">.pdf</span>{" "}
-            files are accepted and every page can be reordered before merge. For
-            Excel mode, upload <span className="font-medium">.xlsx</span> or{" "}
-            <span className="font-medium">.xls</span> files and all source worksheets
-            will be copied into one combined workbook.
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+              {mode === "pdf" ? (
+                <FilePdfIcon size={12} className="text-white" />
+              ) : (
+                <FileXlsIcon size={12} className="text-white" />
+              )}
+              Supported: {mode === "pdf" ? ".pdf" : ".xlsx, .xls"}
+            </span>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-white/80">
+            Upload at least two files. For PDF mode, only{" "}
+            <span className="font-medium">.pdf</span> files are accepted and
+            every page can be reordered before merge. For Excel mode, upload{" "}
+            <span className="font-medium">.xlsx</span> or{" "}
+            <span className="font-medium">.xls</span> files and all source
+            worksheets will be copied into one combined workbook.
           </p>
         </div>
       </div>
 
       {files.length > 0 && (
         <div className="mt-3">
-          <p className="flex items-center gap-2 text-sm text-zinc-600">
+          <p className="flex items-center gap-2 text-sm text-white/85">
             {mode === "pdf" ? (
-              <FilePdfIcon size={16} className="text-emerald-700" />
+              <FilePdfIcon size={16} className="text-white" />
             ) : (
-              <FileXlsIcon size={16} className="text-emerald-700" />
+              <FileXlsIcon size={16} className="text-white" />
             )}
             Selected files: {String(files.length)}
           </p>
-          <p className="mt-1 text-xs leading-5 text-zinc-600">
-            Tip: keep file sets related to the same report or date range so merged
-            output stays organized for your team.
+          <p className="mt-1 text-xs leading-5 text-white/80">
+            Tip: keep file sets related to the same report or date range so
+            merged output stays organized for your team.
           </p>
         </div>
       )}
 
       {mode === "pdf" && pdfPages.length > 0 && (
-        <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-800">
-            <ArrowsDownUpIcon size={16} className="text-emerald-700" />
+        <div className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
+            <ArrowsDownUpIcon size={16} className="text-white" />
             PDF Page Sequence
           </div>
-          <p className="mb-3 text-xs text-zinc-600">
-            Drag and drop rows to define your merged PDF page order before combining.
+          <p className="mb-3 text-xs text-white/80">
+            Drag and drop rows to define your merged PDF page order before
+            combining.
           </p>
-          <p className="mb-3 text-xs leading-5 text-zinc-600">
-            Sequence starts at <span className="font-medium">#1</span> and follows
-            top to bottom. You can drag rows or use keyboard arrows while focused on
-            a row for accessibility.
+          <p className="mb-3 text-xs leading-5 text-white/80">
+            Sequence starts at <span className="font-medium">#1</span> and
+            follows top to bottom. You can drag rows or use keyboard arrows
+            while focused on a row for accessibility.
           </p>
           <ul className="max-h-72 space-y-2 overflow-y-auto pr-1">
             {pdfPages.map((item, index) => (
@@ -423,11 +464,11 @@ export function MergeFilesTool() {
                     }
                   }}
                   aria-label={`PDF sequence item ${String(index + 1)} ${item.label}`}
-                  className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm"
+                  className="flex items-center justify-between rounded-lg border border-white/30 bg-white/15 px-3 py-2 text-sm text-white shadow-sm shadow-emerald-950/10"
                 >
                   <div className="min-w-0">
                     <p className="truncate">
-                      <span className="mr-2 rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                      <span className="mr-2 rounded-md bg-white px-2 py-0.5 text-xs font-medium text-emerald-900">
                         #{String(index + 1)}
                       </span>
                       {item.label}
@@ -438,7 +479,7 @@ export function MergeFilesTool() {
                       type="button"
                       aria-label={`Move ${item.label} up`}
                       onClick={() => handleMovePage(index, "up")}
-                      className="rounded border border-zinc-200 px-2 py-1 text-xs text-zinc-700 transition hover:bg-zinc-100"
+                      className="rounded border border-white/40 px-2 py-1 text-xs text-white transition hover:bg-white/15"
                     >
                       Up
                     </button>
@@ -446,7 +487,7 @@ export function MergeFilesTool() {
                       type="button"
                       aria-label={`Move ${item.label} down`}
                       onClick={() => handleMovePage(index, "down")}
-                      className="rounded border border-zinc-200 px-2 py-1 text-xs text-zinc-700 transition hover:bg-zinc-100"
+                      className="rounded border border-white/40 px-2 py-1 text-xs text-white transition hover:bg-white/15"
                     >
                       Down
                     </button>
@@ -459,11 +500,13 @@ export function MergeFilesTool() {
       )}
 
       {mode === "excel" && files.length > 0 && (
-        <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-          <p className="mb-3 text-sm font-medium text-zinc-800">Excel Page Name per File</p>
-          <p className="mb-3 text-xs text-zinc-600">
-            Set the page (sheet) name to use for each uploaded Excel file in the merged
-            workbook.
+        <div className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
+          <p className="mb-3 text-sm font-medium text-white">
+            Excel Page Name per File
+          </p>
+          <p className="mb-3 text-xs text-white/80">
+            Set the page (sheet) name to use for each uploaded Excel file in the
+            merged workbook.
           </p>
           <div className="space-y-3">
             {files.map((file, index) => {
@@ -471,10 +514,10 @@ export function MergeFilesTool() {
               return (
                 <div
                   key={fileKey}
-                  className="grid gap-2 rounded-lg border border-zinc-200 bg-white p-3 md:grid-cols-[1fr_280px]"
+                  className="grid gap-2 rounded-lg border border-white/30 bg-white/10 p-3 md:grid-cols-[1fr_280px]"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-zinc-900">
+                    <p className="truncate text-sm font-medium text-white">
                       {String(index + 1)}. {file.name}
                     </p>
                   </div>
@@ -485,7 +528,7 @@ export function MergeFilesTool() {
                     onChange={(event) =>
                       handleExcelPageNameChange(fileKey, event.target.value)
                     }
-                    className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                    className="rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                     placeholder={getBaseName(file.name)}
                   />
                 </div>
@@ -503,9 +546,12 @@ export function MergeFilesTool() {
             void handleMerge();
           }}
           disabled={
-            isSubmitting || isPreparingPages || files.length < 2 || (mode === "pdf" && pdfPages.length === 0)
+            isSubmitting ||
+            isPreparingPages ||
+            files.length < 2 ||
+            (mode === "pdf" && pdfPages.length === 0)
           }
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+          className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80"
         >
           <ArrowsMergeIcon size={18} />
           {isSubmitting ? "Merging..." : "Merge Files"}
@@ -516,21 +562,21 @@ export function MergeFilesTool() {
           aria-label="Reset selected files and merge settings"
           onClick={clearSelections}
           disabled={isSubmitting}
-          className="inline-flex items-center rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
+          className="inline-flex items-center rounded-lg border border-white/40 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:text-white/60"
         >
           Reset
         </button>
       </div>
-      <p className="mt-2 text-xs leading-5 text-zinc-600">
+      <p className="mt-2 text-xs leading-5 text-white/80">
         Click <span className="font-medium">Merge Files</span> to generate and
         download your final output immediately. Use{" "}
-        <span className="font-medium">Reset</span> to clear files, page order, and
-        status messages before starting a new batch.
+        <span className="font-medium">Reset</span> to clear files, page order,
+        and status messages before starting a new batch.
       </p>
 
       {message && (
         <p
-          className="mt-4 whitespace-pre-line rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700"
+          className="mt-4 whitespace-pre-line rounded-lg border border-white/35 bg-white/10 px-4 py-3 text-sm text-white"
           aria-live="polite"
         >
           {message}

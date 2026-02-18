@@ -1,10 +1,10 @@
-import 'server-only'
-import { NextResponse } from 'next/server'
-import { getSession } from './get-session'
-import { hasPermission } from './has-permission'
-import { applySecurityHeaders } from '@/lib/security-headers'
-import type { AuthUser } from '@/types/auth'
-import type { Permission } from '@/constants/permissions'
+import "server-only";
+import { NextResponse } from "next/server";
+import { getSession } from "./get-session";
+import { hasPermission } from "./has-permission";
+import { applySecurityHeaders } from "@/lib/security-headers";
+import type { AuthUser } from "@/types/auth";
+import type { Permission } from "@/constants/permissions";
 
 /**
  * For API Route Handlers. Require auth and optionally permission.
@@ -20,28 +20,25 @@ import type { Permission } from '@/constants/permissions'
  */
 export async function withAuth(
   _request: Request,
-  permission?: Permission
-): Promise<
-  | { user: AuthUser }
-  | NextResponse
-> {
-  const result = await getSession()
+  permission?: Permission,
+): Promise<{ user: AuthUser } | NextResponse> {
+  const result = await getSession();
 
   if (!result.user) {
     const response = NextResponse.json(
-      { error: 'Unauthorized', code: result.error },
-      { status: 401 }
-    )
-    return applySecurityHeaders(response)
+      { error: "Unauthorized", code: result.error },
+      { status: 401 },
+    );
+    return applySecurityHeaders(response);
   }
 
   if (permission && !hasPermission(result.user, permission)) {
     const response = NextResponse.json(
-      { error: 'Forbidden', message: 'Insufficient permissions' },
-      { status: 403 }
-    )
-    return applySecurityHeaders(response)
+      { error: "Forbidden", message: "Insufficient permissions" },
+      { status: 403 },
+    );
+    return applySecurityHeaders(response);
   }
 
-  return { user: result.user }
+  return { user: result.user };
 }

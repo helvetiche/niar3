@@ -344,23 +344,38 @@ export function GenerateProfilesTool() {
   }
 
   return (
-    <section className="flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-6 shadow-xl shadow-emerald-950/30">
       <div className="mb-6">
-        <h2 className="flex items-center gap-2 text-xl font-medium text-zinc-900">
-          <MagnifyingGlassIcon size={22} className="text-emerald-700" />
+        <h2 className="flex items-center gap-2 text-xl font-medium text-white">
+          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+            <MagnifyingGlassIcon size={18} className="text-white" />
+          </span>
           IFR Scanner
         </h2>
-        <p className="mt-2 text-sm text-zinc-600">
-          Upload the master&apos;s list and scan records to generate one profile
-          workbook per lot. You can also include a ready-to-use consolidated IFR
-          file in the same output ZIP.
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <FileXlsIcon size={12} className="text-white" />
+            Profile Extraction
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <DownloadSimpleIcon size={12} className="text-white" />
+            ZIP Output
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-white/85">
+          Upload master lists and scan files to automatically generate one
+          profile workbook per lot with consistent naming and folder structure.
+          Select your template, configure optional consolidation, and download
+          everything in one ZIP. This flow streamlines repetitive encoding,
+          reduces manual errors, and accelerates report preparation for field
+          teams across all divisions.
         </p>
       </div>
 
       <div className="grid gap-4">
         <div className="block">
-          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
-            <FileXlsIcon size={18} />
+          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+            <FileXlsIcon size={18} className="text-white" />
             IFR Source Files (Required)
           </span>
 
@@ -388,15 +403,22 @@ export function GenerateProfilesTool() {
               event.preventDefault();
               handleSourceSelection(event.dataTransfer.files);
             }}
-            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-base text-zinc-700 transition hover:border-emerald-600 hover:bg-emerald-50"
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/10 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/15"
           >
-            <UploadSimpleIcon size={34} className="text-emerald-700" />
+            <UploadSimpleIcon size={34} className="text-white" />
             <span className="font-medium">
               Drag and drop IFR source files, or click to browse
             </span>
           </button>
 
-          <p className="mt-2 text-xs text-zinc-600">
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+              <FileXlsIcon size={12} className="text-white" />
+              Supported: .xlsx, .xls
+            </span>
+          </div>
+
+          <p className="mt-2 text-xs text-white/80">
             Upload one or many .xlsx/.xls files. Each uploaded file is processed
             as a separate division folder in the ZIP with one{" "}
             <span className="font-medium">land account</span> subfolder.
@@ -405,14 +427,14 @@ export function GenerateProfilesTool() {
       </div>
 
       {sourceFiles.length > 0 && (
-        <section className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-          <p className="flex items-center gap-2 text-sm text-zinc-700">
-            <FileXlsIcon size={16} className="text-emerald-700" />
+        <section className="mt-3 rounded-xl border border-white/35 bg-white/10 p-4">
+          <p className="flex items-center gap-2 text-sm text-white">
+            <FileXlsIcon size={16} className="text-white" />
             Selected source files: {String(sourceFiles.length)}
           </p>
 
           <label className="mt-4 block">
-            <span className="mb-2 block text-sm font-medium text-zinc-800">
+            <span className="mb-2 block text-sm font-medium text-white/90">
               Land Account Folder Name
             </span>
             <input
@@ -422,7 +444,7 @@ export function GenerateProfilesTool() {
               onChange={(event) =>
                 setProfileFolderName(sanitizeFolderInput(event.target.value))
               }
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+              className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
               placeholder={defaultProfileFolderName}
             />
           </label>
@@ -447,10 +469,10 @@ export function GenerateProfilesTool() {
               return (
                 <div
                   key={fileKey}
-                  className="rounded-lg border border-zinc-200 bg-white p-3"
+                  className="rounded-lg border border-white/30 bg-white/10 p-3"
                 >
                   <label className="block">
-                    <span className="mb-2 block text-xs font-medium text-zinc-700">
+                    <span className="mb-2 block text-xs font-medium text-white/85">
                       Division Folder Name for {file.name}
                     </span>
                     <input
@@ -460,7 +482,7 @@ export function GenerateProfilesTool() {
                       onChange={(event) =>
                         handleFolderNameChange(fileKey, event.target.value)
                       }
-                      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                      className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                       placeholder={getBaseName(file.name)}
                     />
                   </label>
@@ -468,7 +490,7 @@ export function GenerateProfilesTool() {
                   {createConsolidation && (
                     <div className="mt-3 grid gap-3 md:grid-cols-2">
                       <label className="block">
-                        <span className="mb-2 block text-xs font-medium text-zinc-700">
+                        <span className="mb-2 block text-xs font-medium text-white/85">
                           Division for {file.name}
                         </span>
                         <input
@@ -481,12 +503,12 @@ export function GenerateProfilesTool() {
                           onChange={(event) =>
                             handleDivisionChange(fileKey, event.target.value)
                           }
-                          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                          className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                           placeholder={defaultConsolidationDivision}
                         />
                       </label>
                       <label className="block">
-                        <span className="mb-2 block text-xs font-medium text-zinc-700">
+                        <span className="mb-2 block text-xs font-medium text-white/85">
                           IA for {file.name}
                         </span>
                         <input
@@ -496,20 +518,20 @@ export function GenerateProfilesTool() {
                           onChange={(event) =>
                             handleIAChange(fileKey, event.target.value)
                           }
-                          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                          className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                           placeholder={defaultConsolidationIA}
                         />
                       </label>
                     </div>
                   )}
 
-                  <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2 text-xs text-zinc-700">
+                  <div className="mt-3 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs text-white">
                     <p className="font-medium">{folderName || "division"}/</p>
                     {createConsolidation && (
                       <p className="pl-4">{consolidationFileName}</p>
                     )}
                     <p className="pl-4">{profilesFolder}/</p>
-                    <p className="pl-8 text-zinc-500">
+                    <p className="pl-8 text-white/70">
                       ...generated land account files
                     </p>
                   </div>
@@ -521,7 +543,7 @@ export function GenerateProfilesTool() {
       )}
 
       <label className="mt-4 block" htmlFor="zip-name-input">
-        <span className="mb-2 block text-sm font-medium text-zinc-800">
+        <span className="mb-2 block text-sm font-medium text-white/90">
           ZIP File Name
         </span>
         <input
@@ -530,10 +552,10 @@ export function GenerateProfilesTool() {
           aria-label="Set output zip file name"
           value={zipName}
           onChange={(event) => setZipName(event.target.value)}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+          className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
           placeholder={defaultZipName}
         />
-        <span className="mt-2 block text-xs leading-5 text-zinc-600">
+        <span className="mt-2 block text-xs leading-5 text-white/80">
           Sets the final downloaded ZIP name that contains all generated profile
           files. Use a clear batch label like{" "}
           <span className="font-medium">division-3-week-7</span> so your team
@@ -548,26 +570,26 @@ export function GenerateProfilesTool() {
           setSelectedTemplateId(id);
         }}
       />
-      <p className="mt-2 text-xs leading-5 text-zinc-600">
+      <p className="mt-2 text-xs leading-5 text-white/80">
         Select the saved IFR Scanner template used to generate each lot profile.
         This template controls the output workbook layout and cell mapping.
       </p>
 
-      <section className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+      <section className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
         <label className="flex cursor-pointer items-start gap-3">
           <input
             type="checkbox"
-            className="mt-1 h-4 w-4 rounded border-zinc-300 text-emerald-700 focus:ring-emerald-700"
+            className="mt-1 h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-800 focus:ring-white/60"
             checked={createConsolidation}
             onChange={(event) => setCreateConsolidation(event.target.checked)}
             aria-label="Create consolidation file from generated land profiles"
           />
           <span>
-            <span className="flex items-center gap-2 text-sm font-medium text-zinc-800">
-              <CheckSquareIcon size={16} className="text-emerald-700" />
+            <span className="flex items-center gap-2 text-sm font-medium text-white">
+              <CheckSquareIcon size={16} className="text-white" />
               Create Consolidation
             </span>
-            <span className="mt-1 block text-xs text-zinc-600">
+            <span className="mt-1 block text-xs text-white/80">
               Enable this to generate a consolidated XLSX and include it in the
               same ZIP.
             </span>
@@ -577,7 +599,7 @@ export function GenerateProfilesTool() {
         {createConsolidation && (
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-zinc-800">
+              <span className="mb-2 block text-sm font-medium text-white/90">
                 Consolidation Template
               </span>
               <select
@@ -587,7 +609,7 @@ export function GenerateProfilesTool() {
                   setConsolidationTemplateId(event.target.value)
                 }
                 disabled={isLoadingConsolidationTemplates}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
               >
                 <option value="">Select template...</option>
                 {consolidationTemplates.map((template) => (
@@ -596,14 +618,14 @@ export function GenerateProfilesTool() {
                   </option>
                 ))}
               </select>
-              <span className="mt-2 block text-xs text-zinc-600">
+              <span className="mt-2 block text-xs text-white/80">
                 Uses saved templates from Consolidate Land Profile scope. This
                 template is used to build the combined workbook included in the
                 ZIP.
               </span>
             </label>
 
-            <p className="md:col-span-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600">
+            <p className="md:col-span-2 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs text-white/85">
               Consolidation filename is automatic per file:{" "}
               <span className="font-medium">
                 [Division (2 digits)] [IA NAME] CONSOLIDATED.xlsx
@@ -631,7 +653,7 @@ export function GenerateProfilesTool() {
             !selectedTemplateId ||
             (createConsolidation && !consolidationTemplateId)
           }
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+          className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80"
         >
           <DownloadSimpleIcon size={18} />
           {isGenerating ? "Generating..." : "Scan and Generate"}
@@ -642,22 +664,22 @@ export function GenerateProfilesTool() {
           aria-label="Clear uploaded files"
           onClick={handleClearFiles}
           disabled={isGenerating}
-          className="inline-flex items-center rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
+          className="inline-flex items-center rounded-lg border border-white/40 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:text-white/60"
         >
           Clear
         </button>
       </div>
       {missingRequirements.length > 0 && (
-        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-medium text-red-700">
+        <div className="mt-3 rounded-lg border border-white/50 bg-white/20 px-4 py-3 shadow-lg shadow-black/10 backdrop-blur-md">
+          <p className="text-sm font-medium text-white">
             Requirements before generate:
           </p>
-          <p className="mt-1 whitespace-pre-line text-sm text-red-700">
+          <p className="mt-1 whitespace-pre-line text-sm text-white/90">
             {missingRequirements.map((item) => `- ${item}`).join("\n")}
           </p>
         </div>
       )}
-      <p className="mt-2 text-xs leading-5 text-zinc-600">
+      <p className="mt-2 text-xs leading-5 text-white/80">
         Click <span className="font-medium">Scan and Generate</span> to process
         your uploaded source files and download the ZIP immediately. Use{" "}
         <span className="font-medium">Clear</span> to reset all selected files,
@@ -666,7 +688,7 @@ export function GenerateProfilesTool() {
 
       {message && (
         <p
-          className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700"
+          className="mt-4 rounded-lg border border-white/35 bg-white/10 px-4 py-3 text-sm text-white"
           aria-live="polite"
         >
           {message}

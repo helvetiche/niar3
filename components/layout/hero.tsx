@@ -41,7 +41,11 @@ export function Hero() {
               Speed
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm sm:gap-2 sm:px-4 sm:py-1.5 sm:text-sm">
-              <ChartLineUpIcon size={18} weight="duotone" className="shrink-0" />
+              <ChartLineUpIcon
+                size={18}
+                weight="duotone"
+                className="shrink-0"
+              />
               Efficiency
             </span>
           </div>
@@ -49,7 +53,8 @@ export function Hero() {
             className="text-sm leading-relaxed text-white/90 sm:hidden"
             style={{ fontFamily: "var(--font-jetbrains-mono)" }}
           >
-            Automates manual processes into minute-level results. Streamlines workflows so teams focus on meaningful work.
+            Automates manual processes into minute-level results. Streamlines
+            workflows so teams focus on meaningful work.
           </p>
           <p
             className="hidden text-base leading-relaxed text-white/90 text-justify sm:block md:text-lg"

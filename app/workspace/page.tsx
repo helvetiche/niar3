@@ -5,17 +5,23 @@ import { GenerateProfilesTool } from "@/components/GenerateProfilesTool";
 import { ConsolidateIfrTool } from "@/components/ConsolidateIfrTool";
 import { MergeFilesTool } from "@/components/MergeFilesTool";
 import { LipaSummaryTool } from "@/components/LipaSummaryTool";
+import { WorkspaceHub } from "@/components/WorkspaceHub";
 import { WorkspaceToolPlaceholder } from "@/components/WorkspaceToolPlaceholder";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
 
 const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
+  hub: {
+    name: "HUB",
+    description: "Central workspace hub for quick access to all productivity tools.",
+  },
   "lipa-summary": {
     name: "LIPA SUMMARY",
     description: "Generate summary reports for LIPA documents and records.",
   },
   "consolidate-ifr": {
     name: "CONSOLIDATE LAND PROFILE",
-    description: "Merge and consolidate land profile documents into a single file.",
+    description:
+      "Merge and consolidate land profile documents into a single file.",
   },
   "merge-files": {
     name: "MERGE FILES",
@@ -34,10 +40,12 @@ export default function WorkspacePage() {
   return (
     <>
       <WorkspaceLoadingScreen />
-      <main className="flex min-h-0 flex-1 flex-col bg-zinc-50">
-        <div className="flex min-h-0 flex-1 flex-col p-4">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-emerald-950">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3 sm:p-4">
           {selectedTab === "lipa-summary" ? (
             <LipaSummaryTool />
+          ) : selectedTab === "hub" ? (
+            <WorkspaceHub />
           ) : selectedTab === "ifr-scanner" ? (
             <GenerateProfilesTool />
           ) : selectedTab === "consolidate-ifr" ? (

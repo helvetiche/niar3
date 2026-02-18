@@ -18,12 +18,17 @@ export type LipaReportData = {
 };
 
 const sanitizeFileName = (value: string): string =>
-  value.replace(/[<>:"/\\|?*\x00-\x1F]/g, "_").replace(/\s+/g, " ").trim();
+  value
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
+    .replace(/\s+/g, " ")
+    .trim();
 
 const normalizeOutputName = (value: string): string => {
   const safeBase = sanitizeFileName(value || "LIPA Summary Report");
   if (!safeBase) return "LIPA Summary Report.xlsx";
-  return safeBase.toLowerCase().endsWith(".xlsx") ? safeBase : `${safeBase}.xlsx`;
+  return safeBase.toLowerCase().endsWith(".xlsx")
+    ? safeBase
+    : `${safeBase}.xlsx`;
 };
 
 const createThinBorder = () => ({

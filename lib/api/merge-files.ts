@@ -68,7 +68,9 @@ export const mergeFiles = async (
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error((data as { error?: string }).error ?? "Failed to merge files");
+    throw new Error(
+      (data as { error?: string }).error ?? "Failed to merge files",
+    );
   }
 
   const blob = await response.blob();

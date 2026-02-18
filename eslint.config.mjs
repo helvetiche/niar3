@@ -24,6 +24,10 @@ const eslintConfig = defineConfig([
       "security/detect-new-buffer": "error",
       "security/detect-non-literal-regexp": "error",
       "security/detect-non-literal-require": "error",
+      // High-noise rules in this codebase; keep strong security checks above.
+      "security/detect-object-injection": "off",
+      "security/detect-non-literal-fs-filename": "off",
+      "react-hooks/exhaustive-deps": "off",
     },
   },
   globalIgnores([

@@ -33,7 +33,9 @@ export async function uploadBufferToStorage(
   });
 }
 
-export async function downloadBufferFromStorage(storagePath: string): Promise<Buffer> {
+export async function downloadBufferFromStorage(
+  storagePath: string,
+): Promise<Buffer> {
   const [contents] = await getBucket().file(storagePath).download();
   return contents;
 }

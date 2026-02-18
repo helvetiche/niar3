@@ -24,14 +24,12 @@ export function WorkspaceLoadingScreen({
 }: {
   onComplete?: () => void;
 }) {
+  const getRandomQuote = () =>
+    QUOTES[Math.floor(Math.random() * QUOTES.length)] ?? QUOTES[0];
   const [progress, setProgress] = useState(0);
   const [isDone, setIsDone] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const [quote, setQuote] = useState(QUOTES[0]);
-
-  useEffect(() => {
-    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-  }, []);
+  const [quote] = useState(getRandomQuote);
 
   useEffect(() => {
     const start = performance.now();
@@ -79,7 +77,11 @@ export function WorkspaceLoadingScreen({
       <div className="flex flex-col items-center gap-6">
         <div className="flex items-center gap-3 text-white">
           {isDone ? (
-            <CheckCircleIcon size={32} weight="fill" className="shrink-0 text-white" />
+            <CheckCircleIcon
+              size={32}
+              weight="fill"
+              className="shrink-0 text-white"
+            />
           ) : (
             <WrenchIcon size={32} weight="duotone" className="shrink-0" />
           )}

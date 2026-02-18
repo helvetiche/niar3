@@ -53,7 +53,9 @@ const getCellValue = (
 
   const cell = rowData[col];
   const value =
-    typeof cell === "string" || typeof cell === "number" ? String(cell).trim() : "";
+    typeof cell === "string" || typeof cell === "number"
+      ? String(cell).trim()
+      : "";
 
   if (isNumeric && value) return formatNumber(value);
   return value;
@@ -83,7 +85,9 @@ const sumPlantedAreaFromAcc = (accData: unknown[][]): string => {
     if (!Array.isArray(rowData)) break;
     const cell = rowData[col];
     const number =
-      typeof cell === "number" ? cell : Number(String(cell ?? "").replace(/,/g, ""));
+      typeof cell === "number"
+        ? cell
+        : Number(String(cell ?? "").replace(/,/g, ""));
     if (!Number.isNaN(number) && number > 0) total += number;
   }
 
@@ -265,8 +269,13 @@ const extractFileId = (filename: string): string => {
   return String(Number.parseInt(match[1], 10));
 };
 
-export const extractData = (sheets: ParsedSheet[], filename = ""): ExtractedData => {
-  const accSheet = sheets.find((sheet) => sheet.name.includes("00 ACC DETAILS"));
+export const extractData = (
+  sheets: ParsedSheet[],
+  filename = "",
+): ExtractedData => {
+  const accSheet = sheets.find((sheet) =>
+    sheet.name.includes("00 ACC DETAILS"),
+  );
   const soaSheets = sheets.filter((sheet) => sheet.name.includes("01 SOA"));
 
   let bestSoaDetails: SOADetail[] = [];

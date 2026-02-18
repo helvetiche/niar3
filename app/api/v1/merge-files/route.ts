@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/get-session";
-import {
-  mergeExcelBuffers,
-  mergePdfBuffers,
-} from "@/lib/merge-files";
+import { mergeExcelBuffers, mergePdfBuffers } from "@/lib/merge-files";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 
 type MergeMode = "pdf" | "excel";
@@ -120,7 +117,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const fileName = typeof fileNameValue === "string" ? fileNameValue : undefined;
+    const fileName =
+      typeof fileNameValue === "string" ? fileNameValue : undefined;
     const inputFiles = await Promise.all(
       files.map(async (file) => ({
         fileName: file.name,
@@ -195,7 +193,8 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[api/merge-files POST]", error);
-    const message = error instanceof Error ? error.message : "Failed to merge files";
+    const message =
+      error instanceof Error ? error.message : "Failed to merge files";
     await logAuditTrailEntry({
       uid: session.user.uid,
       action: "merge-files.post",

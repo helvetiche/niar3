@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
-import { applySecurityHeaders } from '@/lib/security-headers'
-import { apiRateLimit, getClientIdentifier, isRateLimitEnabled } from './index'
+import { NextResponse } from "next/server";
+import { applySecurityHeaders } from "@/lib/security-headers";
+import { apiRateLimit, getClientIdentifier, isRateLimitEnabled } from "./index";
 
 /**
  * Use in API Route Handlers to enforce rate limiting.
@@ -14,24 +14,24 @@ import { apiRateLimit, getClientIdentifier, isRateLimitEnabled } from './index'
  * }
  */
 export async function withApiRateLimit(
-  request: Request
+  request: Request,
 ): Promise<NextResponse | null> {
   if (!isRateLimitEnabled() || !apiRateLimit) {
-    return null
+    return null;
   }
-  const identifier = getClientIdentifier(request)
-  const { success, reset } = await apiRateLimit.limit(identifier)
+  const identifier = getClientIdentifier(request);
+  const { success, reset } = await apiRateLimit.limit(identifier);
   if (!success) {
     const response = NextResponse.json(
-      { error: 'Too many requests' },
+      { error: "Too many requests" },
       {
         status: 429,
         headers: {
-          'Retry-After': String(Math.ceil((reset - Date.now()) / 1000)),
+          "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)),
         },
-      }
-    )
-    return applySecurityHeaders(response)
+      },
+    );
+    return applySecurityHeaders(response);
   }
-  return null
+  return null;
 }

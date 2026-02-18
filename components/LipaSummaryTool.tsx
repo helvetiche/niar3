@@ -59,7 +59,10 @@ export function LipaSummaryTool() {
 
     setItems((previous) => {
       const existingKeys = new Set(
-        previous.map((item) => `${item.file.name}-${String(item.file.lastModified)}-${String(item.file.size)}`),
+        previous.map(
+          (item) =>
+            `${item.file.name}-${String(item.file.lastModified)}-${String(item.file.size)}`,
+        ),
       );
       const added = incomingFiles
         .filter(
@@ -82,7 +85,9 @@ export function LipaSummaryTool() {
 
   const handleDivisionChange = (id: string, divisionName: string) => {
     setItems((previous) =>
-      previous.map((item) => (item.id === id ? { ...item, divisionName } : item)),
+      previous.map((item) =>
+        item.id === id ? { ...item, divisionName } : item,
+      ),
     );
   };
 
@@ -202,7 +207,9 @@ export function LipaSummaryTool() {
       succeeded = true;
     } catch (error) {
       const text =
-        error instanceof Error ? error.message : "Failed to generate LIPA summary report.";
+        error instanceof Error
+          ? error.message
+          : "Failed to generate LIPA summary report.";
       setMessage(text);
     } finally {
       setIsGenerating(false);
@@ -216,22 +223,36 @@ export function LipaSummaryTool() {
   };
 
   return (
-    <section className="flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-6 shadow-xl shadow-emerald-950/30">
       <div className="mb-6">
-        <h2 className="flex items-center gap-2 text-xl font-medium text-zinc-900">
-          <FileTextIcon size={22} className="text-emerald-700" />
+        <h2 className="flex items-center gap-2 text-xl font-medium text-white">
+          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+            <FileTextIcon size={18} className="text-white" />
+          </span>
           LIPA Summary
         </h2>
-        <p className="mt-2 text-sm text-zinc-600">
-          Upload PDF files, assign each file to a division, then generate a final
-          Excel LIPA report immediately. This workflow does not save uploaded files
-          to Firebase storage.
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <FilePdfIcon size={12} className="text-white" />
+            PDF to LIPA Report
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <DownloadSimpleIcon size={12} className="text-white" />
+            Excel Output
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-white/85">
+          Upload LIPA PDF files, assign division names, and set the exact page
+          to scan for each document. The generator extracts association data,
+          compiles standardized rows, and builds a final Excel summary in
+          seconds. Use it to minimize manual consolidation, improve consistency,
+          and deliver clean reporting outputs for regional operations teams.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-zinc-800">
+          <span className="mb-2 block text-sm font-medium text-white/90">
             Report Title
           </span>
           <input
@@ -239,32 +260,34 @@ export function LipaSummaryTool() {
             aria-label="Report title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+            className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
             placeholder={defaultReportTitle}
           />
-          <span className="mt-2 block text-xs leading-5 text-zinc-600">
+          <span className="mt-2 block text-xs leading-5 text-white/80">
             Main heading shown in the generated Excel report.
           </span>
         </label>
 
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-zinc-800">Season</span>
+          <span className="mb-2 block text-sm font-medium text-white/90">
+            Season
+          </span>
           <input
             type="text"
             aria-label="Season"
             value={season}
             onChange={(event) => setSeason(event.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+            className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
             placeholder={defaultSeason}
           />
-          <span className="mt-2 block text-xs leading-5 text-zinc-600">
+          <span className="mt-2 block text-xs leading-5 text-white/80">
             Subtitle row for cropping season or reporting period.
           </span>
         </label>
 
         <label className="block">
-          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
-            <DownloadSimpleIcon size={16} className="text-emerald-700" />
+          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+            <DownloadSimpleIcon size={16} className="text-white" />
             Output File Name
           </span>
           <input
@@ -272,18 +295,18 @@ export function LipaSummaryTool() {
             aria-label="Output file name"
             value={outputFileName}
             onChange={(event) => setOutputFileName(event.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+            className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
             placeholder={defaultOutputFileName}
           />
-          <span className="mt-2 block text-xs leading-5 text-zinc-600">
+          <span className="mt-2 block text-xs leading-5 text-white/80">
             Download name for the final `.xlsx` report.
           </span>
         </label>
       </div>
 
       <div className="mt-5">
-        <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
-          <FilePdfIcon size={18} className="text-emerald-700" />
+        <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+          <FilePdfIcon size={18} className="text-white" />
           Source PDF Files
         </span>
 
@@ -310,46 +333,55 @@ export function LipaSummaryTool() {
             event.preventDefault();
             handleIncomingFiles(event.dataTransfer.files);
           }}
-          className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-8 text-base text-zinc-700 transition hover:border-emerald-600 hover:bg-emerald-50"
+          className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/10 px-6 py-8 text-base text-white transition hover:border-white hover:bg-white/15"
         >
-          <UploadSimpleIcon size={34} className="text-emerald-700" />
-          <span className="font-medium">Drag and drop PDFs here, or click to browse</span>
+          <UploadSimpleIcon size={34} className="text-white" />
+          <span className="font-medium">
+            Drag and drop PDFs here, or click to browse
+          </span>
         </button>
-        <p className="mt-2 text-xs leading-5 text-zinc-600">
-          Upload one or more PDF documents. Each file must have a division name and
-          a target page number. The AI will scan only one page number per file.
+        <div className="mt-2 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <FilePdfIcon size={12} className="text-white" />
+            Supported: .pdf
+          </span>
+        </div>
+        <p className="mt-2 text-xs leading-5 text-white/80">
+          Upload one or more PDF documents. Each file must have a division name
+          and a target page number. The AI will scan only one page number per
+          file.
         </p>
       </div>
 
       {items.length > 0 && (
-        <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-          <p className="mb-3 text-sm font-medium text-zinc-800">
+        <div className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
+          <p className="mb-3 text-sm font-medium text-white">
             Division Mapping per File
           </p>
-          <p className="mb-3 text-xs leading-5 text-zinc-600">
-            Set both the division and the exact page number to scan. LIPA Summary
-            strictly processes one page per PDF.
+          <p className="mb-3 text-xs leading-5 text-white/80">
+            Set both the division and the exact page number to scan. LIPA
+            Summary strictly processes one page per PDF.
           </p>
-          <p className="mb-3 text-xs leading-5 text-zinc-600">
+          <p className="mb-3 text-xs leading-5 text-white/80">
             Page input guide (same style as NIA Automation):{" "}
             <span className="font-medium">0</span> means last page,{" "}
             <span className="font-medium">1</span> means page 1,{" "}
             <span className="font-medium">1,3,5</span> and{" "}
-            <span className="font-medium">1-5</span> are multi-page examples from
-            the old flow. For this LIPA tool, use only one value per file (
+            <span className="font-medium">1-5</span> are multi-page examples
+            from the old flow. For this LIPA tool, use only one value per file (
             <span className="font-medium">0</span> or a single page number).
           </p>
           <div className="space-y-3">
             {items.map((item, index) => (
               <div
                 key={item.id}
-                className="grid gap-2 rounded-lg border border-zinc-200 bg-white p-3 md:grid-cols-[1fr_220px_120px_auto]"
+                className="grid gap-2 rounded-lg border border-white/30 bg-white/10 p-3 md:grid-cols-[1fr_220px_120px_auto]"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-zinc-900">
+                  <p className="truncate text-sm font-medium text-white">
                     {String(index + 1)}. {item.file.name}
                   </p>
-                  <p className="text-xs text-zinc-600">
+                  <p className="text-xs text-white/75">
                     Size: {(item.file.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
@@ -360,7 +392,7 @@ export function LipaSummaryTool() {
                   onChange={(event) =>
                     handleDivisionChange(item.id, event.target.value)
                   }
-                  className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                  className="rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                   placeholder="Division name"
                 />
                 <input
@@ -373,14 +405,14 @@ export function LipaSummaryTool() {
                   onChange={(event) =>
                     handlePageNumberChange(item.id, event.target.value)
                   }
-                  className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                  className="rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                   placeholder="Page #"
                 />
                 <button
                   type="button"
                   aria-label={`Remove ${item.file.name}`}
                   onClick={() => handleRemoveFile(item.id)}
-                  className="inline-flex items-center justify-center rounded-lg border border-zinc-300 px-3 py-2 text-zinc-700 transition hover:bg-zinc-100"
+                  className="inline-flex items-center justify-center rounded-lg border border-white/40 px-3 py-2 text-white transition hover:bg-white/15"
                 >
                   <TrashIcon size={16} />
                 </button>
@@ -398,7 +430,7 @@ export function LipaSummaryTool() {
             void handleGenerate();
           }}
           disabled={isGenerating || items.length === 0}
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+          className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80"
         >
           <DownloadSimpleIcon size={18} />
           {isGenerating ? "Generating..." : "Generate LIPA Report"}
@@ -409,33 +441,33 @@ export function LipaSummaryTool() {
           aria-label="Reset LIPA summary form"
           onClick={handleReset}
           disabled={isGenerating}
-          className="inline-flex items-center rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
+          className="inline-flex items-center rounded-lg border border-white/40 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:text-white/60"
         >
           Reset
         </button>
       </div>
       {isGenerating && (
-        <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-          <div className="mb-2 flex items-center justify-between text-xs text-zinc-600">
+        <div className="mt-4 rounded-lg border border-white/35 bg-white/10 p-3">
+          <div className="mb-2 flex items-center justify-between text-xs text-white/80">
             <span>{progressLabel || "Processing..."}</span>
             <span>{String(progressPercent)}%</span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-emerald-950/80">
             <div
-              className="h-full rounded-full bg-emerald-700 transition-all duration-500 ease-out"
+              className="h-full rounded-full bg-white transition-all duration-500 ease-out"
               style={{ width: `${String(progressPercent)}%` }}
             />
           </div>
         </div>
       )}
-      <p className="mt-2 text-xs leading-5 text-zinc-600">
+      <p className="mt-2 text-xs leading-5 text-white/80">
         Generation returns your final report immediately as an Excel file. No
         uploaded documents are stored by this LIPA Summary flow.
       </p>
 
       {message && (
         <p
-          className="mt-4 whitespace-pre-line rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700"
+          className="mt-4 whitespace-pre-line rounded-lg border border-white/35 bg-white/10 px-4 py-3 text-sm text-white"
           aria-live="polite"
         >
           {message}

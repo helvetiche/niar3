@@ -20,12 +20,14 @@ const getTemplatePath = (): string => {
   );
 };
 
-const formatQueueNumber = (value: number): string => String(value).padStart(2, "0");
+const formatQueueNumber = (value: number): string =>
+  String(value).padStart(2, "0");
 
 const isValidName = (value: string): boolean =>
   Boolean(value && value.trim() !== "" && value.trim().toUpperCase() !== "N");
 
-const sanitizeFilePart = (value: string): string => value.replace(/[/\\]/g, "-").trim();
+const sanitizeFilePart = (value: string): string =>
+  value.replace(/[/\\]/g, "-").trim();
 
 const formatFilename = (
   queue: number,
@@ -40,13 +42,15 @@ const formatFilename = (
   const chosenName =
     ownerParts.length > 0 ? ownerParts.join(", ") : farmerParts.join(", ");
 
-  const base = `${formatQueueNumber(queue)} ${sanitizeFilePart(lotCode)}`.trim();
+  const base =
+    `${formatQueueNumber(queue)} ${sanitizeFilePart(lotCode)}`.trim();
   const name = sanitizeFilePart(chosenName);
   return name ? `${base} ${name}.xlsx` : `${base}.xlsx`;
 };
 
 const toExcelValue = (value: string | number): string | number => {
-  if (typeof value === "string" && value.trim().toUpperCase() === "N") return "";
+  if (typeof value === "string" && value.trim().toUpperCase() === "N")
+    return "";
   if (typeof value === "number") return value;
 
   const asString = String(value).trim();
@@ -113,7 +117,8 @@ export const generateProfileBuffer = async (
     penaltyTotal += penalty;
   }
 
-  const oldAccountNumber = Number(String(oldAccount ?? "").replace(/,/g, "")) || 0;
+  const oldAccountNumber =
+    Number(String(oldAccount ?? "").replace(/,/g, "")) || 0;
   const total = principalTotal + penaltyTotal + oldAccountNumber;
 
   setCell(workbook, SOA_SHEET, "D100", principalTotal);
@@ -122,7 +127,9 @@ export const generateProfileBuffer = async (
   setCell(workbook, SOA_SHEET, "G102", total);
 
   const output = await workbook.outputAsync();
-  const buffer = Buffer.isBuffer(output) ? output : Buffer.from(output as ArrayBuffer);
+  const buffer = Buffer.isBuffer(output)
+    ? output
+    : Buffer.from(output as ArrayBuffer);
   const filename = formatFilename(
     queueNumber,
     lotCode,
