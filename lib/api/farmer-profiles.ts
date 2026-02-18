@@ -10,11 +10,17 @@ export type GenerateProfilesOptions = {
 };
 
 export const generateProfilesZip = async (
-  mastersFile: File,
+  sourceFiles: File[],
   options: GenerateProfilesOptions,
 ): Promise<Blob> => {
+  if (sourceFiles.length === 0) {
+    throw new Error("Please upload at least one source Excel file.");
+  }
+
   const formData = new FormData();
-  formData.append("file", mastersFile);
+  sourceFiles.forEach((file) => {
+    formData.append("files", file);
+  });
   if (options.templateId?.trim()) {
     formData.append("templateId", options.templateId.trim());
   }

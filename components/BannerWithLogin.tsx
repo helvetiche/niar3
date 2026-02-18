@@ -2,11 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  LockIcon,
-  SignInIcon,
-  UserIcon,
-} from "@phosphor-icons/react";
+import { LockIcon, SignInIcon, UserIcon } from "@phosphor-icons/react";
 import { LoginModal } from "./LoginModal";
 
 export function BannerWithLogin() {
@@ -27,7 +23,7 @@ export function BannerWithLogin() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-sm font-medium text-white">
             <LockIcon size={18} weight="duotone" className="shrink-0" />
-            <span>Exclusive for NIA Employees</span>
+            <span>Exclusive for NIA O&M Employees</span>
           </div>
           <p className="mt-1 hidden text-xs text-white/90 sm:block">
             Designed for NIA employees to streamline workflows, automate manual
@@ -46,10 +42,7 @@ export function BannerWithLogin() {
           <span>Login</span>
         </button>
       </div>
-      <LoginModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+      <LoginModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </>
   );
 }

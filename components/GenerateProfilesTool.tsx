@@ -18,7 +18,7 @@ const defaultConsolidationDivision = "0";
 const defaultConsolidationIA = "IA";
 
 export function GenerateProfilesTool() {
-  const [mastersFile, setMastersFile] = useState<File | null>(null);
+  const [sourceFiles, setSourceFiles] = useState<File[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [zipName, setZipName] = useState(defaultZipName);
   const [createConsolidation, setCreateConsolidation] = useState(false);
@@ -38,10 +38,10 @@ export function GenerateProfilesTool() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState("");
 
-  const mastersInputRef = useRef<HTMLInputElement | null>(null);
+  const sourceInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleMastersSelection = (incoming: FileList | null) => {
-    setMastersFile(incoming?.[0] ?? null);
+  const handleSourceSelection = (incoming: FileList | null) => {
+    setSourceFiles(Array.from(incoming ?? []));
   };
 
   useEffect(() => {
@@ -76,8 +76,8 @@ export function GenerateProfilesTool() {
   }, [createConsolidation]);
 
   const handleGenerateProfiles = async () => {
-    if (!mastersFile) {
-      setMessage("Please upload the master's list file first.");
+    if (sourceFiles.length === 0) {
+      setMessage("Please upload one or more source Excel files first.");
       return;
     }
     if (!selectedTemplateId) {
@@ -93,7 +93,7 @@ export function GenerateProfilesTool() {
     setMessage("Generating profile files...");
 
     try {
-      const blob = await generateProfilesZip(mastersFile, {
+      const blob = await generateProfilesZip(sourceFiles, {
         templateId: selectedTemplateId,
         createConsolidation,
         consolidationTemplateId,
@@ -126,7 +126,7 @@ export function GenerateProfilesTool() {
   };
 
   const handleClearFiles = () => {
-    setMastersFile(null);
+    setSourceFiles([]);
     setSelectedTemplateId("");
     setCreateConsolidation(false);
     setConsolidationTemplateId("");
@@ -134,7 +134,7 @@ export function GenerateProfilesTool() {
     setConsolidationDivision(defaultConsolidationDivision);
     setConsolidationIA(defaultConsolidationIA);
     setMessage("");
-    if (mastersInputRef.current) mastersInputRef.current.value = "";
+    if (sourceInputRef.current) sourceInputRef.current.value = "";
   };
 
   return (
@@ -155,49 +155,56 @@ export function GenerateProfilesTool() {
         <div className="block">
           <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
             <FileXlsIcon size={18} />
-            Master&apos;s List (Required)
+            IFR Source Files (Required)
           </span>
 
           <input
-            id="masters-list-input"
-            ref={mastersInputRef}
+            id="source-files-input"
+            ref={sourceInputRef}
             type="file"
             accept=".xlsx,.xls"
-            aria-label="Upload master's list Excel file"
+            multiple
+            aria-label="Upload one or more source Excel files"
             onChange={(event) => {
-              handleMastersSelection(event.target.files);
+              handleSourceSelection(event.target.files);
             }}
             className="hidden"
           />
 
           <button
             type="button"
-            aria-label="Choose master's list Excel file"
-            onClick={() => mastersInputRef.current?.click()}
+            aria-label="Choose source Excel files"
+            onClick={() => sourceInputRef.current?.click()}
             onDragOver={(event) => {
               event.preventDefault();
             }}
             onDrop={(event) => {
               event.preventDefault();
-              handleMastersSelection(event.dataTransfer.files);
+              handleSourceSelection(event.dataTransfer.files);
             }}
             className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-base text-zinc-700 transition hover:border-emerald-600 hover:bg-emerald-50"
           >
             <UploadSimpleIcon size={34} className="text-emerald-700" />
             <span className="font-medium">
-              Drag and drop master&apos;s list, or click to browse
+              Drag and drop IFR source files, or click to browse
             </span>
           </button>
 
           <p className="mt-2 text-xs text-zinc-600">
-            Upload the official master&apos;s list in .xlsx or .xls format. Use the
-            drag-and-drop area for faster selection or click to browse manually.
-            This file is required and drives the profile generation process,
-            including lot grouping and filename output. Ensure the spreadsheet
-            structure matches your expected encoding columns.
+            Upload one or many .xlsx/.xls files. Each uploaded file is processed
+            as a separate division folder in the ZIP with a{" "}
+            <span className="font-medium">consolidated division</span> folder and a{" "}
+            <span className="font-medium">farmer profile</span> subfolder.
           </p>
         </div>
       </div>
+
+      {sourceFiles.length > 0 && (
+        <p className="mt-3 flex items-center gap-2 text-sm text-zinc-600">
+          <FileXlsIcon size={16} className="text-emerald-700" />
+          Selected source files: {String(sourceFiles.length)}
+        </p>
+      )}
 
       <label className="mt-4 block" htmlFor="zip-name-input">
         <span className="mb-2 block text-sm font-medium text-zinc-800">ZIP File Name</span>
@@ -342,7 +349,7 @@ export function GenerateProfilesTool() {
           }}
           disabled={
             isGenerating ||
-            !mastersFile ||
+            sourceFiles.length === 0 ||
             !selectedTemplateId ||
             (createConsolidation && !consolidationTemplateId)
           }
@@ -364,7 +371,7 @@ export function GenerateProfilesTool() {
       </div>
       <p className="mt-2 text-xs leading-5 text-zinc-600">
         Click <span className="font-medium">Scan and Generate</span> to process
-        your master&apos;s list and download the ZIP immediately. Use{" "}
+        your uploaded source files and download the ZIP immediately. Use{" "}
         <span className="font-medium">Clear</span> to reset all selected files,
         template choices, and optional consolidation settings.
       </p>

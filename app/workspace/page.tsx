@@ -4,6 +4,7 @@ import { WorkspaceLoadingScreen } from "@/components/WorkspaceLoadingScreen";
 import { GenerateProfilesTool } from "@/components/GenerateProfilesTool";
 import { ConsolidateIfrTool } from "@/components/ConsolidateIfrTool";
 import { MergeFilesTool } from "@/components/MergeFilesTool";
+import { LipaSummaryTool } from "@/components/LipaSummaryTool";
 import { WorkspaceToolPlaceholder } from "@/components/WorkspaceToolPlaceholder";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
 
@@ -35,7 +36,9 @@ export default function WorkspacePage() {
       <WorkspaceLoadingScreen />
       <main className="flex min-h-0 flex-1 flex-col bg-zinc-50">
         <div className="flex min-h-0 flex-1 flex-col p-4">
-          {selectedTab === "ifr-scanner" ? (
+          {selectedTab === "lipa-summary" ? (
+            <LipaSummaryTool />
+          ) : selectedTab === "ifr-scanner" ? (
             <GenerateProfilesTool />
           ) : selectedTab === "consolidate-ifr" ? (
             <ConsolidateIfrTool />
