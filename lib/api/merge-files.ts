@@ -12,6 +12,7 @@ export type MergeFilesPayload = {
   files: File[];
   fileName?: string;
   pageOrder?: PdfPageOrderItem[];
+  excelPageNames?: string[];
 };
 
 export type MergeFilesResult = {
@@ -53,6 +54,10 @@ export const mergeFiles = async (
 
   if (payload.mode === "pdf" && payload.pageOrder?.length) {
     formData.append("pageOrder", JSON.stringify(payload.pageOrder));
+  }
+
+  if (payload.mode === "excel" && payload.excelPageNames?.length) {
+    formData.append("excelPageNames", JSON.stringify(payload.excelPageNames));
   }
 
   const response = await fetch("/api/v1/merge-files", {

@@ -48,8 +48,8 @@ const TOOLS = [
   },
   {
     id: "consolidate-ifr" as const,
-    name: "CONSOLIDATE IFR",
-    description: "Merge and consolidate IFR documents into a single file.",
+    name: "CONSOLIDATE LAND PROFILE",
+    description: "Merge and consolidate land profile documents into a single file.",
     icon: StackIcon,
   },
   {
@@ -134,7 +134,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
 
   return (
     <aside
-      className={`flex shrink-0 flex-col border-r border-emerald-950/50 bg-emerald-900 transition-[width] duration-200 ease-out ${
+      className={`sticky top-0 flex h-screen shrink-0 self-start flex-col overflow-hidden border-r border-emerald-950/50 bg-emerald-900 transition-[width] duration-200 ease-out ${
         collapsed ? "w-[72px]" : "w-96"
       }`}
     >

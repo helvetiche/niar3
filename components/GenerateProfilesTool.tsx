@@ -3,19 +3,79 @@
 import { useEffect, useRef, useState } from "react";
 import {
   CheckSquareIcon,
+  CheckCircleIcon,
+  ClockCountdownIcon,
   DownloadSimpleIcon,
   FileXlsIcon,
   MagnifyingGlassIcon,
   UploadSimpleIcon,
+  WrenchIcon,
 } from "@phosphor-icons/react";
 import { generateProfilesZip } from "@/lib/api/farmer-profiles";
 import { TemplateManager } from "@/components/TemplateManager";
 import { listTemplates, type StoredTemplate } from "@/lib/api/templates";
 
 const defaultZipName = "farmer-profiles";
-const defaultConsolidationName = "DIVISION X CONSOLIDATED";
 const defaultConsolidationDivision = "0";
 const defaultConsolidationIA = "IA";
+const defaultProfileFolderName = "land account";
+const scannerConsolidationTemplateStorageKey = "ifr-scanner:last-consolidation-template-id";
+
+const sanitizeFolderInput = (value: string): string =>
+  value
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_");
+
+const getBaseName = (fileName: string): string => {
+  const trimmed = fileName.trim();
+  const lastDot = trimmed.lastIndexOf(".");
+  if (lastDot <= 0) return trimmed;
+  return trimmed.slice(0, lastDot);
+};
+
+const getSourceFileKey = (file: File): string =>
+  `${file.name}::${String(file.size)}::${String(file.lastModified)}`;
+
+const detectDivisionAndIAFromFilename = (
+  fileName: string,
+): { division: string; ia: string } => {
+  const baseName = getBaseName(fileName).replace(/_/g, " ").trim();
+  const divisionMatch = /\bDIV\.?\s*([0-9]{1,2})\b/i.exec(baseName);
+  if (!divisionMatch) {
+    return { division: defaultConsolidationDivision, ia: defaultConsolidationIA };
+  }
+
+  const division = String(Number.parseInt(divisionMatch[1], 10));
+  const matchStart = divisionMatch.index ?? 0;
+  const remainderStart = matchStart + divisionMatch[0].length;
+  let iaPart = baseName.slice(remainderStart).trim();
+
+  iaPart = iaPart.replace(/^[-:–—]+\s*/, "");
+  iaPart = iaPart.replace(/\s{2,}/g, " ");
+
+  return {
+    division: division || defaultConsolidationDivision,
+    ia: iaPart || defaultConsolidationIA,
+  };
+};
+
+const buildConsolidationFileName = (division: string, ia: string): string => {
+  const digits = division.replace(/[^0-9]/g, "");
+  const paddedDivision = digits ? digits.padStart(2, "0") : "00";
+  const iaName = ia.trim().toUpperCase() || "IA";
+  return `${paddedDivision} ${iaName} CONSOLIDATED.xlsx`;
+};
+
+const wait = async (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+
+const formatElapsedTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (mins <= 0) return `${String(secs)}s`;
+  return `${String(mins)}m ${String(secs).padStart(2, "0")}s`;
+};
 
 export function GenerateProfilesTool() {
   const [sourceFiles, setSourceFiles] = useState<File[]>([]);
@@ -26,19 +86,25 @@ export function GenerateProfilesTool() {
     StoredTemplate[]
   >([]);
   const [consolidationTemplateId, setConsolidationTemplateId] = useState("");
-  const [consolidationFileName, setConsolidationFileName] = useState(
-    defaultConsolidationName,
+  const [profileFolderName, setProfileFolderName] = useState(defaultProfileFolderName);
+  const [sourceFolderNames, setSourceFolderNames] = useState<Record<string, string>>({});
+  const [sourceConsolidationDivisions, setSourceConsolidationDivisions] = useState<
+    Record<string, string>
+  >({});
+  const [sourceConsolidationIAs, setSourceConsolidationIAs] = useState<Record<string, string>>(
+    {},
   );
-  const [consolidationDivision, setConsolidationDivision] = useState(
-    defaultConsolidationDivision,
-  );
-  const [consolidationIA, setConsolidationIA] = useState(defaultConsolidationIA);
   const [isLoadingConsolidationTemplates, setIsLoadingConsolidationTemplates] =
     useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState("");
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [isOverlayOpaque, setIsOverlayOpaque] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   const sourceInputRef = useRef<HTMLInputElement | null>(null);
+  const elapsedIntervalRef = useRef<number | null>(null);
 
   const handleSourceSelection = (incoming: FileList | null) => {
     setSourceFiles(Array.from(incoming ?? []));
@@ -56,6 +122,12 @@ export function GenerateProfilesTool() {
         setConsolidationTemplates(items);
         setConsolidationTemplateId((previous) => {
           if (previous && items.some((item) => item.id === previous)) return previous;
+          const savedTemplateId = window.localStorage.getItem(
+            scannerConsolidationTemplateStorageKey,
+          );
+          if (savedTemplateId && items.some((item) => item.id === savedTemplateId)) {
+            return savedTemplateId;
+          }
           return items[0]?.id ?? "";
         });
       } catch (error) {
@@ -75,6 +147,56 @@ export function GenerateProfilesTool() {
     };
   }, [createConsolidation]);
 
+  useEffect(() => {
+    if (sourceFiles.length === 0) {
+      setSourceFolderNames({});
+      return;
+    }
+
+    setSourceFolderNames((previous) => {
+      const next: Record<string, string> = {};
+      sourceFiles.forEach((file) => {
+        const fileKey = getSourceFileKey(file);
+        const existingName = previous[fileKey];
+        next[fileKey] = existingName ? existingName : getBaseName(file.name);
+      });
+      return next;
+    });
+
+    setSourceConsolidationDivisions((previous) => {
+      const next: Record<string, string> = {};
+      sourceFiles.forEach((file) => {
+        const fileKey = getSourceFileKey(file);
+        const detected = detectDivisionAndIAFromFilename(file.name);
+        const existingDivision = previous[fileKey];
+        next[fileKey] = existingDivision ?? detected.division;
+      });
+      return next;
+    });
+
+    setSourceConsolidationIAs((previous) => {
+      const next: Record<string, string> = {};
+      sourceFiles.forEach((file) => {
+        const fileKey = getSourceFileKey(file);
+        const detected = detectDivisionAndIAFromFilename(file.name);
+        const existingIA = previous[fileKey];
+        next[fileKey] = existingIA ?? detected.ia;
+      });
+      return next;
+    });
+  }, [sourceFiles]);
+
+  useEffect(() => {
+    if (!consolidationTemplateId.trim()) {
+      window.localStorage.removeItem(scannerConsolidationTemplateStorageKey);
+      return;
+    }
+    window.localStorage.setItem(
+      scannerConsolidationTemplateStorageKey,
+      consolidationTemplateId.trim(),
+    );
+  }, [consolidationTemplateId]);
+
   const handleGenerateProfiles = async () => {
     if (sourceFiles.length === 0) {
       setMessage("Please upload one or more source Excel files first.");
@@ -91,15 +213,29 @@ export function GenerateProfilesTool() {
 
     setIsGenerating(true);
     setMessage("Generating profile files...");
+    setIsFinalizing(false);
+    setElapsedSeconds(0);
+    setIsOverlayVisible(true);
+    setIsOverlayOpaque(false);
+    window.requestAnimationFrame(() => {
+      setIsOverlayOpaque(true);
+    });
+    if (elapsedIntervalRef.current !== null) {
+      window.clearInterval(elapsedIntervalRef.current);
+    }
+    elapsedIntervalRef.current = window.setInterval(() => {
+      setElapsedSeconds((previous) => previous + 1);
+    }, 1000);
 
     try {
       const blob = await generateProfilesZip(sourceFiles, {
         templateId: selectedTemplateId,
         createConsolidation,
         consolidationTemplateId,
-        consolidationFileName,
-        consolidationDivision,
-        consolidationIA,
+        profileFolderName,
+        sourceFolderNames,
+        sourceConsolidationDivisions,
+        sourceConsolidationIAs,
       });
       const objectUrl = URL.createObjectURL(blob);
       const downloadLink = document.createElement("a");
@@ -116,10 +252,26 @@ export function GenerateProfilesTool() {
       URL.revokeObjectURL(objectUrl);
 
       setMessage("Success. Profile ZIP has been downloaded.");
+      setIsFinalizing(true);
+      if (elapsedIntervalRef.current !== null) {
+        window.clearInterval(elapsedIntervalRef.current);
+        elapsedIntervalRef.current = null;
+      }
+      await wait(280);
+      setIsOverlayOpaque(false);
+      await wait(320);
+      setIsOverlayVisible(false);
     } catch (error) {
       const text =
         error instanceof Error ? error.message : "Failed to generate profile files.";
       setMessage(text);
+      if (elapsedIntervalRef.current !== null) {
+        window.clearInterval(elapsedIntervalRef.current);
+        elapsedIntervalRef.current = null;
+      }
+      setIsOverlayOpaque(false);
+      await wait(240);
+      setIsOverlayVisible(false);
     } finally {
       setIsGenerating(false);
     }
@@ -130,12 +282,54 @@ export function GenerateProfilesTool() {
     setSelectedTemplateId("");
     setCreateConsolidation(false);
     setConsolidationTemplateId("");
-    setConsolidationFileName(defaultConsolidationName);
-    setConsolidationDivision(defaultConsolidationDivision);
-    setConsolidationIA(defaultConsolidationIA);
+    setProfileFolderName(defaultProfileFolderName);
+    setSourceFolderNames({});
+    setSourceConsolidationDivisions({});
+    setSourceConsolidationIAs({});
     setMessage("");
     if (sourceInputRef.current) sourceInputRef.current.value = "";
   };
+
+  useEffect(() => {
+    return () => {
+      if (elapsedIntervalRef.current !== null) {
+        window.clearInterval(elapsedIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const handleFolderNameChange = (fileKey: string, value: string) => {
+    const sanitized = sanitizeFolderInput(value);
+    setSourceFolderNames((previous) => ({
+      ...previous,
+      [fileKey]: sanitized,
+    }));
+  };
+
+  const handleDivisionChange = (fileKey: string, value: string) => {
+    setSourceConsolidationDivisions((previous) => ({
+      ...previous,
+      [fileKey]: value.replace(/[^0-9]/g, ""),
+    }));
+  };
+
+  const handleIAChange = (fileKey: string, value: string) => {
+    setSourceConsolidationIAs((previous) => ({
+      ...previous,
+      [fileKey]: value.trimStart(),
+    }));
+  };
+
+  const missingRequirements: string[] = [];
+  if (sourceFiles.length === 0) {
+    missingRequirements.push("Upload one or more source Excel files.");
+  }
+  if (!selectedTemplateId) {
+    missingRequirements.push("Select a saved IFR Scanner template.");
+  }
+  if (createConsolidation && !consolidationTemplateId) {
+    missingRequirements.push("Select a consolidation template.");
+  }
 
   return (
     <section className="flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
@@ -192,18 +386,120 @@ export function GenerateProfilesTool() {
 
           <p className="mt-2 text-xs text-zinc-600">
             Upload one or many .xlsx/.xls files. Each uploaded file is processed
-            as a separate division folder in the ZIP with a{" "}
-            <span className="font-medium">consolidated division</span> folder and a{" "}
-            <span className="font-medium">farmer profile</span> subfolder.
+            as a separate division folder in the ZIP with one{" "}
+            <span className="font-medium">land account</span> subfolder.
           </p>
         </div>
       </div>
 
       {sourceFiles.length > 0 && (
-        <p className="mt-3 flex items-center gap-2 text-sm text-zinc-600">
-          <FileXlsIcon size={16} className="text-emerald-700" />
-          Selected source files: {String(sourceFiles.length)}
-        </p>
+        <section className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+          <p className="flex items-center gap-2 text-sm text-zinc-700">
+            <FileXlsIcon size={16} className="text-emerald-700" />
+            Selected source files: {String(sourceFiles.length)}
+          </p>
+
+          <label className="mt-4 block">
+            <span className="mb-2 block text-sm font-medium text-zinc-800">
+              Land Account Folder Name
+            </span>
+            <input
+              type="text"
+              aria-label="Set land account folder name"
+              value={profileFolderName}
+              onChange={(event) =>
+                setProfileFolderName(sanitizeFolderInput(event.target.value))
+              }
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+              placeholder={defaultProfileFolderName}
+            />
+          </label>
+
+          <div className="mt-4 space-y-4">
+            {sourceFiles.map((file) => {
+              const fileKey = getSourceFileKey(file);
+              const folderName = sourceFolderNames[fileKey] || getBaseName(file.name);
+              const profilesFolder = profileFolderName.trim() || defaultProfileFolderName;
+              const divisionValue =
+                sourceConsolidationDivisions[fileKey] ?? defaultConsolidationDivision;
+              const iaValue = sourceConsolidationIAs[fileKey] ?? defaultConsolidationIA;
+              const consolidationFileName = buildConsolidationFileName(
+                divisionValue,
+                iaValue,
+              );
+
+              return (
+                <div
+                  key={fileKey}
+                  className="rounded-lg border border-zinc-200 bg-white p-3"
+                >
+                  <label className="block">
+                    <span className="mb-2 block text-xs font-medium text-zinc-700">
+                      Division Folder Name for {file.name}
+                    </span>
+                    <input
+                      type="text"
+                      aria-label={`Set division folder name for ${file.name}`}
+                      value={folderName}
+                      onChange={(event) =>
+                        handleFolderNameChange(fileKey, event.target.value)
+                      }
+                      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                      placeholder={getBaseName(file.name)}
+                    />
+                  </label>
+
+                  {createConsolidation && (
+                    <div className="mt-3 grid gap-3 md:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-medium text-zinc-700">
+                          Division for {file.name}
+                        </span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          step="1"
+                          aria-label={`Set consolidation division for ${file.name}`}
+                          value={divisionValue}
+                          onChange={(event) =>
+                            handleDivisionChange(fileKey, event.target.value)
+                          }
+                          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                          placeholder={defaultConsolidationDivision}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-xs font-medium text-zinc-700">
+                          IA for {file.name}
+                        </span>
+                        <input
+                          type="text"
+                          aria-label={`Set consolidation IA for ${file.name}`}
+                          value={iaValue}
+                          onChange={(event) => handleIAChange(fileKey, event.target.value)}
+                          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                          placeholder={defaultConsolidationIA}
+                        />
+                      </label>
+                    </div>
+                  )}
+
+                  <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2 text-xs text-zinc-700">
+                    <p className="font-medium">{folderName || "division"}/</p>
+                    {createConsolidation && (
+                      <p className="pl-4">
+                        {consolidationFileName}
+                      </p>
+                    )}
+                    <p className="pl-4">{profilesFolder}/</p>
+                    <p className="pl-8 text-zinc-500">...generated land account files</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       <label className="mt-4 block" htmlFor="zip-name-input">
@@ -278,64 +574,18 @@ export function GenerateProfilesTool() {
                 ))}
               </select>
               <span className="mt-2 block text-xs text-zinc-600">
-                Uses saved templates from Consolidate IFR scope. This template is
+                Uses saved templates from Consolidate Land Profile scope. This template is
                 used to build the combined workbook included in the ZIP.
               </span>
             </label>
 
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-zinc-800">
-                Consolidation File Name
+            <p className="md:col-span-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-600">
+              Consolidation filename is automatic per file:{" "}
+              <span className="font-medium">
+                [Division (2 digits)] [IA NAME] CONSOLIDATED.xlsx
               </span>
-              <input
-                type="text"
-                aria-label="Consolidation file name"
-                value={consolidationFileName}
-                onChange={(event) => setConsolidationFileName(event.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
-                placeholder={defaultConsolidationName}
-              />
-              <span className="mt-2 block text-xs text-zinc-600">
-                Sets the filename of the consolidated workbook added to your ZIP.
-              </span>
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-zinc-800">
-                Division
-              </span>
-              <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                step="1"
-                aria-label="Consolidation division"
-                value={consolidationDivision}
-                onChange={(event) =>
-                  setConsolidationDivision(event.target.value.replace(/[^0-9]/g, ""))
-                }
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
-                placeholder={defaultConsolidationDivision}
-              />
-              <span className="mt-2 block text-xs text-zinc-600">
-                Numeric DIVISION value written to all consolidated rows.
-              </span>
-            </label>
-
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-zinc-800">IA</span>
-              <input
-                type="text"
-                aria-label="Consolidation IA"
-                value={consolidationIA}
-                onChange={(event) => setConsolidationIA(event.target.value)}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
-                placeholder={defaultConsolidationIA}
-              />
-              <span className="mt-2 block text-xs text-zinc-600">
-                IA code written to all consolidated rows in the generated workbook.
-              </span>
-            </label>
+              . Example: <span className="font-medium">08 BAGONG PAG-ASA CONSOLIDATED.xlsx</span>.
+            </p>
           </div>
         )}
       </section>
@@ -369,6 +619,14 @@ export function GenerateProfilesTool() {
           Clear
         </button>
       </div>
+      {missingRequirements.length > 0 && (
+        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-medium text-red-700">Requirements before generate:</p>
+          <p className="mt-1 whitespace-pre-line text-sm text-red-700">
+            {missingRequirements.map((item) => `- ${item}`).join("\n")}
+          </p>
+        </div>
+      )}
       <p className="mt-2 text-xs leading-5 text-zinc-600">
         Click <span className="font-medium">Scan and Generate</span> to process
         your uploaded source files and download the ZIP immediately. Use{" "}
@@ -384,6 +642,61 @@ export function GenerateProfilesTool() {
           {message}
         </p>
       )}
+
+      {isOverlayVisible && (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-emerald-900/90 backdrop-blur-sm transition-opacity duration-300 ${
+            isOverlayOpaque ? "opacity-100" : "opacity-0"
+          }`}
+          aria-live="polite"
+        >
+          <div className="w-[92%] max-w-lg rounded-2xl border border-white/15 bg-emerald-950/55 p-6 text-white shadow-2xl">
+            <div className="mb-4 flex items-center gap-3">
+              {isFinalizing ? (
+                <CheckCircleIcon size={28} weight="fill" className="text-white" />
+              ) : (
+                <WrenchIcon size={28} weight="duotone" className="text-white" />
+              )}
+              <p className="text-lg font-medium">
+                {isFinalizing ? "Done" : "Processing IFR Scanner"}
+              </p>
+            </div>
+
+            <div className="relative h-4 overflow-hidden rounded-full bg-emerald-950/80 ring-2 ring-white/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
+              <div className="scanner-loading-bar absolute left-0 top-0 h-full w-2/5 rounded-full bg-white" />
+            </div>
+
+            <div className="mt-3 flex items-center justify-between text-sm text-white/90">
+              <p>{isFinalizing ? "Finalizing and preparing download..." : "Please wait..."}</p>
+              <p className="inline-flex items-center gap-1 tabular-nums font-medium">
+                <ClockCountdownIcon size={14} />
+                Time Elapsed: {formatElapsedTime(elapsedSeconds)}
+              </p>
+            </div>
+
+            <p className="mt-2 text-xs text-white/80">
+              Do not interrupt or close this window while processing.
+            </p>
+          </div>
+        </div>
+      )}
+      <style jsx>{`
+        .scanner-loading-bar {
+          animation: scanner-loading-slide 1.2s ease-in-out infinite;
+        }
+
+        @keyframes scanner-loading-slide {
+          0% {
+            transform: translateX(-120%);
+          }
+          50% {
+            transform: translateX(170%);
+          }
+          100% {
+            transform: translateX(-120%);
+          }
+        }
+      `}</style>
     </section>
   );
 }

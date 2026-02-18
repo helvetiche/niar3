@@ -9,7 +9,9 @@ import {
   UploadSimpleIcon,
 } from "@phosphor-icons/react";
 import {
-  generateLipaSummary,
+  buildLipaSummaryReport,
+  scanLipaFile,
+  type LipaScannedFileResult,
   type LipaSummaryFileMapping,
 } from "@/lib/api/lipa-summary";
 
@@ -41,6 +43,8 @@ export function LipaSummaryTool() {
   const [season, setSeason] = useState(defaultSeason);
   const [outputFileName, setOutputFileName] = useState(defaultOutputFileName);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("");
   const [message, setMessage] = useState("");
 
   const handleIncomingFiles = (incoming: FileList | null) => {
@@ -101,6 +105,8 @@ export function LipaSummaryTool() {
     setTitle(defaultReportTitle);
     setSeason(defaultSeason);
     setOutputFileName(defaultOutputFileName);
+    setProgressPercent(0);
+    setProgressLabel("");
     setMessage("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -135,12 +141,45 @@ export function LipaSummaryTool() {
     }
 
     setIsGenerating(true);
+    setProgressPercent(0);
+    setProgressLabel("Preparing files...");
     setMessage("Scanning PDFs with AI and building LIPA report...");
+    let succeeded = false;
 
     try {
-      const result = await generateLipaSummary({
-        files: items.map((item) => item.file),
-        mappings: buildMappings(),
+      const mappings = buildMappings();
+      const scannedFiles: LipaScannedFileResult[] = [];
+
+      for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        const mapping = mappings[index];
+        if (!mapping) {
+          throw new Error("Missing scan mapping for one or more files.");
+        }
+        const startedPercent = Math.max(
+          1,
+          Math.round((index / Math.max(1, items.length)) * 90),
+        );
+        setProgressPercent(startedPercent);
+        setProgressLabel(
+          `Scanning ${String(index + 1)} of ${String(items.length)}: ${item.file.name}`,
+        );
+
+        const scanned = await scanLipaFile({
+          file: item.file,
+          mapping,
+        });
+        scannedFiles.push(scanned);
+
+        const completedPercent = Math.round(((index + 1) / items.length) * 90);
+        setProgressPercent(completedPercent);
+      }
+
+      setProgressLabel("Building final Excel report...");
+      setProgressPercent(95);
+
+      const result = await buildLipaSummaryReport({
+        scannedFiles,
         title: title.trim(),
         season: season.trim(),
         outputFileName: outputFileName.trim(),
@@ -154,16 +193,25 @@ export function LipaSummaryTool() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
+      setProgressPercent(100);
+      setProgressLabel("Completed");
 
       setMessage(
         `Success. Scanned ${String(result.scannedFiles)} PDF file(s) and extracted ${String(result.extractedAssociations)} association record(s).`,
       );
+      succeeded = true;
     } catch (error) {
       const text =
         error instanceof Error ? error.message : "Failed to generate LIPA summary report.";
       setMessage(text);
     } finally {
       setIsGenerating(false);
+      if (!succeeded) {
+        setTimeout(() => {
+          setProgressPercent(0);
+          setProgressLabel("");
+        }, 1200);
+      }
     }
   };
 
@@ -366,6 +414,20 @@ export function LipaSummaryTool() {
           Reset
         </button>
       </div>
+      {isGenerating && (
+        <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+          <div className="mb-2 flex items-center justify-between text-xs text-zinc-600">
+            <span>{progressLabel || "Processing..."}</span>
+            <span>{String(progressPercent)}%</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-200">
+            <div
+              className="h-full rounded-full bg-emerald-700 transition-all duration-500 ease-out"
+              style={{ width: `${String(progressPercent)}%` }}
+            />
+          </div>
+        </div>
+      )}
       <p className="mt-2 text-xs leading-5 text-zinc-600">
         Generation returns your final report immediately as an Excel file. No
         uploaded documents are stored by this LIPA Summary flow.

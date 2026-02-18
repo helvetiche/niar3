@@ -52,6 +52,16 @@ const parsePageOrder = (value: FormDataEntryValue | null): PageOrderItem[] => {
   return result;
 };
 
+const parseExcelPageNames = (value: FormDataEntryValue | null): string[] => {
+  if (typeof value !== "string" || !value.trim()) return [];
+  const parsed = JSON.parse(value) as unknown;
+  if (!Array.isArray(parsed)) {
+    throw new Error("Invalid Excel page names payload.");
+  }
+
+  return parsed.map((item) => (typeof item === "string" ? item : ""));
+};
+
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session.user) {
@@ -105,9 +115,12 @@ export async function POST(request: Request) {
       });
     }
 
-    const { buffer, outputName, mergedSheetCount } = mergeExcelBuffers({
+    const excelPageNames = parseExcelPageNames(formData.get("excelPageNames"));
+
+    const { buffer, outputName, mergedSheetCount } = await mergeExcelBuffers({
       inputFiles,
       fileName,
+      excelPageNames,
     });
 
     return new NextResponse(new Uint8Array(buffer), {

@@ -1,4 +1,4 @@
-import XlsxPopulate from "xlsx-populate";
+import ExcelJS from "exceljs";
 
 export type LipaIrrigator = {
   name: string;
@@ -26,6 +26,13 @@ const normalizeOutputName = (value: string): string => {
   return safeBase.toLowerCase().endsWith(".xlsx") ? safeBase : `${safeBase}.xlsx`;
 };
 
+const createThinBorder = () => ({
+  top: { style: "thin" as const },
+  left: { style: "thin" as const },
+  bottom: { style: "thin" as const },
+  right: { style: "thin" as const },
+});
+
 export const generateLipaReportWorkbook = async ({
   report,
   outputFileName,
@@ -33,52 +40,151 @@ export const generateLipaReportWorkbook = async ({
   report: LipaReportData;
   outputFileName?: string;
 }): Promise<{ buffer: Buffer; outputName: string }> => {
-  const workbook = await XlsxPopulate.fromBlankAsync();
-  const sheet = workbook.sheet(0);
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Sheet1");
 
-  const setCellValue = (address: string, value: string | number) => {
-    sheet.cell(address).value(value);
+  worksheet.columns = [{ width: 8 }, { width: 60 }, { width: 24 }];
+
+  worksheet.pageSetup = {
+    paperSize: 9,
+    orientation: "portrait",
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    margins: {
+      left: 0.7,
+      right: 0.7,
+      top: 0.75,
+      bottom: 0.75,
+      header: 0.3,
+      footer: 0.3,
+    },
   };
-  const setNumericCell = (address: string, value: number) => {
-    sheet.cell(address).value(value);
-    sheet.cell(address).style("numberFormat", '#,##0.00;-#,##0.00;"-"');
+
+  worksheet.views = [
+    {
+      showGridLines: false,
+      zoomScale: 60,
+      zoomScaleNormal: 100,
+    },
+  ];
+
+  const titleRow = worksheet.addRow([report.title]);
+  titleRow.getCell(1).font = { name: "Cambria", size: 12, bold: true };
+  titleRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
+  titleRow.getCell(1).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFCCCCCC" },
   };
+  worksheet.mergeCells("A1:C1");
 
-  setCellValue("A1", report.title);
-  setCellValue("A2", report.season);
+  const seasonRow = worksheet.addRow([report.season]);
+  seasonRow.getCell(1).font = { name: "Cambria", size: 12, bold: true };
+  seasonRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
+  seasonRow.getCell(1).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFCCCCCC" },
+  };
+  worksheet.mergeCells("A2:C2");
 
-  setCellValue("A4", "NO.");
-  setCellValue("B4", "IRRIGATORS ASSOCIATION");
-  setCellValue("C4", "TOTAL PLANTED AREA");
+  worksheet.addRow([]);
 
-  let row = 5;
+  const headerRow = worksheet.addRow([
+    "NO.",
+    "IRRIGATORS ASSOCIATION",
+    "TOTAL PLANTED AREA",
+  ]);
+  headerRow.getCell(1).font = { name: "Cambria", size: 12, bold: true };
+  headerRow.getCell(2).font = { name: "Cambria", size: 12, bold: true };
+  headerRow.getCell(3).font = { name: "Cambria", size: 12, bold: true };
+  headerRow.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
+  headerRow.getCell(2).alignment = { horizontal: "center", vertical: "middle" };
+  headerRow.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
+  headerRow.getCell(1).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD3D3D3" },
+  };
+  headerRow.getCell(2).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD3D3D3" },
+  };
+  headerRow.getCell(3).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFD3D3D3" },
+  };
+  headerRow.getCell(1).border = createThinBorder();
+  headerRow.getCell(2).border = createThinBorder();
+  headerRow.getCell(3).border = createThinBorder();
+
   let grandTotal = 0;
 
-  for (const division of report.divisions) {
-    const safeDivisionName = division.divisionName.trim() || "UNNAMED DIVISION";
-    setCellValue(`A${String(row)}`, safeDivisionName);
-    row += 1;
+  report.divisions.forEach((division) => {
+    const cleanName = division.divisionName.replace(/\.pdf$/i, "");
+    const divisionRow = worksheet.addRow([cleanName]);
+    divisionRow.getCell(1).font = { name: "Cambria", size: 12, bold: true };
+    divisionRow.getCell(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFFCE4D6" },
+    };
+    worksheet.mergeCells(`A${divisionRow.number}:C${divisionRow.number}`);
 
     division.irrigators.forEach((irrigator, index) => {
-      setCellValue(`A${String(row)}`, index + 1);
-      setCellValue(`B${String(row)}`, irrigator.name);
-      setNumericCell(`C${String(row)}`, irrigator.totalPlantedArea);
-      row += 1;
+      const row = worksheet.addRow([
+        index + 1,
+        irrigator.name,
+        irrigator.totalPlantedArea,
+      ]);
+      row.font = { name: "Cambria", size: 12 };
+      row.getCell(1).alignment = { horizontal: "left" };
+      row.getCell(3).numFmt = "#,##0.00";
+      row.eachCell((cell) => {
+        cell.border = createThinBorder();
+      });
     });
 
-    setCellValue(`A${String(row)}`, "TOTAL");
-    setNumericCell(`C${String(row)}`, division.total);
+    const totalRow = worksheet.addRow(["TOTAL", "", division.total]);
+    totalRow.font = { name: "Cambria", size: 12, bold: true };
+    totalRow.getCell(1).alignment = { horizontal: "left" };
+    totalRow.getCell(3).numFmt = "#,##0.00";
+    totalRow.getCell(1).border = createThinBorder();
+    totalRow.getCell(2).border = createThinBorder();
+    totalRow.getCell(3).border = createThinBorder();
     grandTotal += division.total;
-    row += 2;
-  }
 
-  setCellValue(`A${String(row)}`, "GRAND TOTAL");
-  setNumericCell(`C${String(row)}`, grandTotal);
+    worksheet.addRow([]);
+  });
 
-  const output = await workbook.outputAsync();
-  const buffer = Buffer.isBuffer(output) ? output : Buffer.from(output as ArrayBuffer);
+  const grandTotalRow = worksheet.addRow(["GRAND TOTAL", "", grandTotal]);
+  worksheet.mergeCells(`A${grandTotalRow.number}:B${grandTotalRow.number}`);
+  grandTotalRow.getCell(1).font = { name: "Cambria", size: 12, bold: true };
+  grandTotalRow.getCell(3).font = { name: "Cambria", size: 12, bold: true };
+  grandTotalRow.getCell(1).alignment = { horizontal: "left" };
+  grandTotalRow.getCell(1).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF92D052" },
+  };
+  grandTotalRow.getCell(3).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF92D052" },
+  };
+  grandTotalRow.getCell(3).numFmt = "#,##0.00";
+  grandTotalRow.getCell(1).border = createThinBorder();
+  grandTotalRow.getCell(2).border = createThinBorder();
+  grandTotalRow.getCell(3).border = createThinBorder();
+
+  worksheet.pageSetup.printArea = `A1:C${grandTotalRow.number}`;
+
+  const buffer = await workbook.xlsx.writeBuffer();
   return {
-    buffer,
+    buffer: Buffer.from(buffer),
     outputName: normalizeOutputName(outputFileName || "LIPA Summary Report"),
   };
 };

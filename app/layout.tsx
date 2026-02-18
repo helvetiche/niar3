@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Google_Sans, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Poppins } from "next/font/google";
 import { Providers } from "@/components/ToastProvider";
 import "./globals.css";
 
-const googleSans = Google_Sans({
-  variable: "--font-google-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500"],
   adjustFontFallback: false,
 });
 
@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${googleSans.variable} ${jetbrainsMono.variable}`}
+      className={`${poppins.variable} ${jetbrainsMono.variable}`}
     >
       <body className="antialiased font-sans">
         <Providers>{children}</Providers>

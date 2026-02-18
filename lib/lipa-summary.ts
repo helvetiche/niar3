@@ -10,6 +10,17 @@ export type LipaSourceFile = {
   buffer: Buffer;
 };
 
+export type LipaScannedFile = {
+  fileName: string;
+  divisionName: string;
+  confidence: number;
+  associations: LipaAssociationExtraction[];
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+};
+
 type LipaAssociationExtraction = {
   name: string;
   totalArea: number;
@@ -65,6 +76,58 @@ const parseGeminiJsonResponse = (rawText: string): z.infer<typeof geminiJsonSche
   return geminiJsonSchema.parse(parsed);
 };
 
+const parseRetryDelayMs = (message: string): number => {
+  const retryInMatch = message.match(/retry in ([0-9.]+)s/i);
+  if (retryInMatch?.[1]) {
+    const seconds = Number.parseFloat(retryInMatch[1]);
+    if (Number.isFinite(seconds) && seconds > 0) {
+      return Math.ceil(seconds * 1000);
+    }
+  }
+
+  const retryDelayMatch = message.match(/"retryDelay":"([0-9.]+)s"/i);
+  if (retryDelayMatch?.[1]) {
+    const seconds = Number.parseFloat(retryDelayMatch[1]);
+    if (Number.isFinite(seconds) && seconds > 0) {
+      return Math.ceil(seconds * 1000);
+    }
+  }
+
+  return 60_000;
+};
+
+const isQuotaOrRateLimitError = (message: string): boolean => {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("429") ||
+    lower.includes("too many requests") ||
+    lower.includes("quota exceeded") ||
+    lower.includes("rate limit")
+  );
+};
+
+const generateContentWithQuotaGuard = async (
+  model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
+  parts: Array<
+    | { inlineData: { mimeType: string; data: string } }
+    | { text: string }
+  >,
+): Promise<Awaited<ReturnType<typeof model.generateContent>>> => {
+  try {
+    return await model.generateContent(parts);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (isQuotaOrRateLimitError(message)) {
+      const retryMs = parseRetryDelayMs(message);
+      const retrySeconds = Math.ceil(retryMs / 1000);
+      throw new Error(
+        `Gemini API quota/rate limit reached. Please retry in about ${String(retrySeconds)} seconds.`,
+      );
+    }
+    throw error;
+  }
+};
+
 const buildGeminiPrompt = (originalPageNumber: number): string => `You are extracting irrigation summary data from a PDF.
 
 Task:
@@ -115,7 +178,7 @@ const extractFromSinglePdf = async (
 ): Promise<ExtractedFileResult> => {
   const onePagePdfBuffer = await extractSinglePagePdf(file.buffer, file.pageNumber);
 
-  const result = await model.generateContent([
+  const result = await generateContentWithQuotaGuard(model, [
     {
       inlineData: {
         mimeType: "application/pdf",
@@ -145,6 +208,37 @@ const extractFromSinglePdf = async (
     outputTokens: usage?.candidatesTokenCount ?? 0,
     totalTokens: usage?.totalTokenCount ?? 0,
   };
+};
+
+const toScannedFile = (entry: ExtractedFileResult): LipaScannedFile => {
+  const estimatedCostUsd =
+    (entry.inputTokens / 1_000_000) * geminiPricingPerMillionTokens.input +
+    (entry.outputTokens / 1_000_000) * geminiPricingPerMillionTokens.output;
+
+  return {
+    fileName: entry.fileName,
+    divisionName: entry.divisionName,
+    confidence: entry.confidence,
+    associations: entry.associations,
+    inputTokens: entry.inputTokens,
+    outputTokens: entry.outputTokens,
+    totalTokens: entry.totalTokens,
+    estimatedCostUsd: Number(estimatedCostUsd.toFixed(6)),
+  };
+};
+
+export const scanLipaSourceFile = async (
+  file: LipaSourceFile,
+): Promise<LipaScannedFile> => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is missing. Please set it in environment variables.");
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: geminiModelName });
+  const extracted = await extractFromSinglePdf(model, file);
+  return toScannedFile(extracted);
 };
 
 const mergeDivisionAssociations = (
@@ -211,19 +305,40 @@ export const buildLipaReportData = async ({
   outputTokens: number;
   estimatedCostUsd: number;
 }> => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY is missing. Please set it in environment variables.");
-  }
+  const scannedFiles = await Promise.all(inputFiles.map((file) => scanLipaSourceFile(file)));
+  return buildLipaReportDataFromScannedFiles({
+    scannedFiles,
+    title,
+    season,
+  });
+};
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: geminiModelName });
-
-  const extracted: ExtractedFileResult[] = [];
-  for (const file of inputFiles) {
-    const result = await extractFromSinglePdf(model, file);
-    extracted.push(result);
-  }
+export const buildLipaReportDataFromScannedFiles = ({
+  scannedFiles,
+  title,
+  season,
+}: {
+  scannedFiles: LipaScannedFile[];
+  title?: string;
+  season?: string;
+}): {
+  report: LipaReportData;
+  scannedFiles: number;
+  extractedAssociations: number;
+  averageConfidence: number;
+  inputTokens: number;
+  outputTokens: number;
+  estimatedCostUsd: number;
+} => {
+  const extracted: ExtractedFileResult[] = scannedFiles.map((item) => ({
+    fileName: item.fileName,
+    divisionName: item.divisionName,
+    confidence: item.confidence,
+    associations: item.associations,
+    inputTokens: item.inputTokens,
+    outputTokens: item.outputTokens,
+    totalTokens: item.totalTokens,
+  }));
 
   const { divisions, extractedAssociations } = mergeDivisionAssociations(extracted);
   if (extractedAssociations === 0) {
@@ -255,7 +370,7 @@ export const buildLipaReportData = async ({
 
   return {
     report,
-    scannedFiles: extracted.length,
+    scannedFiles: scannedFiles.length,
     extractedAssociations,
     averageConfidence,
     inputTokens,

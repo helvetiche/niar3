@@ -14,8 +14,8 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
     description: "Generate summary reports for LIPA documents and records.",
   },
   "consolidate-ifr": {
-    name: "CONSOLIDATE IFR",
-    description: "Merge and consolidate IFR documents into a single file.",
+    name: "CONSOLIDATE LAND PROFILE",
+    description: "Merge and consolidate land profile documents into a single file.",
   },
   "merge-files": {
     name: "MERGE FILES",

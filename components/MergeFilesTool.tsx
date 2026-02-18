@@ -23,6 +23,14 @@ type PdfPageItem = PdfPageOrderItem & {
 
 const pdfDefaultName = "Merged PDF Document";
 const excelDefaultName = "Merged Excel Workbook";
+const getFileKey = (file: File): string =>
+  `${file.name}::${String(file.lastModified)}::${String(file.size)}`;
+const getBaseName = (fileName: string): string => {
+  const trimmed = fileName.trim();
+  const dotIndex = trimmed.lastIndexOf(".");
+  if (dotIndex <= 0) return trimmed;
+  return trimmed.slice(0, dotIndex);
+};
 
 const reorderItems = <T,>(items: T[], fromIndex: number, toIndex: number): T[] => {
   if (fromIndex === toIndex) return items;
@@ -40,6 +48,7 @@ export function MergeFilesTool() {
   const [mode, setMode] = useState<MergeMode>("pdf");
   const [files, setFiles] = useState<File[]>([]);
   const [pdfPages, setPdfPages] = useState<PdfPageItem[]>([]);
+  const [excelPageNames, setExcelPageNames] = useState<Record<string, string>>({});
   const [fileName, setFileName] = useState(pdfDefaultName);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,6 +59,7 @@ export function MergeFilesTool() {
   const clearSelections = () => {
     setFiles([]);
     setPdfPages([]);
+    setExcelPageNames({});
     setMessage("");
     setIsPreparingPages(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -86,10 +96,35 @@ export function MergeFilesTool() {
 
   const handleIncomingFiles = async (incomingFileList: FileList | null) => {
     const incomingFiles = Array.from(incomingFileList ?? []);
-    setFiles(incomingFiles);
+    const filteredIncomingFiles = incomingFiles.filter((file) =>
+      mode === "pdf"
+        ? file.name.toLowerCase().endsWith(".pdf")
+        : /\.(xlsx|xls)$/i.test(file.name),
+    );
+
+    if (filteredIncomingFiles.length === 0) return;
+
+    const existingKeys = new Set(files.map((file) => getFileKey(file)));
+    const uniqueIncomingFiles = filteredIncomingFiles.filter(
+      (file) => !existingKeys.has(getFileKey(file)),
+    );
+    if (uniqueIncomingFiles.length === 0) return;
+
+    const nextFiles = [...files, ...uniqueIncomingFiles];
+
+    setFiles(nextFiles);
+    setExcelPageNames((previous) => {
+      const next: Record<string, string> = {};
+      nextFiles.forEach((file) => {
+        const key = getFileKey(file);
+        next[key] = previous[key] ?? getBaseName(file.name);
+      });
+      return next;
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setMessage("");
 
-    if (mode !== "pdf" || incomingFiles.length === 0) {
+    if (mode !== "pdf" || nextFiles.length === 0) {
       setPdfPages([]);
       return;
     }
@@ -97,7 +132,7 @@ export function MergeFilesTool() {
     try {
       setIsPreparingPages(true);
       setMessage("Reading PDF pages for sequence editor...");
-      const pages = await buildPdfPages(incomingFiles);
+      const pages = await buildPdfPages(nextFiles);
       setPdfPages(pages);
       setMessage("");
     } catch (error) {
@@ -150,6 +185,10 @@ export function MergeFilesTool() {
         mode,
         files,
         fileName: fileName.trim(),
+        excelPageNames:
+          mode === "excel"
+            ? files.map((file) => excelPageNames[getFileKey(file)]?.trim() ?? "")
+            : undefined,
         pageOrder:
           mode === "pdf"
             ? pdfPages.map((item) => ({
@@ -181,6 +220,13 @@ export function MergeFilesTool() {
   };
 
   const acceptedTypes = mode === "pdf" ? ".pdf" : ".xlsx,.xls";
+
+  const handleExcelPageNameChange = (fileKey: string, value: string) => {
+    setExcelPageNames((previous) => ({
+      ...previous,
+      [fileKey]: value,
+    }));
+  };
 
   return (
     <section className="flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
@@ -409,6 +455,43 @@ export function MergeFilesTool() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {mode === "excel" && files.length > 0 && (
+        <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+          <p className="mb-3 text-sm font-medium text-zinc-800">Excel Page Name per File</p>
+          <p className="mb-3 text-xs text-zinc-600">
+            Set the page (sheet) name to use for each uploaded Excel file in the merged
+            workbook.
+          </p>
+          <div className="space-y-3">
+            {files.map((file, index) => {
+              const fileKey = getFileKey(file);
+              return (
+                <div
+                  key={fileKey}
+                  className="grid gap-2 rounded-lg border border-zinc-200 bg-white p-3 md:grid-cols-[1fr_280px]"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-zinc-900">
+                      {String(index + 1)}. {file.name}
+                    </p>
+                  </div>
+                  <input
+                    type="text"
+                    aria-label={`Page name for ${file.name}`}
+                    value={excelPageNames[fileKey] ?? ""}
+                    onChange={(event) =>
+                      handleExcelPageNameChange(fileKey, event.target.value)
+                    }
+                    className="rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                    placeholder={getBaseName(file.name)}
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

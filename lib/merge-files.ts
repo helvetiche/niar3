@@ -1,5 +1,5 @@
 import { PDFDocument } from "pdf-lib";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 type MergeFileInput = {
   fileName: string;
@@ -20,7 +20,9 @@ type MergePdfBuffersOptions = {
 type MergeExcelBuffersOptions = {
   inputFiles: MergeFileInput[];
   fileName?: string;
+  excelPageNames?: string[];
 };
+type ExcelLoadBuffer = Parameters<ExcelJS.Workbook["xlsx"]["load"]>[0];
 
 const sanitizeOutputName = (value: string, fallback: string): string => {
   const cleaned = value
@@ -143,39 +145,140 @@ export const mergePdfBuffers = async ({
   };
 };
 
-export const mergeExcelBuffers = ({
+export const mergeExcelBuffers = async ({
   inputFiles,
   fileName,
-}: MergeExcelBuffersOptions): {
+  excelPageNames,
+}: MergeExcelBuffersOptions): Promise<{
   buffer: Buffer;
   outputName: string;
   mergedSheetCount: number;
-} => {
+}> => {
   if (inputFiles.length < 2) {
     throw new Error("Please upload at least two Excel files.");
   }
 
-  const mergedWorkbook = XLSX.utils.book_new();
+  const mergedWorkbook = new ExcelJS.Workbook();
   const usedSheetNames = new Set<string>();
   let mergedSheetCount = 0;
 
-  for (const file of inputFiles) {
-    const workbook = XLSX.read(file.buffer, { type: "buffer" });
-    const workbookSheetNames = workbook.SheetNames ?? [];
+  const cloneValue = <T,>(value: T): T => {
+    if (value === null || value === undefined) return value;
+    if (value instanceof Date) return new Date(value.getTime()) as T;
+    if (typeof value === "object") {
+      return structuredClone(value);
+    }
+    return value;
+  };
 
-    for (const sheetName of workbookSheetNames) {
-      const worksheet = workbook.Sheets[sheetName];
-      if (!worksheet) continue;
+  const cloneValueOrUndefined = <T,>(value: T): T => {
+    if (!value) return value;
+    return structuredClone(value);
+  };
 
-      const workbookName =
-        file.fileName.replace(/\.(xlsx|xls)$/i, "").trim() || "Workbook";
-      const desiredSheetName = `${workbookName} - ${sheetName}`;
-      const uniqueSheetName = createUniqueSheetName(
-        desiredSheetName,
-        usedSheetNames,
-      );
+  const cloneJsonValue = <T,>(value: T): T => {
+    if (value === undefined || value === null) return value;
+    return JSON.parse(JSON.stringify(value)) as T;
+  };
 
-      XLSX.utils.book_append_sheet(mergedWorkbook, worksheet, uniqueSheetName);
+  const pruneEmpty = (value: unknown): unknown => {
+    if (value === undefined || value === null) return undefined;
+    if (Array.isArray(value)) {
+      const next = value.map((item) => pruneEmpty(item));
+      return next;
+    }
+    if (typeof value !== "object") return value;
+
+    const entries = Object.entries(value as Record<string, unknown>)
+      .map(([key, val]) => [key, pruneEmpty(val)] as const)
+      .filter(([, val]) => val !== undefined);
+    if (entries.length === 0) return undefined;
+    return Object.fromEntries(entries);
+  };
+
+  const copyWorksheet = (
+    sourceSheet: ExcelJS.Worksheet,
+    targetSheet: ExcelJS.Worksheet,
+  ): void => {
+    targetSheet.state = sourceSheet.state;
+    targetSheet.properties =
+      cloneValueOrUndefined(sourceSheet.properties) ?? targetSheet.properties;
+    targetSheet.pageSetup =
+      cloneValueOrUndefined(sourceSheet.pageSetup) ?? targetSheet.pageSetup;
+    targetSheet.headerFooter =
+      cloneValueOrUndefined(sourceSheet.headerFooter) ?? targetSheet.headerFooter;
+    targetSheet.views = cloneValueOrUndefined(sourceSheet.views) ?? [];
+    targetSheet.autoFilter = cloneValueOrUndefined(sourceSheet.autoFilter) as
+      | ExcelJS.AutoFilter
+      | undefined;
+
+    sourceSheet.columns.forEach((column, index) => {
+      const targetColumn = targetSheet.getColumn(index + 1);
+      if (column.width !== undefined) targetColumn.width = column.width;
+      if (column.hidden !== undefined) targetColumn.hidden = column.hidden;
+      if (column.outlineLevel !== undefined) targetColumn.outlineLevel = column.outlineLevel;
+    });
+
+    sourceSheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+      const targetRow = targetSheet.getRow(rowNumber);
+      if (row.height !== undefined) targetRow.height = row.height;
+      if (row.hidden !== undefined) targetRow.hidden = row.hidden;
+      if (row.outlineLevel !== undefined) targetRow.outlineLevel = row.outlineLevel;
+
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const targetCell = targetRow.getCell(colNumber);
+        targetCell.value = cloneValue(cell.value);
+        if (cell.numFmt) {
+          targetCell.numFmt = cell.numFmt;
+        }
+        const font = pruneEmpty(cloneJsonValue(cell.font));
+        if (font) {
+          targetCell.font = font as ExcelJS.Font;
+        }
+        const alignment = pruneEmpty(cloneJsonValue(cell.alignment));
+        if (alignment) {
+          targetCell.alignment = alignment as ExcelJS.Alignment;
+        }
+        const fill = pruneEmpty(cloneJsonValue(cell.fill));
+        if (fill && typeof fill === "object" && "type" in (fill as Record<string, unknown>)) {
+          targetCell.fill = fill as ExcelJS.Fill;
+        }
+        const border = pruneEmpty(cloneJsonValue(cell.border));
+        if (border && typeof border === "object") {
+          targetCell.border = border as ExcelJS.Borders;
+        }
+        const protection = pruneEmpty(cloneJsonValue(cell.protection));
+        if (protection && typeof protection === "object") {
+          targetCell.protection = protection as Partial<ExcelJS.Protection>;
+        }
+      });
+
+      targetRow.commit();
+    });
+
+    const merges = sourceSheet.model.merges ?? [];
+    merges.forEach((range) => {
+      targetSheet.mergeCells(range);
+    });
+  };
+
+  for (let fileIndex = 0; fileIndex < inputFiles.length; fileIndex += 1) {
+    const file = inputFiles[fileIndex];
+    const workbook = new ExcelJS.Workbook();
+    const bufferForLoad = file.buffer as unknown as ExcelLoadBuffer;
+    await workbook.xlsx.load(bufferForLoad);
+    const customPageName = excelPageNames?.[fileIndex]?.trim() ?? "";
+
+    for (let sheetIndex = 0; sheetIndex < workbook.worksheets.length; sheetIndex += 1) {
+      const sourceSheet = workbook.worksheets[sheetIndex];
+      const desiredSheetName = customPageName
+        ? workbook.worksheets.length === 1
+          ? customPageName
+          : `${customPageName} ${String(sheetIndex + 1)}`
+        : sourceSheet.name;
+      const uniqueSheetName = createUniqueSheetName(desiredSheetName, usedSheetNames);
+      const targetSheet = mergedWorkbook.addWorksheet(uniqueSheetName);
+      copyWorksheet(sourceSheet, targetSheet);
       mergedSheetCount += 1;
     }
   }
@@ -188,10 +291,13 @@ export const mergeExcelBuffers = ({
     fileName ?? "Merged Excel Workbook",
     "Merged Excel Workbook",
   );
-  const output = XLSX.write(mergedWorkbook, { bookType: "xlsx", type: "buffer" });
+  const output = await mergedWorkbook.xlsx.writeBuffer();
+  const outputBuffer = Buffer.isBuffer(output)
+    ? output
+    : Buffer.from(output as ArrayBuffer);
 
   return {
-    buffer: Buffer.from(output),
+    buffer: outputBuffer,
     outputName: withExtension(outputBaseName, ".xlsx"),
     mergedSheetCount,
   };

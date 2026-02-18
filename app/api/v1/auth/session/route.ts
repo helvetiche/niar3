@@ -5,10 +5,12 @@ import { authRateLimit, getClientIdentifier, isRateLimitEnabled } from '@/lib/ra
 
 const SESSION_COOKIE = '__session'
 const MAX_AGE = 60 * 60 * 24 * 5 // 5 days
+const EXPIRES_IN_MS = MAX_AGE * 1000
 
 /**
  * POST /api/v1/auth/session
  * Verifies Firebase ID token and sets __session cookie for server-side auth.
+ * The cookie stores a Firebase session cookie (not raw ID token) to avoid 1-hour expiry.
  * Body: { token: string }
  */
 export async function POST(request: Request) {
@@ -38,9 +40,12 @@ export async function POST(request: Request) {
   try {
     const auth = getAdminAuth()
     const decoded = await auth.verifyIdToken(token)
+    const sessionCookie = await auth.createSessionCookie(token, {
+      expiresIn: EXPIRES_IN_MS,
+    })
 
     const cookieStore = await cookies()
-    cookieStore.set(SESSION_COOKIE, token, {
+    cookieStore.set(SESSION_COOKIE, sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

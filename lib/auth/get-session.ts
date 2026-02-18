@@ -17,7 +17,7 @@ export async function getSession(): Promise<
 
   try {
     const auth = getAdminAuth()
-    const decoded = await auth.verifyIdToken(token)
+    const decoded = await auth.verifySessionCookie(token, true)
 
     const user: AuthUser = {
       uid: decoded.uid,
@@ -28,7 +28,11 @@ export async function getSession(): Promise<
     return { user }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    if (message.includes('expired') || message.includes('auth/id-token-expired')) {
+    if (
+      message.includes('expired') ||
+      message.includes('auth/session-cookie-expired') ||
+      message.includes('auth/id-token-expired')
+    ) {
       return { user: null, error: 'expired' }
     }
     return { user: null, error: 'invalid-token' }

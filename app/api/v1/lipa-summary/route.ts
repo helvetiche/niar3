@@ -107,6 +107,15 @@ export async function POST(request: Request) {
     console.error("[api/lipa-summary POST]", error);
     const message =
       error instanceof Error ? error.message : "Failed to generate LIPA summary report";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const lower = message.toLowerCase();
+    const isQuotaOrRateLimit =
+      lower.includes("quota") ||
+      lower.includes("too many requests") ||
+      lower.includes("rate limit") ||
+      lower.includes("429");
+    return NextResponse.json(
+      { error: message },
+      { status: isQuotaOrRateLimit ? 429 : 500 },
+    );
   }
 }

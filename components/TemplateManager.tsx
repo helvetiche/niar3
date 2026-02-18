@@ -21,6 +21,9 @@ type Props = {
   onSelectedTemplateIdChange: (id: string) => void;
 };
 
+const getTemplateStorageKey = (scope: TemplateScope): string =>
+  `template-manager:last-selected:${scope}`;
+
 export function TemplateManager({
   scope,
   selectedTemplateId,
@@ -40,6 +43,15 @@ export function TemplateManager({
       setTemplates(items);
       if (selectedTemplateId && !items.some((t) => t.id === selectedTemplateId)) {
         onSelectedTemplateIdChange("");
+        window.localStorage.removeItem(getTemplateStorageKey(scope));
+        return;
+      }
+
+      if (!selectedTemplateId) {
+        const savedTemplateId = window.localStorage.getItem(getTemplateStorageKey(scope));
+        if (savedTemplateId && items.some((template) => template.id === savedTemplateId)) {
+          onSelectedTemplateIdChange(savedTemplateId);
+        }
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to load templates.");
@@ -51,6 +63,15 @@ export function TemplateManager({
   useEffect(() => {
     void refreshTemplates();
   }, [refreshTemplates]);
+
+  useEffect(() => {
+    const key = getTemplateStorageKey(scope);
+    if (selectedTemplateId.trim()) {
+      window.localStorage.setItem(key, selectedTemplateId.trim());
+      return;
+    }
+    window.localStorage.removeItem(key);
+  }, [scope, selectedTemplateId]);
 
   const handleUpload = async () => {
     if (!uploadFile) {

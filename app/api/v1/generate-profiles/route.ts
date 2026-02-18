@@ -32,6 +32,65 @@ const getUniqueFolderName = (
   return `${baseName} (${String(currentCount + 1)})`;
 };
 
+const getSourceFileKey = (file: File): string =>
+  `${file.name}::${String(file.size)}::${String(file.lastModified)}`;
+
+const detectDivisionAndIAFromFilename = (
+  fileName: string,
+): { division: string; ia: string } => {
+  const trimmedName = fileName.trim();
+  const lastDot = trimmedName.lastIndexOf(".");
+  const baseName = (lastDot > 0 ? trimmedName.slice(0, lastDot) : trimmedName)
+    .replace(/_/g, " ")
+    .trim();
+  const divisionMatch = /\bDIV\.?\s*([0-9]{1,2})\b/i.exec(baseName);
+  if (!divisionMatch) {
+    return { division: "0", ia: "IA" };
+  }
+
+  const division = String(Number.parseInt(divisionMatch[1], 10) || 0);
+  const matchStart = divisionMatch.index ?? 0;
+  const remainderStart = matchStart + divisionMatch[0].length;
+  let iaPart = baseName.slice(remainderStart).trim();
+  iaPart = iaPart.replace(/^[-:–—]+\s*/, "");
+  iaPart = iaPart.replace(/\s{2,}/g, " ");
+
+  return {
+    division: division || "0",
+    ia: iaPart || "IA",
+  };
+};
+
+const buildConsolidationFileName = (division: string, ia: string): string => {
+  const digits = division.replace(/[^0-9]/g, "");
+  const paddedDivision = digits ? digits.padStart(2, "0") : "00";
+  const iaName = ia.trim().toUpperCase() || "IA";
+  return `${paddedDivision} ${iaName} CONSOLIDATED`;
+};
+
+const parseTextMap = (
+  value: FormDataEntryValue | null,
+  transformer: (input: string) => string,
+): Record<string, string> => {
+  if (typeof value !== "string" || !value.trim()) return {};
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+
+    const map: Record<string, string> = {};
+    Object.entries(parsed as Record<string, unknown>).forEach(([key, raw]) => {
+      if (typeof raw !== "string") return;
+      const cleanKey = key.trim();
+      const cleanValue = transformer(raw);
+      if (!cleanKey || !cleanValue) return;
+      map[cleanKey] = cleanValue;
+    });
+    return map;
+  } catch {
+    return {};
+  }
+};
+
 export async function POST(request: Request) {
   const result = await getSession();
   if (!result.user) {
@@ -48,9 +107,12 @@ export async function POST(request: Request) {
     const templateId = formData.get("templateId");
     const createConsolidationRaw = formData.get("createConsolidation");
     const consolidationTemplateIdRaw = formData.get("consolidationTemplateId");
-    const consolidationFileNameRaw = formData.get("consolidationFileName");
     const consolidationDivisionRaw = formData.get("consolidationDivision");
     const consolidationIARaw = formData.get("consolidationIA");
+    const profileFolderNameRaw = formData.get("profileFolderName");
+    const sourceFolderNamesRaw = formData.get("sourceFolderNames");
+    const sourceConsolidationDivisionsRaw = formData.get("sourceConsolidationDivisions");
+    const sourceConsolidationIAsRaw = formData.get("sourceConsolidationIAs");
 
     const createConsolidation =
       typeof createConsolidationRaw === "string" &&
@@ -59,10 +121,6 @@ export async function POST(request: Request) {
       typeof consolidationTemplateIdRaw === "string"
         ? consolidationTemplateIdRaw.trim()
         : "";
-    const consolidationFileName =
-      typeof consolidationFileNameRaw === "string" && consolidationFileNameRaw.trim()
-        ? consolidationFileNameRaw.trim()
-        : "DIVISION X CONSOLIDATED";
     const consolidationDivision =
       typeof consolidationDivisionRaw === "string"
         ? consolidationDivisionRaw.replace(/[^0-9]/g, "") || "0"
@@ -71,6 +129,18 @@ export async function POST(request: Request) {
       typeof consolidationIARaw === "string" && consolidationIARaw.trim()
         ? consolidationIARaw.trim()
         : "IA";
+    const profileFolderName =
+      typeof profileFolderNameRaw === "string" && profileFolderNameRaw.trim()
+        ? sanitizeFolderName(profileFolderNameRaw)
+        : "land account";
+    const sourceFolderNames = parseTextMap(sourceFolderNamesRaw, sanitizeFolderName);
+    const sourceConsolidationDivisions = parseTextMap(
+      sourceConsolidationDivisionsRaw,
+      (value) => value.replace(/[^0-9]/g, ""),
+    );
+    const sourceConsolidationIAs = parseTextMap(sourceConsolidationIAsRaw, (value) =>
+      value.trim(),
+    );
 
     const sourceFiles = files.length > 0 ? files : singleFile instanceof File ? [singleFile] : [];
 
@@ -143,7 +213,7 @@ export async function POST(request: Request) {
       }
 
       const divisionFolderName = getUniqueFolderName(
-        getFileBaseName(sourceFile.name),
+        sourceFolderNames[getSourceFileKey(sourceFile)] ?? getFileBaseName(sourceFile.name),
         seenDivisionFolders,
       );
       const divisionFolder = zip.folder(divisionFolderName);
@@ -151,16 +221,9 @@ export async function POST(request: Request) {
         throw new Error(`Unable to create folder: ${divisionFolderName}`);
       }
 
-      const consolidatedDivisionFolder = divisionFolder.folder("consolidated division");
-      if (!consolidatedDivisionFolder) {
-        throw new Error(`Unable to create folder: ${divisionFolderName}/consolidated division`);
-      }
-
-      const profilesFolder = consolidatedDivisionFolder.folder("farmer profile");
+      const profilesFolder = divisionFolder.folder(profileFolderName || "land account");
       if (!profilesFolder) {
-        throw new Error(
-          `Unable to create folder: ${divisionFolderName}/consolidated division/farmer profile`,
-        );
+        throw new Error(`Unable to create folder: ${divisionFolderName}/${profileFolderName}`);
       }
 
       const generatedProfileFiles: { fileName: string; buffer: Buffer }[] = [];
@@ -175,14 +238,24 @@ export async function POST(request: Request) {
       totalGeneratedProfiles += generatedProfileFiles.length;
 
       if (createConsolidation && consolidationTemplateBuffer) {
+        const sourceFileKey = getSourceFileKey(sourceFile);
+        const detected = detectDivisionAndIAFromFilename(sourceFile.name);
+        const sourceDivision =
+          sourceConsolidationDivisions[sourceFileKey] ??
+          detected.division ??
+          consolidationDivision ??
+          "0";
+        const sourceIA =
+          sourceConsolidationIAs[sourceFileKey] ?? detected.ia ?? consolidationIA ?? "IA";
+        const consolidationFileName = buildConsolidationFileName(sourceDivision, sourceIA);
         const consolidated = await buildConsolidatedWorkbook({
           templateBuffer: consolidationTemplateBuffer,
           inputFiles: generatedProfileFiles,
           fileName: consolidationFileName,
-          division: consolidationDivision,
-          ia: consolidationIA,
+          division: sourceDivision,
+          ia: sourceIA,
         });
-        consolidatedDivisionFolder.file(consolidated.outputName, consolidated.buffer);
+        divisionFolder.file(consolidated.outputName, consolidated.buffer);
       }
     }
 

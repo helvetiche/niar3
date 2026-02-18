@@ -4,9 +4,10 @@ export type GenerateProfilesOptions = {
   templateId: string;
   createConsolidation?: boolean;
   consolidationTemplateId?: string;
-  consolidationFileName?: string;
-  consolidationDivision?: string;
-  consolidationIA?: string;
+  profileFolderName?: string;
+  sourceFolderNames?: Record<string, string>;
+  sourceConsolidationDivisions?: Record<string, string>;
+  sourceConsolidationIAs?: Record<string, string>;
 };
 
 export const generateProfilesZip = async (
@@ -30,15 +31,21 @@ export const generateProfilesZip = async (
     if (options.consolidationTemplateId?.trim()) {
       formData.append("consolidationTemplateId", options.consolidationTemplateId.trim());
     }
-    if (options.consolidationFileName?.trim()) {
-      formData.append("consolidationFileName", options.consolidationFileName.trim());
-    }
-    if (options.consolidationDivision?.trim()) {
-      formData.append("consolidationDivision", options.consolidationDivision.trim());
-    }
-    if (options.consolidationIA?.trim()) {
-      formData.append("consolidationIA", options.consolidationIA.trim());
-    }
+  }
+  if (options.profileFolderName?.trim()) {
+    formData.append("profileFolderName", options.profileFolderName.trim());
+  }
+  if (options.sourceFolderNames) {
+    formData.append("sourceFolderNames", JSON.stringify(options.sourceFolderNames));
+  }
+  if (options.sourceConsolidationDivisions) {
+    formData.append(
+      "sourceConsolidationDivisions",
+      JSON.stringify(options.sourceConsolidationDivisions),
+    );
+  }
+  if (options.sourceConsolidationIAs) {
+    formData.append("sourceConsolidationIAs", JSON.stringify(options.sourceConsolidationIAs));
   }
 
   const response = await fetch("/api/v1/generate-profiles", {

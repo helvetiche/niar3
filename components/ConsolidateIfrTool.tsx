@@ -90,12 +90,20 @@ export function ConsolidateIfrTool() {
     if (ifrInputRef.current) ifrInputRef.current.value = "";
   };
 
+  const missingRequirements: string[] = [];
+  if (files.length === 0) {
+    missingRequirements.push("Upload one or more IFR Excel files.");
+  }
+  if (!selectedTemplateId) {
+    missingRequirements.push("Select a saved consolidation template.");
+  }
+
   return (
     <section className="flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
       <div className="mb-6">
         <h2 className="flex items-center gap-2 text-xl font-medium text-zinc-900">
           <ArrowsMergeIcon size={22} className="text-emerald-700" />
-          Consolidate IFR to Template
+          Consolidate Land Profile
         </h2>
         <p className="mt-2 text-sm text-zinc-600">
           Upload one or more IFR workbooks, choose a saved template from Template
@@ -259,6 +267,14 @@ export function ConsolidateIfrTool() {
           Reset
         </button>
       </div>
+      {missingRequirements.length > 0 && (
+        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-medium text-red-700">Requirements before consolidate:</p>
+          <p className="mt-1 whitespace-pre-line text-sm text-red-700">
+            {missingRequirements.map((item) => `- ${item}`).join("\n")}
+          </p>
+        </div>
+      )}
 
       {message && (
         <p
