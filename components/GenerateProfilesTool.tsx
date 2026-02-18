@@ -19,11 +19,11 @@ const defaultZipName = "farmer-profiles";
 const defaultConsolidationDivision = "0";
 const defaultConsolidationIA = "IA";
 const defaultProfileFolderName = "land account";
-const scannerConsolidationTemplateStorageKey = "ifr-scanner:last-consolidation-template-id";
+const scannerConsolidationTemplateStorageKey =
+  "ifr-scanner:last-consolidation-template-id";
 
 const sanitizeFolderInput = (value: string): string =>
-  value
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_");
+  value.replace(/[<>:"/\\|?*\x00-\x1F]/g, "_");
 
 const getBaseName = (fileName: string): string => {
   const trimmed = fileName.trim();
@@ -41,7 +41,10 @@ const detectDivisionAndIAFromFilename = (
   const baseName = getBaseName(fileName).replace(/_/g, " ").trim();
   const divisionMatch = /\bDIV\.?\s*([0-9]{1,2})\b/i.exec(baseName);
   if (!divisionMatch) {
-    return { division: defaultConsolidationDivision, ia: defaultConsolidationIA };
+    return {
+      division: defaultConsolidationDivision,
+      ia: defaultConsolidationIA,
+    };
   }
 
   const division = String(Number.parseInt(divisionMatch[1], 10));
@@ -86,14 +89,17 @@ export function GenerateProfilesTool() {
     StoredTemplate[]
   >([]);
   const [consolidationTemplateId, setConsolidationTemplateId] = useState("");
-  const [profileFolderName, setProfileFolderName] = useState(defaultProfileFolderName);
-  const [sourceFolderNames, setSourceFolderNames] = useState<Record<string, string>>({});
-  const [sourceConsolidationDivisions, setSourceConsolidationDivisions] = useState<
+  const [profileFolderName, setProfileFolderName] = useState(
+    defaultProfileFolderName,
+  );
+  const [sourceFolderNames, setSourceFolderNames] = useState<
     Record<string, string>
   >({});
-  const [sourceConsolidationIAs, setSourceConsolidationIAs] = useState<Record<string, string>>(
-    {},
-  );
+  const [sourceConsolidationDivisions, setSourceConsolidationDivisions] =
+    useState<Record<string, string>>({});
+  const [sourceConsolidationIAs, setSourceConsolidationIAs] = useState<
+    Record<string, string>
+  >({});
   const [isLoadingConsolidationTemplates, setIsLoadingConsolidationTemplates] =
     useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -121,11 +127,15 @@ export function GenerateProfilesTool() {
         if (!active) return;
         setConsolidationTemplates(items);
         setConsolidationTemplateId((previous) => {
-          if (previous && items.some((item) => item.id === previous)) return previous;
+          if (previous && items.some((item) => item.id === previous))
+            return previous;
           const savedTemplateId = window.localStorage.getItem(
             scannerConsolidationTemplateStorageKey,
           );
-          if (savedTemplateId && items.some((item) => item.id === savedTemplateId)) {
+          if (
+            savedTemplateId &&
+            items.some((item) => item.id === savedTemplateId)
+          ) {
             return savedTemplateId;
           }
           return items[0]?.id ?? "";
@@ -263,7 +273,9 @@ export function GenerateProfilesTool() {
       setIsOverlayVisible(false);
     } catch (error) {
       const text =
-        error instanceof Error ? error.message : "Failed to generate profile files.";
+        error instanceof Error
+          ? error.message
+          : "Failed to generate profile files.";
       setMessage(text);
       if (elapsedIntervalRef.current !== null) {
         window.clearInterval(elapsedIntervalRef.current);
@@ -418,11 +430,15 @@ export function GenerateProfilesTool() {
           <div className="mt-4 space-y-4">
             {sourceFiles.map((file) => {
               const fileKey = getSourceFileKey(file);
-              const folderName = sourceFolderNames[fileKey] || getBaseName(file.name);
-              const profilesFolder = profileFolderName.trim() || defaultProfileFolderName;
+              const folderName =
+                sourceFolderNames[fileKey] || getBaseName(file.name);
+              const profilesFolder =
+                profileFolderName.trim() || defaultProfileFolderName;
               const divisionValue =
-                sourceConsolidationDivisions[fileKey] ?? defaultConsolidationDivision;
-              const iaValue = sourceConsolidationIAs[fileKey] ?? defaultConsolidationIA;
+                sourceConsolidationDivisions[fileKey] ??
+                defaultConsolidationDivision;
+              const iaValue =
+                sourceConsolidationIAs[fileKey] ?? defaultConsolidationIA;
               const consolidationFileName = buildConsolidationFileName(
                 divisionValue,
                 iaValue,
@@ -477,7 +493,9 @@ export function GenerateProfilesTool() {
                           type="text"
                           aria-label={`Set consolidation IA for ${file.name}`}
                           value={iaValue}
-                          onChange={(event) => handleIAChange(fileKey, event.target.value)}
+                          onChange={(event) =>
+                            handleIAChange(fileKey, event.target.value)
+                          }
                           className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
                           placeholder={defaultConsolidationIA}
                         />
@@ -488,12 +506,12 @@ export function GenerateProfilesTool() {
                   <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50 px-3 py-2 text-xs text-zinc-700">
                     <p className="font-medium">{folderName || "division"}/</p>
                     {createConsolidation && (
-                      <p className="pl-4">
-                        {consolidationFileName}
-                      </p>
+                      <p className="pl-4">{consolidationFileName}</p>
                     )}
                     <p className="pl-4">{profilesFolder}/</p>
-                    <p className="pl-8 text-zinc-500">...generated land account files</p>
+                    <p className="pl-8 text-zinc-500">
+                      ...generated land account files
+                    </p>
                   </div>
                 </div>
               );
@@ -503,7 +521,9 @@ export function GenerateProfilesTool() {
       )}
 
       <label className="mt-4 block" htmlFor="zip-name-input">
-        <span className="mb-2 block text-sm font-medium text-zinc-800">ZIP File Name</span>
+        <span className="mb-2 block text-sm font-medium text-zinc-800">
+          ZIP File Name
+        </span>
         <input
           id="zip-name-input"
           type="text"
@@ -516,8 +536,8 @@ export function GenerateProfilesTool() {
         <span className="mt-2 block text-xs leading-5 text-zinc-600">
           Sets the final downloaded ZIP name that contains all generated profile
           files. Use a clear batch label like{" "}
-          <span className="font-medium">division-3-week-7</span> so your team can
-          quickly identify the correct output.
+          <span className="font-medium">division-3-week-7</span> so your team
+          can quickly identify the correct output.
         </span>
       </label>
 
@@ -548,7 +568,8 @@ export function GenerateProfilesTool() {
               Create Consolidation
             </span>
             <span className="mt-1 block text-xs text-zinc-600">
-              Enable this to generate a consolidated XLSX and include it in the same ZIP.
+              Enable this to generate a consolidated XLSX and include it in the
+              same ZIP.
             </span>
           </span>
         </label>
@@ -562,7 +583,9 @@ export function GenerateProfilesTool() {
               <select
                 aria-label="Select consolidation template"
                 value={consolidationTemplateId}
-                onChange={(event) => setConsolidationTemplateId(event.target.value)}
+                onChange={(event) =>
+                  setConsolidationTemplateId(event.target.value)
+                }
                 disabled={isLoadingConsolidationTemplates}
                 className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-800 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
               >
@@ -574,8 +597,9 @@ export function GenerateProfilesTool() {
                 ))}
               </select>
               <span className="mt-2 block text-xs text-zinc-600">
-                Uses saved templates from Consolidate Land Profile scope. This template is
-                used to build the combined workbook included in the ZIP.
+                Uses saved templates from Consolidate Land Profile scope. This
+                template is used to build the combined workbook included in the
+                ZIP.
               </span>
             </label>
 
@@ -584,7 +608,11 @@ export function GenerateProfilesTool() {
               <span className="font-medium">
                 [Division (2 digits)] [IA NAME] CONSOLIDATED.xlsx
               </span>
-              . Example: <span className="font-medium">08 BAGONG PAG-ASA CONSOLIDATED.xlsx</span>.
+              . Example:{" "}
+              <span className="font-medium">
+                08 BAGONG PAG-ASA CONSOLIDATED.xlsx
+              </span>
+              .
             </p>
           </div>
         )}
@@ -621,7 +649,9 @@ export function GenerateProfilesTool() {
       </div>
       {missingRequirements.length > 0 && (
         <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-medium text-red-700">Requirements before generate:</p>
+          <p className="text-sm font-medium text-red-700">
+            Requirements before generate:
+          </p>
           <p className="mt-1 whitespace-pre-line text-sm text-red-700">
             {missingRequirements.map((item) => `- ${item}`).join("\n")}
           </p>
@@ -653,12 +683,16 @@ export function GenerateProfilesTool() {
           <div className="w-[92%] max-w-lg rounded-2xl border border-white/15 bg-emerald-950/55 p-6 text-white shadow-2xl">
             <div className="mb-4 flex items-center gap-3">
               {isFinalizing ? (
-                <CheckCircleIcon size={28} weight="fill" className="text-white" />
+                <CheckCircleIcon
+                  size={28}
+                  weight="fill"
+                  className="text-white"
+                />
               ) : (
                 <WrenchIcon size={28} weight="duotone" className="text-white" />
               )}
               <p className="text-lg font-medium">
-                {isFinalizing ? "Done" : "Processing IFR Scanner"}
+                {isFinalizing ? "Done" : "Processing IFR"}
               </p>
             </div>
 
@@ -667,7 +701,11 @@ export function GenerateProfilesTool() {
             </div>
 
             <div className="mt-3 flex items-center justify-between text-sm text-white/90">
-              <p>{isFinalizing ? "Finalizing and preparing download..." : "Please wait..."}</p>
+              <p>
+                {isFinalizing
+                  ? "Finalizing and preparing download..."
+                  : "Please wait..."}
+              </p>
               <p className="inline-flex items-center gap-1 tabular-nums font-medium">
                 <ClockCountdownIcon size={14} />
                 Time Elapsed: {formatElapsedTime(elapsedSeconds)}

@@ -9,7 +9,7 @@ import { BannerWithLogin } from "@/components/BannerWithLogin";
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen w-screen overflow-x-hidden overflow-y-auto">
+    <section className="relative min-h-screen w-screen overflow-hidden">
       <BannerWithLogin />
       <div
         className="absolute inset-0"
