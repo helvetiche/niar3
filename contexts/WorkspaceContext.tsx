@@ -4,11 +4,10 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 import type { AuthUser } from "@/types/auth";
 
 export const WORKSPACE_TABS = [
-  "calendar",
   "lipa-summary",
   "consolidate-ifr",
+  "merge-files",
   "ifr-scanner",
-  "email-automation",
 ] as const;
 export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
 
@@ -27,7 +26,7 @@ export function WorkspaceProvider({
   user: AuthUser;
   children: ReactNode;
 }) {
-  const [selectedTab, setSelectedTab] = useState<WorkspaceTab>("calendar");
+  const [selectedTab, setSelectedTab] = useState<WorkspaceTab>("ifr-scanner");
   return (
     <WorkspaceContext.Provider value={{ user, selectedTab, setSelectedTab }}>
       {children}

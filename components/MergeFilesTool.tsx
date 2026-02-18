@@ -1,0 +1,458 @@
+"use client";
+
+import { useRef, useState } from "react";
+import {
+  ArrowsDownUpIcon,
+  ArrowsMergeIcon,
+  DownloadSimpleIcon,
+  FilePdfIcon,
+  FileXlsIcon,
+  UploadSimpleIcon,
+} from "@phosphor-icons/react";
+import { PDFDocument } from "pdf-lib";
+import {
+  mergeFiles,
+  type MergeMode,
+  type PdfPageOrderItem,
+} from "@/lib/api/merge-files";
+
+type PdfPageItem = PdfPageOrderItem & {
+  id: string;
+  label: string;
+};
+
+const pdfDefaultName = "Merged PDF Document";
+const excelDefaultName = "Merged Excel Workbook";
+
+const reorderItems = <T,>(items: T[], fromIndex: number, toIndex: number): T[] => {
+  if (fromIndex === toIndex) return items;
+  const nextItems = [...items];
+  const [movedItem] = nextItems.splice(fromIndex, 1);
+  if (!movedItem) return items;
+  nextItems.splice(toIndex, 0, movedItem);
+  return nextItems;
+};
+
+export function MergeFilesTool() {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const draggedIndexRef = useRef<number | null>(null);
+
+  const [mode, setMode] = useState<MergeMode>("pdf");
+  const [files, setFiles] = useState<File[]>([]);
+  const [pdfPages, setPdfPages] = useState<PdfPageItem[]>([]);
+  const [fileName, setFileName] = useState(pdfDefaultName);
+  const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreparingPages, setIsPreparingPages] = useState(false);
+
+  const defaultFileName = mode === "pdf" ? pdfDefaultName : excelDefaultName;
+
+  const clearSelections = () => {
+    setFiles([]);
+    setPdfPages([]);
+    setMessage("");
+    setIsPreparingPages(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleModeChange = (nextMode: MergeMode) => {
+    if (nextMode === mode) return;
+    setMode(nextMode);
+    setFileName(nextMode === "pdf" ? pdfDefaultName : excelDefaultName);
+    clearSelections();
+  };
+
+  const buildPdfPages = async (incomingFiles: File[]): Promise<PdfPageItem[]> => {
+    const pages: PdfPageItem[] = [];
+
+    for (let fileIndex = 0; fileIndex < incomingFiles.length; fileIndex += 1) {
+      const file = incomingFiles[fileIndex];
+      const fileBytes = await file.arrayBuffer();
+      const doc = await PDFDocument.load(fileBytes);
+      const pageCount = doc.getPageCount();
+
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+        pages.push({
+          id: `${String(fileIndex)}-${String(pageIndex)}`,
+          fileIndex,
+          pageIndex,
+          label: `${file.name} - Page ${String(pageIndex + 1)}`,
+        });
+      }
+    }
+
+    return pages;
+  };
+
+  const handleIncomingFiles = async (incomingFileList: FileList | null) => {
+    const incomingFiles = Array.from(incomingFileList ?? []);
+    setFiles(incomingFiles);
+    setMessage("");
+
+    if (mode !== "pdf" || incomingFiles.length === 0) {
+      setPdfPages([]);
+      return;
+    }
+
+    try {
+      setIsPreparingPages(true);
+      setMessage("Reading PDF pages for sequence editor...");
+      const pages = await buildPdfPages(incomingFiles);
+      setPdfPages(pages);
+      setMessage("");
+    } catch (error) {
+      const text =
+        error instanceof Error
+          ? error.message
+          : "Failed to read one or more PDF files.";
+      setPdfPages([]);
+      setMessage(text);
+    } finally {
+      setIsPreparingPages(false);
+    }
+  };
+
+  const handleDragStart = (index: number) => {
+    draggedIndexRef.current = index;
+  };
+
+  const handleDrop = (targetIndex: number) => {
+    if (draggedIndexRef.current === null) return;
+    setPdfPages((previous) =>
+      reorderItems(previous, draggedIndexRef.current as number, targetIndex),
+    );
+    draggedIndexRef.current = null;
+  };
+
+  const handleMovePage = (index: number, direction: "up" | "down") => {
+    if (direction === "up" && index === 0) return;
+    if (direction === "down" && index === pdfPages.length - 1) return;
+    const nextIndex = direction === "up" ? index - 1 : index + 1;
+    setPdfPages((previous) => reorderItems(previous, index, nextIndex));
+  };
+
+  const handleMerge = async () => {
+    if (files.length < 2) {
+      setMessage("Please upload at least two files.");
+      return;
+    }
+
+    if (mode === "pdf" && pdfPages.length === 0) {
+      setMessage("No PDF pages detected. Please reselect your PDF files.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setMessage("Merging files...");
+
+    try {
+      const result = await mergeFiles({
+        mode,
+        files,
+        fileName: fileName.trim(),
+        pageOrder:
+          mode === "pdf"
+            ? pdfPages.map((item) => ({
+                fileIndex: item.fileIndex,
+                pageIndex: item.pageIndex,
+              }))
+            : undefined,
+      });
+
+      const blobUrl = URL.createObjectURL(result.blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = result.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+
+      const outputTypeLabel = mode === "pdf" ? "pages" : "worksheets";
+      setMessage(
+        `Success. Merged ${String(result.mergedCount)} ${outputTypeLabel} into ${result.fileName}.`,
+      );
+    } catch (error) {
+      const text = error instanceof Error ? error.message : "Failed to merge files.";
+      setMessage(text);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const acceptedTypes = mode === "pdf" ? ".pdf" : ".xlsx,.xls";
+
+  return (
+    <section className="flex h-full w-full flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+      <div className="mb-6">
+        <h2 className="flex items-center gap-2 text-xl font-medium text-zinc-900">
+          <ArrowsMergeIcon size={22} className="text-emerald-700" />
+          Merge Files
+        </h2>
+        <p className="mt-2 text-sm text-zinc-600">
+          Merge PDF files with drag-and-drop page sequence control, or combine
+          multiple Excel files into one workbook where each source worksheet is kept
+          as its own separate page (sheet).
+        </p>
+      </div>
+
+      <div className="mb-4">
+        <div className="grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-end">
+          <div>
+            <span className="mb-1 block text-sm font-medium text-zinc-800">Mode</span>
+            <div className="inline-flex rounded-lg border border-zinc-300 p-1">
+              <button
+                type="button"
+                aria-label="Switch to PDF merge mode"
+                onClick={() => handleModeChange("pdf")}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  mode === "pdf"
+                    ? "bg-emerald-700 text-white"
+                    : "text-zinc-700 hover:bg-zinc-100"
+                }`}
+              >
+                Combine PDF
+              </button>
+              <button
+                type="button"
+                aria-label="Switch to Excel merge mode"
+                onClick={() => handleModeChange("excel")}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  mode === "excel"
+                    ? "bg-emerald-700 text-white"
+                    : "text-zinc-700 hover:bg-zinc-100"
+                }`}
+              >
+                Combine Excel
+              </button>
+            </div>
+          </div>
+
+          <label className="min-w-0" htmlFor="merge-output-file-name-input">
+            <span className="mb-1 flex items-center gap-2 text-sm font-medium text-zinc-800">
+              <DownloadSimpleIcon size={16} className="text-emerald-700" />
+              Output File Name
+            </span>
+            <input
+              id="merge-output-file-name-input"
+              type="text"
+              aria-label="Input output file name"
+              value={fileName}
+              onChange={(event) => setFileName(event.target.value)}
+              className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+              placeholder={defaultFileName}
+            />
+          </label>
+        </div>
+
+        <div className="mt-2 grid gap-2 lg:grid-cols-2">
+          <p className="text-xs leading-5 text-zinc-600">
+            Use <span className="font-medium">Combine PDF</span> when you need one
+            final PDF with custom page order. Use{" "}
+            <span className="font-medium">Combine Excel</span> to merge multiple
+            workbooks where each worksheet remains separate.
+          </p>
+          <p className="text-xs leading-5 text-zinc-600">
+            This value becomes your downloaded output filename. Keep it short and
+            clear (for example: <span className="font-medium">Week 7 PDF Batch</span>{" "}
+            or <span className="font-medium">Division 3 Excel Merge</span>).
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        <div className="block">
+          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-zinc-800">
+            {mode === "pdf" ? (
+              <FilePdfIcon size={18} className="text-emerald-700" />
+            ) : (
+              <FileXlsIcon size={18} className="text-emerald-700" />
+            )}
+            {mode === "pdf" ? "PDF Files" : "Excel Files"}
+          </span>
+
+          <input
+            id="merge-file-input"
+            ref={fileInputRef}
+            type="file"
+            accept={acceptedTypes}
+            multiple
+            aria-label={
+              mode === "pdf"
+                ? "Upload one or more PDF files"
+                : "Upload one or more Excel files"
+            }
+            onChange={(event) => {
+              void handleIncomingFiles(event.target.files);
+            }}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            aria-label={
+              mode === "pdf" ? "Choose PDF files" : "Choose Excel files"
+            }
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(event) => {
+              event.preventDefault();
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              void handleIncomingFiles(event.dataTransfer.files);
+            }}
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-base text-zinc-700 transition hover:border-emerald-600 hover:bg-emerald-50"
+          >
+            <UploadSimpleIcon size={34} className="text-emerald-700" />
+            <span className="font-medium">
+              {mode === "pdf"
+                ? "Drag and drop PDF files here, or click to browse"
+                : "Drag and drop Excel files here, or click to browse"}
+            </span>
+          </button>
+          <p className="mt-2 text-xs leading-5 text-zinc-600">
+            Upload at least two files. For PDF mode, only <span className="font-medium">.pdf</span>{" "}
+            files are accepted and every page can be reordered before merge. For
+            Excel mode, upload <span className="font-medium">.xlsx</span> or{" "}
+            <span className="font-medium">.xls</span> files and all source worksheets
+            will be copied into one combined workbook.
+          </p>
+        </div>
+      </div>
+
+      {files.length > 0 && (
+        <div className="mt-3">
+          <p className="flex items-center gap-2 text-sm text-zinc-600">
+            {mode === "pdf" ? (
+              <FilePdfIcon size={16} className="text-emerald-700" />
+            ) : (
+              <FileXlsIcon size={16} className="text-emerald-700" />
+            )}
+            Selected files: {String(files.length)}
+          </p>
+          <p className="mt-1 text-xs leading-5 text-zinc-600">
+            Tip: keep file sets related to the same report or date range so merged
+            output stays organized for your team.
+          </p>
+        </div>
+      )}
+
+      {mode === "pdf" && pdfPages.length > 0 && (
+        <div className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-800">
+            <ArrowsDownUpIcon size={16} className="text-emerald-700" />
+            PDF Page Sequence
+          </div>
+          <p className="mb-3 text-xs text-zinc-600">
+            Drag and drop rows to define your merged PDF page order before combining.
+          </p>
+          <p className="mb-3 text-xs leading-5 text-zinc-600">
+            Sequence starts at <span className="font-medium">#1</span> and follows
+            top to bottom. You can drag rows or use keyboard arrows while focused on
+            a row for accessibility.
+          </p>
+          <ul className="max-h-72 space-y-2 overflow-y-auto pr-1">
+            {pdfPages.map((item, index) => (
+              <li key={item.id}>
+                <div
+                  draggable
+                  tabIndex={0}
+                  onDragStart={() => {
+                    handleDragStart(index);
+                  }}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                  }}
+                  onDrop={() => {
+                    handleDrop(index);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "ArrowUp") {
+                      event.preventDefault();
+                      handleMovePage(index, "up");
+                    }
+                    if (event.key === "ArrowDown") {
+                      event.preventDefault();
+                      handleMovePage(index, "down");
+                    }
+                  }}
+                  aria-label={`PDF sequence item ${String(index + 1)} ${item.label}`}
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700 shadow-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate">
+                      <span className="mr-2 rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                        #{String(index + 1)}
+                      </span>
+                      {item.label}
+                    </p>
+                  </div>
+                  <div className="ml-3 flex items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label={`Move ${item.label} up`}
+                      onClick={() => handleMovePage(index, "up")}
+                      className="rounded border border-zinc-200 px-2 py-1 text-xs text-zinc-700 transition hover:bg-zinc-100"
+                    >
+                      Up
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Move ${item.label} down`}
+                      onClick={() => handleMovePage(index, "down")}
+                      className="rounded border border-zinc-200 px-2 py-1 text-xs text-zinc-700 transition hover:bg-zinc-100"
+                    >
+                      Down
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          aria-label="Merge selected files and download output"
+          onClick={() => {
+            void handleMerge();
+          }}
+          disabled={
+            isSubmitting || isPreparingPages || files.length < 2 || (mode === "pdf" && pdfPages.length === 0)
+          }
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+        >
+          <ArrowsMergeIcon size={18} />
+          {isSubmitting ? "Merging..." : "Merge Files"}
+        </button>
+
+        <button
+          type="button"
+          aria-label="Reset selected files and merge settings"
+          onClick={clearSelections}
+          disabled={isSubmitting}
+          className="inline-flex items-center rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:text-zinc-400"
+        >
+          Reset
+        </button>
+      </div>
+      <p className="mt-2 text-xs leading-5 text-zinc-600">
+        Click <span className="font-medium">Merge Files</span> to generate and
+        download your final output immediately. Use{" "}
+        <span className="font-medium">Reset</span> to clear files, page order, and
+        status messages before starting a new batch.
+      </p>
+
+      {message && (
+        <p
+          className="mt-4 whitespace-pre-line rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700"
+          aria-live="polite"
+        >
+          {message}
+        </p>
+      )}
+    </section>
+  );
+}

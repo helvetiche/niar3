@@ -6,14 +6,13 @@ import { fetchProfile } from "@/lib/api/profile";
 import {
   FileTextIcon,
   StackIcon,
+  ArrowsMergeIcon,
   MagnifyingGlassIcon,
-  EnvelopeSimpleIcon,
   CaretLeftIcon,
   CaretRightIcon,
   ListBulletsIcon,
   SquaresFourIcon,
   PencilSimpleIcon,
-  CalendarBlankIcon,
 } from "@phosphor-icons/react";
 import type { AuthUser } from "@/types/auth";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
@@ -40,13 +39,6 @@ function saveSidebarCollapsed(collapsed: boolean) {
   }
 }
 
-const CALENDAR = {
-  id: "calendar" as const,
-  name: "CALENDAR",
-  description: "View your schedule and important dates.",
-  icon: CalendarBlankIcon,
-};
-
 const TOOLS = [
   {
     id: "lipa-summary" as const,
@@ -61,16 +53,17 @@ const TOOLS = [
     icon: StackIcon,
   },
   {
+    id: "merge-files" as const,
+    name: "MERGE FILES",
+    description:
+      "Merge PDF files with page ordering and combine Excel files into one workbook.",
+    icon: ArrowsMergeIcon,
+  },
+  {
     id: "ifr-scanner" as const,
     name: "IFR SCANNER",
     description: "Scan and extract data from IFR documents automatically.",
     icon: MagnifyingGlassIcon,
-  },
-  {
-    id: "email-automation" as const,
-    name: "EMAIL AUTOMATION",
-    description: "Automate email workflows and bulk email tasks.",
-    icon: EnvelopeSimpleIcon,
   },
 ] as const;
 
@@ -136,9 +129,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
       tool.description.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const navItems = collapsed
-    ? [CALENDAR, ...TOOLS]
-    : [CALENDAR, ...filteredTools];
+  const navItems = collapsed ? TOOLS : filteredTools;
   const { selectedTab, setSelectedTab } = useWorkspaceTab();
 
   return (
