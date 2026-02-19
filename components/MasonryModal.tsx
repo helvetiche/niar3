@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { gsap } from "gsap";
+import {
+  getOpenFromCoords,
+  getCloseToCoords,
+  type AnimateFromDirection,
+} from "@/lib/masonry-animation";
 
 const handleKeyDown = (
   event: KeyboardEvent,
@@ -28,7 +33,7 @@ interface MasonryModalProps {
   /** Content; receives close() to trigger Masonry-style animated close */
   children: React.ReactNode | ((close: () => void) => React.ReactNode);
   /** Masonry-style: animate from direction. Default "bottom" */
-  animateFrom?: "bottom" | "top" | "left" | "right" | "center";
+  animateFrom?: AnimateFromDirection;
   /** Masonry-style: blur to focus on open. Default true */
   blurToFocus?: boolean;
   duration?: number;
@@ -62,37 +67,12 @@ export function MasonryModal({
 
   useEffect(() => {
     if (!overlayRef.current || !panelRef.current) return;
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+
     if (isOpen) {
       const panel = panelRef.current;
       const panelRect = panel.getBoundingClientRect();
-
-      let fromY: number;
-      let fromX: number;
-      switch (animateFrom) {
-        case "top":
-          fromY = -panelRect.height - 200;
-          fromX = 0;
-          break;
-        case "bottom":
-          fromY = window.innerHeight + 200;
-          fromX = 0;
-          break;
-        case "left":
-          fromY = 0;
-          fromX = -panelRect.width - 200;
-          break;
-        case "right":
-          fromY = 0;
-          fromX = window.innerWidth + 200;
-          break;
-        case "center":
-          fromY = 0;
-          fromX = 0;
-          break;
-        default:
-          fromY = window.innerHeight + 200;
-          fromX = 0;
-      }
+      const { fromY, fromX } = getOpenFromCoords(animateFrom, panelRect, viewport);
 
       gsap.set(overlayRef.current, { display: "flex", opacity: 0 });
       gsap.set(panel, {
@@ -119,33 +99,7 @@ export function MasonryModal({
       });
     } else {
       const panel = panelRef.current;
-      let toY: number;
-      let toX: number;
-      switch (animateFrom) {
-        case "top":
-          toY = -window.innerHeight - 200;
-          toX = 0;
-          break;
-        case "bottom":
-          toY = window.innerHeight + 200;
-          toX = 0;
-          break;
-        case "left":
-          toY = 0;
-          toX = -window.innerWidth - 200;
-          break;
-        case "right":
-          toY = 0;
-          toX = window.innerWidth + 200;
-          break;
-        case "center":
-          toY = 0;
-          toX = 0;
-          break;
-        default:
-          toY = window.innerHeight + 200;
-          toX = 0;
-      }
+      const { toY, toX } = getCloseToCoords(animateFrom, viewport);
 
       gsap.to(panel, {
         opacity: 0,
@@ -172,6 +126,8 @@ export function MasonryModal({
     }
     const panel = panelRef.current;
 
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+
     if (animateFrom === "center") {
       gsap.to(panel, {
         opacity: 0,
@@ -181,16 +137,7 @@ export function MasonryModal({
         onComplete: onClose,
       });
     } else {
-      const toY =
-        animateFrom === "top"
-          ? -window.innerHeight - 200
-          : window.innerHeight + 200;
-      const toX =
-        animateFrom === "left"
-          ? -window.innerWidth - 200
-          : animateFrom === "right"
-            ? window.innerWidth + 200
-            : 0;
+      const { toY, toX } = getCloseToCoords(animateFrom, viewport);
 
       gsap.to(panel, {
         opacity: 0,

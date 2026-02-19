@@ -1,6 +1,7 @@
 "use client";
 
 import type { NoteItem } from "@/lib/api/calendar-notes";
+import { getNoteBg } from "@/lib/note-colors";
 
 type ScheduleOnlyItem = {
   id: string;
@@ -14,12 +15,10 @@ export function ScheduleOnlyView({
   monthName,
   year,
   items,
-  getNoteBg,
 }: {
   monthName: string;
   year: number;
   items: ScheduleOnlyItem[];
-  getNoteBg: (color: string) => string;
 }) {
   const formatDeadline = (daysUntil: number) => {
     if (daysUntil < 0) return "Overdue";
@@ -61,7 +60,14 @@ export function ScheduleOnlyView({
                 {formatDeadline(daysUntil)}
               </span>
             </div>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-200">
+            <div
+              className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-200"
+              role="progressbar"
+              aria-valuenow={progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Progress: ${Math.round(progress)}% until deadline`}
+            >
               <div
                 className={`h-full rounded-full transition-all ${
                   progress <= 0

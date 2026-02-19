@@ -4,22 +4,10 @@ import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
 import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
 import { buildConsolidatedWorkbook } from "@/lib/consolidation";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
-import { validateUploads } from "@/lib/upload-limits";
+import { validateUploads, UPLOAD_LIMIT_PRESETS } from "@/lib/upload-limits";
 
-const ifrUploadLimits = {
-  maxFileCount: 400,
-  maxFileSizeBytes: 100 * 1024 * 1024,
-  maxTotalSizeBytes: 5 * 1024 * 1024 * 1024,
-  allowedExtensions: [".xlsx", ".xls"],
-  allowedMimeSubstrings: ["sheet", "excel"],
-} as const;
-const templateUploadLimits = {
-  maxFileCount: 1,
-  maxFileSizeBytes: 100 * 1024 * 1024,
-  maxTotalSizeBytes: 100 * 1024 * 1024,
-  allowedExtensions: [".xlsx", ".xls"],
-  allowedMimeSubstrings: ["sheet", "excel"],
-} as const;
+const ifrUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_BATCH;
+const templateUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_SINGLE;
 
 export async function POST(request: Request) {
   const result = await getSession();

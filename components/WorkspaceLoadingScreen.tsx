@@ -31,9 +31,14 @@ export function WorkspaceLoadingScreen({
   const [progress, setProgress] = useState(0);
   const [isDone, setIsDone] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const [quote] = useState(
-    () => QUOTES[Math.floor(Math.random() * QUOTES.length)] ?? QUOTES[0],
-  );
+  const [quote, setQuote] = useState(QUOTES[0]);
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)] ?? QUOTES[0]);
+    }, 0);
+    return () => clearTimeout(id);
+  }, []);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {

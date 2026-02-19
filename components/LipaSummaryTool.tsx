@@ -14,6 +14,7 @@ import {
   type LipaScannedFileResult,
   type LipaSummaryFileMapping,
 } from "@/lib/api/lipa-summary";
+import { downloadBlob, getErrorMessage } from "@/lib/utils";
 
 type LipaUploadItem = {
   id: string;
@@ -190,14 +191,7 @@ export function LipaSummaryTool() {
         outputFileName: outputFileName.trim(),
       });
 
-      const blobUrl = URL.createObjectURL(result.blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = result.fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
+      downloadBlob(result.blob, result.fileName);
       setProgressPercent(100);
       setProgressLabel("Completed");
 
@@ -206,11 +200,9 @@ export function LipaSummaryTool() {
       );
       succeeded = true;
     } catch (error) {
-      const text =
-        error instanceof Error
-          ? error.message
-          : "Failed to generate LIPA summary report.";
-      setMessage(text);
+      setMessage(
+        getErrorMessage(error, "Failed to generate LIPA summary report."),
+      );
     } finally {
       setIsGenerating(false);
       if (!succeeded) {

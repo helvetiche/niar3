@@ -5,17 +5,9 @@ import toast from "react-hot-toast";
 import {
   CaretLeftIcon,
   CaretRightIcon,
-  CloudIcon,
-  DropIcon,
-  FlameIcon,
-  FlowerIcon,
-  HeartIcon,
-  LeafIcon,
-  LightbulbFilamentIcon,
   ListChecksIcon,
   NotePencilIcon,
   PlusIcon,
-  SunIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { useWorkspaceUser } from "@/contexts/WorkspaceContext";
@@ -28,19 +20,9 @@ import { AddNoteTooltip } from "@/components/AddNoteTooltip";
 import { NotePopover } from "@/components/NotePopover";
 import { ScheduleOnlyToggleButton } from "@/components/ScheduleOnlyToggleButton";
 import { ScheduleOnlyView } from "@/components/ScheduleOnlyView";
+import { NOTE_COLORS, getNoteBg } from "@/lib/note-colors";
 
 export type NoteItem = { text: string; color: string };
-
-const NOTE_COLORS = [
-  { id: "red", bg: "bg-red-600", icon: FlameIcon },
-  { id: "orange", bg: "bg-orange-600", icon: SunIcon },
-  { id: "amber", bg: "bg-amber-600", icon: LightbulbFilamentIcon },
-  { id: "emerald", bg: "bg-emerald-600", icon: LeafIcon },
-  { id: "teal", bg: "bg-teal-600", icon: DropIcon },
-  { id: "blue", bg: "bg-blue-600", icon: CloudIcon },
-  { id: "violet", bg: "bg-violet-600", icon: FlowerIcon },
-  { id: "pink", bg: "bg-pink-600", icon: HeartIcon },
-] as const;
 
 function dateKey(year: number, month: number, day: number) {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -81,7 +63,11 @@ export function WorkspaceCalendar() {
       .then((data) => {
         if (!cancelled) setNotes(data);
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (!cancelled) {
+          toast.error(err instanceof Error ? err.message : "Failed to load notes");
+        }
+      });
     return () => {
       cancelled = true;
     };
@@ -206,20 +192,6 @@ export function WorkspaceCalendar() {
     return "farthest";
   };
 
-  const getNoteBg = (color: string) => {
-    const map: Record<string, string> = {
-      red: "bg-red-700",
-      orange: "bg-orange-700",
-      amber: "bg-amber-700",
-      emerald: "bg-emerald-700",
-      teal: "bg-teal-700",
-      blue: "bg-blue-700",
-      violet: "bg-violet-700",
-      pink: "bg-pink-700",
-    };
-    return map[color] ?? "bg-emerald-700";
-  };
-
   const monthNotesByBucket = (() => {
     const nearest: { day: number; items: NoteItem[] }[] = [];
     const normal: { day: number; items: NoteItem[] }[] = [];
@@ -300,7 +272,6 @@ export function WorkspaceCalendar() {
           monthName={MONTHS[month]}
           year={year}
           items={scheduleOnlyItems}
-          getNoteBg={getNoteBg}
         />
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-[auto_repeat(6,1fr)] gap-px text-center">
@@ -550,7 +521,7 @@ export function WorkspaceCalendar() {
                   className="columns-2 gap-2 sm:columns-3 lg:columns-4"
                   style={{ columnFill: "balance" } as React.CSSProperties}
                 >
-                  {NOTE_COLORS.map(({ id, bg, icon: Icon }) => (
+                  {NOTE_COLORS.map(({ id, pickerBg, icon: Icon }) => (
                     <button
                       key={id}
                       type="button"
@@ -560,11 +531,11 @@ export function WorkspaceCalendar() {
                           ? "border-emerald-500 bg-emerald-50"
                           : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
                       }`}
-                      aria-label={`Select ${id}`}
+                      aria-label={`Select ${id} color`}
                       aria-pressed={selectedColor === id}
                     >
                       <span
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${bg} text-white`}
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${pickerBg} text-white`}
                       >
                         <Icon size={18} weight="duotone" />
                       </span>

@@ -108,3 +108,30 @@ export const validateUploads = (
 
   return { ok: true, totalSizeBytes };
 };
+
+const MB = 1024 * 1024;
+const GB = 1024 * MB;
+
+export const UPLOAD_LIMIT_PRESETS = {
+  EXCEL_BATCH: {
+    maxFileCount: 400,
+    maxFileSizeBytes: 100 * MB,
+    maxTotalSizeBytes: 5 * GB,
+    allowedExtensions: [".xlsx", ".xls"],
+    allowedMimeSubstrings: ["sheet", "excel"],
+  } as const,
+  EXCEL_SINGLE: {
+    maxFileCount: 1,
+    maxFileSizeBytes: 100 * MB,
+    maxTotalSizeBytes: 100 * MB,
+    allowedExtensions: [".xlsx", ".xls"],
+    allowedMimeSubstrings: ["sheet", "excel"],
+  } as const,
+  PDF_BATCH: {
+    maxFileCount: 50,
+    maxFileSizeBytes: 50 * MB,
+    maxTotalSizeBytes: 500 * MB,
+    allowedExtensions: [".pdf"],
+    allowedMimeSubstrings: ["pdf"],
+  } as const,
+} as const;

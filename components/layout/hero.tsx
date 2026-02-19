@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Suspense } from "react";
 import {
   RobotIcon,
   LightningIcon,
@@ -10,7 +11,9 @@ import { BannerWithLogin } from "@/components/BannerWithLogin";
 export function Hero() {
   return (
     <section className="relative min-h-screen w-screen overflow-hidden">
-      <BannerWithLogin />
+      <Suspense fallback={null}>
+        <BannerWithLogin />
+      </Suspense>
       <div
         className="absolute inset-0"
         style={{

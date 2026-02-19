@@ -14,60 +14,26 @@ import {
 import { generateBillingUnitsZip } from "@/lib/api/billing-units";
 import { TemplateManager } from "@/components/TemplateManager";
 import { listTemplates, type StoredTemplate } from "@/lib/api/templates";
+import {
+  getBaseName,
+  getFileKey,
+  detectDivisionAndIAFromFilename,
+  sanitizeFolderName,
+  buildConsolidationFileName,
+} from "@/lib/file-utils";
+import { downloadBlob, getErrorMessage } from "@/lib/utils";
+import { DEFAULT_MERGED_CONSOLIDATION_FILE_NAME } from "@/lib/file-utils";
+import { ERROR_MESSAGES } from "@/constants/error-messages";
 
 const defaultZipName = "BILLING UNITS";
+const defaultBillingUnitFolderName = "billing unit";
 const defaultConsolidationDivision = "0";
 const defaultConsolidationIA = "IA";
-const defaultMergedConsolidationFileName = "ALL DIVISION CONSOLIDATED";
-const defaultBillingUnitFolderName = "billing unit";
 const scannerConsolidationTemplateStorageKey =
   "ifr-scanner:last-consolidation-template-id";
-
-const sanitizeFolderInput = (value: string): string =>
-  value.replace(/[<>:"/\\|?*\x00-\x1F]/g, "_");
-
-const getBaseName = (fileName: string): string => {
-  const trimmed = fileName.trim();
-  const lastDot = trimmed.lastIndexOf(".");
-  if (lastDot <= 0) return trimmed;
-  return trimmed.slice(0, lastDot);
-};
-
-const getSourceFileKey = (file: File): string =>
-  `${file.name}::${String(file.size)}::${String(file.lastModified)}`;
-
-const detectDivisionAndIAFromFilename = (
-  fileName: string,
-): { division: string; ia: string } => {
-  const baseName = getBaseName(fileName).replace(/_/g, " ").trim();
-  const divisionMatch = /\bDIV\.?\s*([0-9]{1,2})\b/i.exec(baseName);
-  if (!divisionMatch) {
-    return {
-      division: defaultConsolidationDivision,
-      ia: defaultConsolidationIA,
-    };
-  }
-
-  const division = String(Number.parseInt(divisionMatch[1], 10));
-  const matchStart = divisionMatch.index ?? 0;
-  const remainderStart = matchStart + divisionMatch[0].length;
-  let iaPart = baseName.slice(remainderStart).trim();
-
-  iaPart = iaPart.replace(/^[-:–—]+\s*/, "");
-  iaPart = iaPart.replace(/\s{2,}/g, " ");
-
-  return {
-    division: division || defaultConsolidationDivision,
-    ia: iaPart || defaultConsolidationIA,
-  };
-};
-
-const buildConsolidationFileName = (division: string, ia: string): string => {
-  const digits = division.replace(/[^0-9]/g, "");
-  const paddedDivision = digits ? digits.padStart(2, "0") : "00";
-  const iaName = ia.trim().toUpperCase() || "IA";
-  return `${paddedDivision} ${iaName} CONSOLIDATED.xlsx`;
-};
+const OVERLAY_OPAQUE_MS = 280;
+const OVERLAY_FADE_MS = 320;
+const OVERLAY_ERROR_FADE_MS = 240;
 
 const wait = async (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -89,7 +55,7 @@ export function GenerateProfilesTool() {
   const [createMergedConsolidation, setCreateMergedConsolidation] =
     useState(false);
   const [mergedConsolidationFileName, setMergedConsolidationFileName] =
-    useState(defaultMergedConsolidationFileName);
+    useState(DEFAULT_MERGED_CONSOLIDATION_FILE_NAME);
   const [consolidationTemplates, setConsolidationTemplates] = useState<
     StoredTemplate[]
   >([]);
@@ -148,9 +114,7 @@ export function GenerateProfilesTool() {
       } catch (error) {
         if (!active) return;
         setMessage(
-          error instanceof Error
-            ? error.message
-            : "Failed to load consolidation templates.",
+          getErrorMessage(error, ERROR_MESSAGES.FAILED_LOAD_TEMPLATES),
         );
       } finally {
         if (active) setIsLoadingConsolidationTemplates(false);
@@ -171,7 +135,7 @@ export function GenerateProfilesTool() {
     setSourceFolderNames((previous) => {
       const next: Record<string, string> = {};
       sourceFiles.forEach((file) => {
-        const fileKey = getSourceFileKey(file);
+        const fileKey = getFileKey(file);
         const existingName = previous[fileKey];
         next[fileKey] = existingName ? existingName : getBaseName(file.name);
       });
@@ -181,7 +145,7 @@ export function GenerateProfilesTool() {
     setSourceConsolidationDivisions((previous) => {
       const next: Record<string, string> = {};
       sourceFiles.forEach((file) => {
-        const fileKey = getSourceFileKey(file);
+        const fileKey = getFileKey(file);
         const detected = detectDivisionAndIAFromFilename(file.name);
         const existingDivision = previous[fileKey];
         next[fileKey] = existingDivision ?? detected.division;
@@ -192,7 +156,7 @@ export function GenerateProfilesTool() {
     setSourceConsolidationIAs((previous) => {
       const next: Record<string, string> = {};
       sourceFiles.forEach((file) => {
-        const fileKey = getSourceFileKey(file);
+        const fileKey = getFileKey(file);
         const detected = detectDivisionAndIAFromFilename(file.name);
         const existingIA = previous[fileKey];
         next[fileKey] = existingIA ?? detected.ia;
@@ -254,19 +218,11 @@ export function GenerateProfilesTool() {
         sourceConsolidationDivisions,
         sourceConsolidationIAs,
       });
-      const objectUrl = URL.createObjectURL(blob);
-      const downloadLink = document.createElement("a");
       const outputName = zipName.trim() || defaultZipName;
-
-      downloadLink.href = objectUrl;
-      downloadLink.download = outputName.endsWith(".zip")
+      const filename = outputName.endsWith(".zip")
         ? outputName
         : `${outputName}.zip`;
-
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      URL.revokeObjectURL(objectUrl);
+      downloadBlob(blob, filename);
 
       setMessage("Success. Billing Unit ZIP has been downloaded.");
       setIsFinalizing(true);
@@ -274,22 +230,20 @@ export function GenerateProfilesTool() {
         window.clearInterval(elapsedIntervalRef.current);
         elapsedIntervalRef.current = null;
       }
-      await wait(280);
+      await wait(OVERLAY_OPAQUE_MS);
       setIsOverlayOpaque(false);
-      await wait(320);
+      await wait(OVERLAY_FADE_MS);
       setIsOverlayVisible(false);
     } catch (error) {
-      const text =
-        error instanceof Error
-          ? error.message
-          : "Failed to generate billing unit files.";
-      setMessage(text);
+      setMessage(
+        getErrorMessage(error, ERROR_MESSAGES.FAILED_GENERATE_BILLING_UNITS),
+      );
       if (elapsedIntervalRef.current !== null) {
         window.clearInterval(elapsedIntervalRef.current);
         elapsedIntervalRef.current = null;
       }
       setIsOverlayOpaque(false);
-      await wait(240);
+      await wait(OVERLAY_ERROR_FADE_MS);
       setIsOverlayVisible(false);
     } finally {
       setIsGenerating(false);
@@ -301,7 +255,7 @@ export function GenerateProfilesTool() {
     setSelectedTemplateId("");
     setCreateConsolidation(false);
     setCreateMergedConsolidation(false);
-    setMergedConsolidationFileName(defaultMergedConsolidationFileName);
+    setMergedConsolidationFileName(DEFAULT_MERGED_CONSOLIDATION_FILE_NAME);
     setConsolidationTemplateId("");
     setBillingUnitFolderName(defaultBillingUnitFolderName);
     setSourceFolderNames({});
@@ -320,7 +274,7 @@ export function GenerateProfilesTool() {
   }, []);
 
   const handleFolderNameChange = (fileKey: string, value: string) => {
-    const sanitized = sanitizeFolderInput(value);
+    const sanitized = sanitizeFolderName(value);
     setSourceFolderNames((previous) => ({
       ...previous,
       [fileKey]: sanitized,
@@ -452,7 +406,7 @@ export function GenerateProfilesTool() {
               value={billingUnitFolderName}
               onChange={(event) =>
                 setBillingUnitFolderName(
-                  sanitizeFolderInput(event.target.value),
+                  sanitizeFolderName(event.target.value),
                 )
               }
               className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
@@ -462,7 +416,7 @@ export function GenerateProfilesTool() {
 
           <div className="mt-4 space-y-4">
             {sourceFiles.map((file) => {
-              const fileKey = getSourceFileKey(file);
+              const fileKey = getFileKey(file);
               const folderName =
                 sourceFolderNames[fileKey] || getBaseName(file.name);
               const profilesFolder =
@@ -475,6 +429,7 @@ export function GenerateProfilesTool() {
               const consolidationFileName = buildConsolidationFileName(
                 divisionValue,
                 iaValue,
+                true,
               );
 
               return (
@@ -679,7 +634,7 @@ export function GenerateProfilesTool() {
                       setMergedConsolidationFileName(event.target.value)
                     }
                     className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                    placeholder={defaultMergedConsolidationFileName}
+                    placeholder={DEFAULT_MERGED_CONSOLIDATION_FILE_NAME}
                   />
                   <span className="mt-2 block text-xs text-white/80">
                     This filename is used for the merged workbook added to the

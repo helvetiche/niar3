@@ -1,7 +1,5 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://niatools.vercel.app";
-
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "NIA Productivity Tools",

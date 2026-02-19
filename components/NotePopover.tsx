@@ -4,17 +4,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { PushPinIcon, TrashIcon } from "@phosphor-icons/react";
 import type { NoteItem } from "@/lib/api/calendar-notes";
-
-const COLOR_CONFIG: Record<string, { accent: string; bg: string }> = {
-  red: { accent: "from-red-500 to-red-600", bg: "bg-red-100" },
-  orange: { accent: "from-orange-500 to-orange-600", bg: "bg-orange-100" },
-  amber: { accent: "from-amber-500 to-amber-600", bg: "bg-amber-100" },
-  emerald: { accent: "from-emerald-500 to-emerald-600", bg: "bg-emerald-100" },
-  teal: { accent: "from-teal-500 to-teal-600", bg: "bg-teal-100" },
-  blue: { accent: "from-blue-500 to-blue-600", bg: "bg-blue-100" },
-  violet: { accent: "from-violet-500 to-violet-600", bg: "bg-violet-100" },
-  pink: { accent: "from-pink-500 to-pink-600", bg: "bg-pink-100" },
-};
+import { getNotePopoverConfig } from "@/lib/note-colors";
 
 interface NotePopoverProps {
   note: NoteItem;
@@ -31,7 +21,7 @@ export function NotePopover({ note, children, onRemove }: NotePopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const config = COLOR_CONFIG[note.color] ?? COLOR_CONFIG.emerald;
+  const config = getNotePopoverConfig(note.color);
 
   const show = () => {
     if (hideTimeoutRef.current) {

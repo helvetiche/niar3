@@ -9,6 +9,7 @@ import {
 } from "@phosphor-icons/react";
 import { consolidateIfrFile } from "@/lib/api/consolidate-ifr";
 import { TemplateManager } from "@/components/TemplateManager";
+import { downloadBlob, getErrorMessage } from "@/lib/utils";
 
 const defaultOutputFileName = "DIVISION X CONSOLIDATED";
 const defaultDivision = "0";
@@ -51,17 +52,11 @@ export function ConsolidateIfrTool() {
         ia: ia.trim(),
       });
 
-      const blobUrl = URL.createObjectURL(result.blob);
-      const link = document.createElement("a");
       const ifrBaseName = fileName.trim() || defaultOutputFileName;
-      link.href = blobUrl;
-      link.download = ifrBaseName.endsWith(".xlsx")
+      const outputFilename = ifrBaseName.endsWith(".xlsx")
         ? ifrBaseName
         : `${ifrBaseName}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
+      downloadBlob(result.blob, outputFilename);
 
       const skippedMessage =
         result.skippedCount > 0
@@ -73,9 +68,7 @@ export function ConsolidateIfrTool() {
         `Success. Consolidated ${String(result.consolidatedCount)} file(s).${skippedMessage}`,
       );
     } catch (error) {
-      const text =
-        error instanceof Error ? error.message : "Failed to consolidate IFR.";
-      setMessage(text);
+      setMessage(getErrorMessage(error, "Failed to consolidate IFR."));
     } finally {
       setIsSubmitting(false);
     }

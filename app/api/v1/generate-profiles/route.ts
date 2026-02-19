@@ -9,93 +9,23 @@ import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
 import { buildConsolidatedWorkbook } from "@/lib/consolidation";
 import { mergeExcelBuffers } from "@/lib/merge-files";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
-import { validateUploads } from "@/lib/upload-limits";
+import { validateUploads, UPLOAD_LIMIT_PRESETS } from "@/lib/upload-limits";
+import {
+  sanitizeFolderName,
+  getBaseName,
+  getFileKey,
+  getUniqueFolderName,
+  detectDivisionAndIAFromFilename,
+  buildConsolidationFileName,
+  ensureXlsxExtension,
+  DEFAULT_MERGED_CONSOLIDATION_FILE_NAME,
+} from "@/lib/file-utils";
+import { HTTP_STATUS } from "@/constants/http-status";
+import { ERROR_MESSAGES } from "@/constants/error-messages";
+import { getErrorMessage } from "@/lib/utils";
 
-const sanitizeFolderName = (value: string): string =>
-  value
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const getFileBaseName = (fileName: string): string => {
-  const trimmed = fileName.trim();
-  const lastDot = trimmed.lastIndexOf(".");
-  if (lastDot <= 0) return trimmed;
-  return trimmed.slice(0, lastDot);
-};
-
-const getUniqueFolderName = (
-  rawName: string,
-  seenFolders: Map<string, number>,
-): string => {
-  const baseName = sanitizeFolderName(rawName) || "division";
-  const currentCount = seenFolders.get(baseName) ?? 0;
-  seenFolders.set(baseName, currentCount + 1);
-  if (currentCount === 0) return baseName;
-  return `${baseName} (${String(currentCount + 1)})`;
-};
-
-const getSourceFileKey = (file: File): string =>
-  `${file.name}::${String(file.size)}::${String(file.lastModified)}`;
-
-const detectDivisionAndIAFromFilename = (
-  fileName: string,
-): { division: string; ia: string } => {
-  const trimmedName = fileName.trim();
-  const lastDot = trimmedName.lastIndexOf(".");
-  const baseName = (lastDot > 0 ? trimmedName.slice(0, lastDot) : trimmedName)
-    .replace(/_/g, " ")
-    .trim();
-  const divisionMatch = /\bDIV\.?\s*([0-9]{1,2})\b/i.exec(baseName);
-  if (!divisionMatch) {
-    return { division: "0", ia: "IA" };
-  }
-
-  const division = String(Number.parseInt(divisionMatch[1], 10) || 0);
-  const matchStart = divisionMatch.index ?? 0;
-  const remainderStart = matchStart + divisionMatch[0].length;
-  let iaPart = baseName.slice(remainderStart).trim();
-  iaPart = iaPart.replace(/^[-:–—]+\s*/, "");
-  iaPart = iaPart.replace(/\s{2,}/g, " ");
-
-  return {
-    division: division || "0",
-    ia: iaPart || "IA",
-  };
-};
-
-const buildConsolidationFileName = (division: string, ia: string): string => {
-  const digits = division.replace(/[^0-9]/g, "");
-  const paddedDivision = digits ? digits.padStart(2, "0") : "00";
-  const iaName = ia.trim().toUpperCase() || "IA";
-  return `${paddedDivision} ${iaName} CONSOLIDATED`;
-};
-
-const defaultMergedConsolidationFileName = "ALL DIVISION CONSOLIDATED";
-const sourceUploadLimits = {
-  maxFileCount: 400,
-  maxFileSizeBytes: 100 * 1024 * 1024,
-  maxTotalSizeBytes: 5 * 1024 * 1024 * 1024,
-  allowedExtensions: [".xlsx", ".xls"],
-  allowedMimeSubstrings: ["sheet", "excel"],
-} as const;
-const templateUploadLimits = {
-  maxFileCount: 1,
-  maxFileSizeBytes: 100 * 1024 * 1024,
-  maxTotalSizeBytes: 100 * 1024 * 1024,
-  allowedExtensions: [".xlsx", ".xls"],
-  allowedMimeSubstrings: ["sheet", "excel"],
-} as const;
-const ensureXlsxExtension = (value: string): string => {
-  const cleaned = value
-    .replace(/[\\/:*?"<>|]/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
-  const baseName = cleaned || defaultMergedConsolidationFileName;
-  return baseName.toLowerCase().endsWith(".xlsx")
-    ? baseName
-    : `${baseName}.xlsx`;
-};
+const sourceUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_BATCH;
+const templateUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_SINGLE;
 
 const parseTextMap = (
   value: FormDataEntryValue | null,
@@ -133,7 +63,10 @@ export async function POST(request: Request) {
       httpStatus: 401,
       details: { reason: "unauthorized" },
     });
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { error: ERROR_MESSAGES.UNAUTHORIZED },
+      { status: HTTP_STATUS.UNAUTHORIZED },
+    );
   }
 
   try {
@@ -177,7 +110,7 @@ export async function POST(request: Request) {
       typeof mergedConsolidationFileNameRaw === "string" &&
       mergedConsolidationFileNameRaw.trim()
         ? mergedConsolidationFileNameRaw.trim()
-        : defaultMergedConsolidationFileName;
+        : DEFAULT_MERGED_CONSOLIDATION_FILE_NAME;
     const consolidationDivision =
       typeof consolidationDivisionRaw === "string"
         ? consolidationDivisionRaw.replace(/[^0-9]/g, "") || "0"
@@ -240,8 +173,8 @@ export async function POST(request: Request) {
         details: { reason: "no-source-files" },
       });
       return NextResponse.json(
-        { error: "No source Excel files uploaded" },
-        { status: 400 },
+        { error: ERROR_MESSAGES.NO_SOURCE_FILES },
+        { status: HTTP_STATUS.BAD_REQUEST },
       );
     }
     if (
@@ -259,11 +192,8 @@ export async function POST(request: Request) {
         details: { reason: "missing-template" },
       });
       return NextResponse.json(
-        {
-          error:
-            "Template is required. Upload a template or select a saved template.",
-        },
-        { status: 400 },
+        { error: ERROR_MESSAGES.MISSING_TEMPLATE },
+        { status: HTTP_STATUS.BAD_REQUEST },
       );
     }
     if (createConsolidation && !consolidationTemplateId) {
@@ -278,11 +208,8 @@ export async function POST(request: Request) {
         details: { reason: "missing-consolidation-template" },
       });
       return NextResponse.json(
-        {
-          error:
-            "Consolidation template is required when create consolidation is enabled.",
-        },
-        { status: 400 },
+        { error: ERROR_MESSAGES.MISSING_CONSOLIDATION_TEMPLATE },
+        { status: HTTP_STATUS.BAD_REQUEST },
       );
     }
 
@@ -326,8 +253,8 @@ export async function POST(request: Request) {
           },
         });
         return NextResponse.json(
-          { error: "Selected template not found" },
-          { status: 404 },
+          { error: ERROR_MESSAGES.TEMPLATE_NOT_FOUND },
+          { status: HTTP_STATUS.NOT_FOUND },
         );
       }
       templateBuffer = await downloadBufferFromStorage(
@@ -335,11 +262,8 @@ export async function POST(request: Request) {
       );
     } else {
       return NextResponse.json(
-        {
-          error:
-            "Template is required. Upload a template or select a saved template.",
-        },
-        { status: 400 },
+        { error: ERROR_MESSAGES.MISSING_TEMPLATE },
+        { status: HTTP_STATUS.BAD_REQUEST },
       );
     }
 
@@ -371,8 +295,8 @@ export async function POST(request: Request) {
           },
         });
         return NextResponse.json(
-          { error: "Selected consolidation template not found." },
-          { status: 404 },
+          { error: ERROR_MESSAGES.CONSOLIDATION_TEMPLATE_NOT_FOUND },
+          { status: HTTP_STATUS.NOT_FOUND },
         );
       }
       consolidationTemplateBuffer = await downloadBufferFromStorage(
@@ -393,8 +317,8 @@ export async function POST(request: Request) {
       }
 
       const divisionFolderName = getUniqueFolderName(
-        sourceFolderNames[getSourceFileKey(sourceFile)] ??
-          getFileBaseName(sourceFile.name),
+        sourceFolderNames[getFileKey(sourceFile)] ??
+          getBaseName(sourceFile.name),
         seenDivisionFolders,
       );
       const divisionFolder = zip.folder(divisionFolderName);
@@ -411,7 +335,7 @@ export async function POST(request: Request) {
         );
       }
 
-      const sourceFileKey = getSourceFileKey(sourceFile);
+      const sourceFileKey = getFileKey(sourceFile);
       const sourceDivision =
         sourceConsolidationDivisions[sourceFileKey] ??
         detectDivisionAndIAFromFilename(sourceFile.name).division ??
@@ -474,7 +398,7 @@ export async function POST(request: Request) {
           inputFiles: consolidatedFilesForMerge,
           fileName: mergedConsolidationFileName,
           excelPageNames: consolidatedFilesForMerge.map((item) =>
-            getFileBaseName(item.fileName),
+            getBaseName(item.fileName),
           ),
         });
         zip.file(outputName, buffer);
@@ -493,11 +417,8 @@ export async function POST(request: Request) {
         details: { reason: "no-lot-records-found" },
       });
       return NextResponse.json(
-        {
-          error:
-            "No lot records found in uploaded files. Check spreadsheet format and upload valid source files.",
-        },
-        { status: 400 },
+        { error: ERROR_MESSAGES.NO_LOT_RECORDS },
+        { status: HTTP_STATUS.BAD_REQUEST },
       );
     }
 
@@ -533,8 +454,10 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[api/generate-profiles POST]", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to generate profiles";
+    const message = getErrorMessage(
+      error,
+      ERROR_MESSAGES.FAILED_GENERATE_PROFILES,
+    );
     await logAuditTrailEntry({
       uid: result.user.uid,
       action: "generate-profiles.post",
@@ -542,12 +465,12 @@ export async function POST(request: Request) {
       route: "/api/v1/generate-profiles",
       method: "POST",
       request,
-      httpStatus: 500,
+      httpStatus: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       errorMessage: message,
     });
     return NextResponse.json(
-      { error: "Failed to generate profiles." },
-      { status: 500 },
+      { error: ERROR_MESSAGES.FAILED_GENERATE_PROFILES },
+      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
     );
   }
 }

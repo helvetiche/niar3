@@ -2,15 +2,20 @@
 
 export type NoteItem = { text: string; color: string };
 
+export type ApiErrorResponse = { error?: string };
+
+const parseApiError = async (res: Response): Promise<string> => {
+  const data = (await res.json().catch(() => ({}))) as ApiErrorResponse;
+  return data.error ?? "Unknown error";
+};
+
 export async function fetchCalendarNotes(): Promise<
   Record<string, NoteItem[]>
 > {
   const res = await fetch("/api/v1/calendar-notes", { credentials: "include" });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ?? "Failed to load notes",
-    );
+    const message = await parseApiError(res);
+    throw new Error(message || "Failed to load notes");
   }
   return res.json();
 }
@@ -26,9 +31,7 @@ export async function saveCalendarNotesForDate(
     body: JSON.stringify({ items }),
   });
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ?? "Failed to save notes",
-    );
+    const message = await parseApiError(res);
+    throw new Error(message || "Failed to save notes");
   }
 }

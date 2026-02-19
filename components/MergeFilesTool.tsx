@@ -15,6 +15,8 @@ import {
   type MergeMode,
   type PdfPageOrderItem,
 } from "@/lib/api/merge-files";
+import { getFileKey, getBaseName } from "@/lib/file-utils";
+import { downloadBlob, getErrorMessage } from "@/lib/utils";
 
 type PdfPageItem = PdfPageOrderItem & {
   id: string;
@@ -23,14 +25,6 @@ type PdfPageItem = PdfPageOrderItem & {
 
 const pdfDefaultName = "Merged PDF Document";
 const excelDefaultName = "Merged Excel Workbook";
-const getFileKey = (file: File): string =>
-  `${file.name}::${String(file.lastModified)}::${String(file.size)}`;
-const getBaseName = (fileName: string): string => {
-  const trimmed = fileName.trim();
-  const dotIndex = trimmed.lastIndexOf(".");
-  if (dotIndex <= 0) return trimmed;
-  return trimmed.slice(0, dotIndex);
-};
 
 const reorderItems = <T,>(
   items: T[],
@@ -144,12 +138,10 @@ export function MergeFilesTool() {
       setPdfPages(pages);
       setMessage("");
     } catch (error) {
-      const text =
-        error instanceof Error
-          ? error.message
-          : "Failed to read one or more PDF files.";
       setPdfPages([]);
-      setMessage(text);
+      setMessage(
+        getErrorMessage(error, "Failed to read one or more PDF files."),
+      );
     } finally {
       setIsPreparingPages(false);
     }
@@ -208,23 +200,14 @@ export function MergeFilesTool() {
             : undefined,
       });
 
-      const blobUrl = URL.createObjectURL(result.blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = result.fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
+      downloadBlob(result.blob, result.fileName);
 
       const outputTypeLabel = mode === "pdf" ? "pages" : "worksheets";
       setMessage(
         `Success. Merged ${String(result.mergedCount)} ${outputTypeLabel} into ${result.fileName}.`,
       );
     } catch (error) {
-      const text =
-        error instanceof Error ? error.message : "Failed to merge files.";
-      setMessage(text);
+      setMessage(getErrorMessage(error, "Failed to merge files."));
     } finally {
       setIsSubmitting(false);
     }
