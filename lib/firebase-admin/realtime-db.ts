@@ -1,5 +1,5 @@
 import "server-only";
-import { getDatabase, type Database } from "firebase-admin/database";
+import { getDatabaseWithUrl, type Database } from "firebase-admin/database";
 import { getFirebaseAdminApp } from "./app";
 
 let database: Database | null = null;
@@ -20,9 +20,9 @@ const getDefaultRealtimeDatabaseUrl = (): string => {
 
 export function getAdminRealtimeDatabase(): Database {
   if (database) return database;
-  database = getDatabase(
-    getFirebaseAdminApp(),
+  database = getDatabaseWithUrl(
     getDefaultRealtimeDatabaseUrl(),
+    getFirebaseAdminApp(),
   );
   return database;
 }
