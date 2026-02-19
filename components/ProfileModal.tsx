@@ -100,6 +100,7 @@ export function ProfileModal({
       onProfileChange(profile);
       toast.success("Profile saved successfully");
       handleClose();
+      window.location.reload();
     } catch {
       toast.error("Failed to save profile");
     }

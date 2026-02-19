@@ -89,6 +89,14 @@ export async function PUT(request: Request) {
   const profile = { first, middle, last, birthday };
   try {
     await setProfile(user.uid, profile);
+    
+    const displayName = [first, middle, last].filter(Boolean).join(" ");
+    if (displayName) {
+      const { getAdminAuth } = await import("@/lib/firebase-admin/app");
+      const auth = getAdminAuth();
+      await auth.updateUser(user.uid, { displayName });
+    }
+    
     await logAuditTrailEntry({
       uid: user.uid,
       action: "profile.put",

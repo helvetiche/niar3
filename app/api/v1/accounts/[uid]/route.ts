@@ -10,6 +10,7 @@ const updateAccountSchema = z.object({
   displayName: z.string().min(1).optional(),
   role: z.enum(["super-admin", "admin", "user"]).optional(),
   disabled: z.boolean().optional(),
+  permissions: z.array(z.string()).optional(),
 });
 
 export const PATCH = withApiAuth(
@@ -44,8 +45,15 @@ export const PATCH = withApiAuth(
         await auth.updateUser(uid, updates);
       }
 
-      if (validated.role !== undefined) {
-        await auth.setCustomUserClaims(uid, { role: validated.role });
+      if (validated.role !== undefined || validated.permissions !== undefined) {
+        const currentUser = await auth.getUser(uid);
+        const currentClaims = currentUser.customClaims || {};
+        
+        await auth.setCustomUserClaims(uid, {
+          ...currentClaims,
+          ...(validated.role !== undefined && { role: validated.role }),
+          ...(validated.permissions !== undefined && { permissions: validated.permissions }),
+        });
       }
 
       const updatedUser = await auth.getUser(uid);
@@ -56,6 +64,7 @@ export const PATCH = withApiAuth(
         displayName: updatedUser.displayName,
         role: updatedUser.customClaims?.role ?? "user",
         disabled: updatedUser.disabled,
+        permissions: updatedUser.customClaims?.permissions ?? [],
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

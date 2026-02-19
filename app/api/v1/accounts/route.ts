@@ -11,6 +11,7 @@ const createAccountSchema = z.object({
   password: z.string().min(8),
   displayName: z.string().min(1),
   role: z.enum(["super-admin", "admin", "user"]),
+  permissions: z.array(z.string()).optional(),
 });
 
 export const GET = withApiAuth(async (req, user) => {
@@ -36,6 +37,7 @@ export const GET = withApiAuth(async (req, user) => {
       role: u.customClaims?.role ?? "user",
       createdAt: u.metadata.creationTime,
       disabled: u.disabled,
+      permissions: u.customClaims?.permissions ?? [],
     }));
 
     const startIndex = (page - 1) * limit;
@@ -84,6 +86,7 @@ export const POST = withApiAuth(async (req, user) => {
 
     await auth.setCustomUserClaims(userRecord.uid, {
       role: validated.role,
+      permissions: validated.permissions || [],
     });
 
     return NextResponse.json(
@@ -92,6 +95,7 @@ export const POST = withApiAuth(async (req, user) => {
         email: userRecord.email,
         displayName: userRecord.displayName,
         role: validated.role,
+        permissions: validated.permissions || [],
       },
       { status: HTTP_STATUS.CREATED },
     );

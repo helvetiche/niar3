@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { fetchAccounts, deleteAccount, createAccount } from "@/lib/api/accounts";
-import type { AccountUser, UserRole } from "@/types/account";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { fetchAccounts, deleteAccount, createAccount, updateAccount } from "@/lib/api/accounts";
+import type { AccountUser } from "@/types/account";
 import {
   UserPlusIcon,
   PencilSimpleIcon,
@@ -17,12 +17,12 @@ import {
   CalendarIcon,
   GearIcon,
   CheckCircleIcon,
-  HouseIcon,
   FileTextIcon,
   StackIcon,
   ArrowsMergeIcon,
   MagnifyingGlassIcon,
   WrenchIcon,
+  ArrowClockwiseIcon,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { MasonryModal } from "./MasonryModal";
@@ -81,12 +81,6 @@ export function AccountManagement() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [editingAccount, setEditingAccount] = useState<AccountUser | null>(
-    null,
-  );
-  const [deletingAccount, setDeletingAccount] = useState<AccountUser | null>(
-    null,
-  );
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [firstName, setFirstName] = useState("");
@@ -99,6 +93,9 @@ export function AccountManagement() {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmCountdown, setConfirmCountdown] = useState(5);
   const [rolePreset, setRolePreset] = useState<"basic" | "advanced" | "custom">("custom");
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState<AccountUser | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const loadAccounts = useCallback(async (page: number) => {
     try {
@@ -123,11 +120,47 @@ export function AccountManagement() {
       setIsConfirmModalOpen(true);
       return;
     }
-    setSelectedTools((prev) =>
-      prev.includes(toolId)
-        ? prev.filter((id) => id !== toolId)
-        : [...prev, toolId],
-    );
+    
+    const newTools = selectedTools.includes(toolId)
+      ? selectedTools.filter((id) => id !== toolId)
+      : [...selectedTools, toolId];
+    
+    setSelectedTools(newTools);
+    updateRolePresetBasedOnTools(newTools);
+  };
+
+  const updateRolePresetBasedOnTools = (tools: string[]) => {
+    if (tools.length === 0) {
+      setRolePreset("custom");
+    } else if (tools.length === ALL_TOOLS.length) {
+      setRolePreset("advanced");
+    } else if (
+      tools.length === BASIC_TOOLS.length &&
+      BASIC_TOOLS.every((id) => tools.includes(id))
+    ) {
+      setRolePreset("basic");
+    } else {
+      setRolePreset("custom");
+    }
+  };
+
+  const handleRolePresetChange = (preset: "basic" | "advanced" | "custom") => {
+    setRolePreset(preset);
+    
+    if (preset === "basic") {
+      setSelectedTools(BASIC_TOOLS);
+    } else if (preset === "advanced") {
+      const hasAccountManager = selectedTools.includes("accounts");
+      if (!hasAccountManager) {
+        setConfirmCountdown(5);
+        setIsConfirmModalOpen(true);
+        setSelectedTools(ALL_TOOLS.filter((id) => id !== "accounts"));
+      } else {
+        setSelectedTools(ALL_TOOLS);
+      }
+    } else {
+      setSelectedTools([]);
+    }
   };
 
   const confirmAccountManagerAccess = () => {
@@ -171,8 +204,8 @@ export function AccountManagement() {
   };
 
   const handleAccountCreated = async () => {
-    if (!firstName || !lastName || !email || !password) {
-      toast.error("First name, last name, email, and password are required");
+    if (!firstName || !email || !password) {
+      toast.error("First name, email, and password are required");
       return;
     }
 
@@ -186,30 +219,63 @@ export function AccountManagement() {
       return;
     }
 
+    if (selectedTools.length === 0) {
+      toast.error("Please select at least one tool permission");
+      return;
+    }
+
     try {
       setIsCreating(true);
       const displayName = [firstName, middleName, lastName]
         .filter(Boolean)
         .join(" ");
-      await createAccount({
-        email,
-        password,
-        displayName,
-        role: "user",
-      });
-      toast.success("Account created successfully");
-      setFirstName("");
-      setMiddleName("");
-      setLastName("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
-      setSelectedTools([]);
+
+      if (editingAccountId) {
+        const optimisticUpdate = accounts.find((a) => a.uid === editingAccountId);
+        if (optimisticUpdate) {
+          setAccounts((prev) =>
+            prev.map((acc) =>
+              acc.uid === editingAccountId
+                ? { ...acc, displayName }
+                : acc
+            )
+          );
+        }
+
+        await updateAccount(editingAccountId, {
+          displayName,
+          role: "user",
+          disabled: false,
+          permissions: selectedTools,
+        });
+        
+        toast.success("Account updated successfully");
+        cancelEditing();
+      } else {
+        await createAccount({
+          email,
+          password,
+          displayName,
+          role: "user",
+          permissions: selectedTools,
+        });
+        toast.success("Account created successfully");
+        setFirstName("");
+        setMiddleName("");
+        setLastName("");
+        setEmail("");
+        setPassword("");
+        setConfirmPassword("");
+        setSelectedTools([]);
+        setRolePreset("custom");
+      }
+      
       await loadAccounts(1);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Server is broken";
       toast.error(message);
+      await loadAccounts(currentPage);
     } finally {
       setIsCreating(false);
     }
@@ -219,7 +285,34 @@ export function AccountManagement() {
     setAccounts((prev) =>
       prev.map((acc) => (acc.uid === updatedAccount.uid ? updatedAccount : acc)),
     );
-    setEditingAccount(null);
+    setEditingAccountId(null);
+  };
+
+  const startEditingAccount = (account: AccountUser) => {
+    const nameParts = account.displayName?.split(" ") || [];
+    setFirstName(nameParts[0] || "");
+    setMiddleName(nameParts.length > 2 ? nameParts.slice(1, -1).join(" ") : "");
+    setLastName(nameParts.length > 1 ? nameParts[nameParts.length - 1] : "");
+    setEmail(account.email);
+    setPassword("");
+    setConfirmPassword("");
+    setSelectedTools(account.permissions || []);
+    updateRolePresetBasedOnTools(account.permissions || []);
+    setEditingAccountId(account.uid);
+    
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const cancelEditing = () => {
+    setEditingAccountId(null);
+    setFirstName("");
+    setMiddleName("");
+    setLastName("");
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setSelectedTools([]);
+    setRolePreset("custom");
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -266,29 +359,43 @@ export function AccountManagement() {
   return (
     <div className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
       <div className="mb-6">
-        <h2 className="flex items-center gap-2 text-xl font-medium text-white">
-          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
-            <UsersThreeIcon size={18} className="text-white" />
-          </span>
-          Account Management
-        </h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
-            <ShieldCheckIcon size={12} className="text-white" />
-            Role Management
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
-            <UserPlusIcon size={12} className="text-white" />
-            Create Users
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
-            <LockKeyIcon size={12} className="text-white" />
-            Access Control
-          </span>
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <h2 className="flex items-center gap-2 text-xl font-medium text-white">
+              <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+                <UsersThreeIcon size={18} className="text-white" />
+              </span>
+              Account Management
+            </h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+                <ShieldCheckIcon size={12} className="text-white" />
+                Role Management
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+                <UserPlusIcon size={12} className="text-white" />
+                Create Users
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+                <LockKeyIcon size={12} className="text-white" />
+                Access Control
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-justify text-white/85">
+              Create, manage, and control user accounts across the system. Assign roles, manage permissions, and monitor account status. Super admins have full control over user access and can create accounts for employees with specific role assignments. This centralized management ensures secure access control and streamlined user administration for field teams across all divisions.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void loadAccounts(currentPage)}
+            disabled={loading}
+            className="ml-4 inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/20 bg-emerald-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Refresh accounts list"
+          >
+            <ArrowClockwiseIcon size={18} weight="duotone" className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
         </div>
-        <p className="mt-2 text-sm text-justify text-white/85">
-          Create, manage, and control user accounts across the system. Assign roles, manage permissions, and monitor account status. Super admins have full control over user access and can create accounts for employees with specific role assignments. This centralized management ensures secure access control and streamlined user administration for field teams across all divisions.
-        </p>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm">
@@ -324,8 +431,8 @@ export function AccountManagement() {
                 </th>
                 <th className="border-r border-white/10 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/70">
                   <div className="flex items-center gap-2">
-                    <CheckCircleIcon size={14} className="text-white/70" />
-                    Status
+                    <WrenchIcon size={14} className="text-white/70" />
+                    Permissions
                   </div>
                 </th>
                 <th className="border-r border-white/10 px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-white/70">
@@ -359,7 +466,7 @@ export function AccountManagement() {
                       <div className="h-6 w-20 rounded-full bg-white/10" />
                     </td>
                     <td className="border-r border-white/10 px-4 py-3">
-                      <div className="h-6 w-16 rounded-full bg-white/10" />
+                      <div className="h-6 w-full rounded bg-white/10" />
                     </td>
                     <td className="border-r border-white/10 px-4 py-3">
                       <div className="h-4 w-20 rounded bg-white/10" />
@@ -406,17 +513,33 @@ export function AccountManagement() {
                           {account.role}
                         </span>
                       </td>
-                      <td className="border-r border-white/10 px-4 py-3">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                            account.disabled
-                              ? "border-emerald-700/40 bg-emerald-900/20 text-emerald-400/60"
-                              : "border-emerald-600/40 bg-emerald-800/30 text-emerald-200"
-                          }`}
-                        >
-                          {account.disabled ? "Disabled" : "Active"}
-                        </span>
-                      </td>
+                    <td className="border-r border-white/10 px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {account.permissions && account.permissions.length > 0 ? (
+                          account.permissions.map((permId) => {
+                            const tool = AVAILABLE_TOOLS.find((t) => t.id === permId);
+                            if (!tool) return null;
+                            const Icon = tool.icon;
+                            return (
+                              <span
+                                key={permId}
+                                title={tool.description}
+                                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
+                                  tool.requiresConfirmation
+                                    ? "border-rose-500/40 bg-rose-800/30 text-rose-200"
+                                    : "border-emerald-600/40 bg-emerald-800/30 text-emerald-200"
+                                }`}
+                              >
+                                <Icon size={12} weight="fill" />
+                                {tool.name}
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-xs text-white/50">No permissions</span>
+                        )}
+                      </div>
+                    </td>
                       <td className="border-r border-white/10 px-4 py-3 text-sm text-white/70">
                         {new Date(account.createdAt).toLocaleDateString()}
                       </td>
@@ -424,7 +547,7 @@ export function AccountManagement() {
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
-                            onClick={() => setEditingAccount(account)}
+                            onClick={() => startEditingAccount(account)}
                             className="rounded-lg p-2 text-white/70 transition hover:bg-emerald-800/50 hover:text-white"
                             title="Edit account"
                           >
@@ -487,22 +610,24 @@ export function AccountManagement() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+      <div ref={formRef} className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
         <div className="mb-4">
           <h3 className="flex items-center gap-2 text-sm font-medium text-white">
             <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1">
               <UserPlusIcon size={14} className="text-white" />
             </span>
-            Create New Account
+            {editingAccountId ? "Edit Account" : "Create New Account"}
           </h3>
           <p className="mt-1 text-xs text-white/70">
-            Add a new user to the system and assign tool permissions
+            {editingAccountId
+              ? "Update user information and permissions"
+              : "Add a new user to the system and assign tool permissions"}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-medium text-white/80">
-              First Name
+              First Name <span className="text-rose-400">*</span>
             </label>
             <input
               type="text"
@@ -541,33 +666,38 @@ export function AccountManagement() {
           </div>
           <div>
             <label className="block text-xs font-medium text-white/80">
-              Email
+              Email <span className="text-rose-400">*</span>
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isCreating}
+              disabled={isCreating || !!editingAccountId}
               className="mt-1 w-full rounded-lg border border-white/20 bg-emerald-900/30 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               placeholder="user@example.com"
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-white/80">
-              Password
+              Password {!editingAccountId && <span className="text-rose-400">*</span>}
             </label>
+            {editingAccountId && (
+              <p className="mt-1 text-xs text-white/60">
+                Leave blank to keep current password
+              </p>
+            )}
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isCreating}
               className="mt-1 w-full rounded-lg border border-white/20 bg-emerald-900/30 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-              placeholder="Min 8 characters"
+              placeholder={editingAccountId ? "Leave blank to keep current" : "Min 8 characters"}
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-white/80">
-              Confirm Password
+              Confirm Password {!editingAccountId && <span className="text-rose-400">*</span>}
             </label>
             <input
               type="password"
@@ -575,8 +705,79 @@ export function AccountManagement() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={isCreating}
               className="mt-1 w-full rounded-lg border border-white/20 bg-emerald-900/30 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
-              placeholder="Confirm password"
+              placeholder={editingAccountId ? "Leave blank to keep current" : "Confirm password"}
             />
+          </div>
+
+          <div className="col-span-3">
+            <label className="block text-xs font-medium text-white/80">
+              Role Preset <span className="text-rose-400">*</span>
+            </label>
+            <p className="mt-1 text-xs text-white/60">
+              Choose a preset or customize tool access manually
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleRolePresetChange("basic")}
+                disabled={isCreating}
+                className={`flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  rolePreset === "basic"
+                    ? "border-emerald-500/60 bg-emerald-700/50 text-white"
+                    : "border-white/30 bg-white/5 text-white/70 hover:border-white/50 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <UserIcon size={24} weight={rolePreset === "basic" ? "fill" : "regular"} />
+                  <div className="text-center">
+                    <div className="font-semibold">Basic</div>
+                    <div className="mt-1 text-xs opacity-80">
+                      Standard tools only
+                    </div>
+                  </div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRolePresetChange("advanced")}
+                disabled={isCreating}
+                className={`flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  rolePreset === "advanced"
+                    ? "border-emerald-500/60 bg-emerald-700/50 text-white"
+                    : "border-white/30 bg-white/5 text-white/70 hover:border-white/50 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <ShieldCheckIcon size={24} weight={rolePreset === "advanced" ? "fill" : "regular"} />
+                  <div className="text-center">
+                    <div className="font-semibold">Advanced</div>
+                    <div className="mt-1 text-xs opacity-80">
+                      All tools & admin access
+                    </div>
+                  </div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRolePresetChange("custom")}
+                disabled={isCreating}
+                className={`flex-1 rounded-lg border px-4 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  rolePreset === "custom"
+                    ? "border-emerald-500/60 bg-emerald-700/50 text-white"
+                    : "border-white/30 bg-white/5 text-white/70 hover:border-white/50 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <WrenchIcon size={24} weight={rolePreset === "custom" ? "fill" : "regular"} />
+                  <div className="text-center">
+                    <div className="font-semibold">Custom</div>
+                    <div className="mt-1 text-xs opacity-80">
+                      Select tools manually
+                    </div>
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
           <div className="col-span-3">
             <div className="flex items-center justify-between">
@@ -642,7 +843,17 @@ export function AccountManagement() {
             </div>
           </div>
         </div>
-        <div className="mt-4 flex justify-end">
+        <div className="mt-4 flex justify-end gap-2">
+          {editingAccountId && (
+            <button
+              type="button"
+              onClick={cancelEditing}
+              disabled={isCreating}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -652,19 +863,10 @@ export function AccountManagement() {
             className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-emerald-800 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CheckCircleIcon size={18} weight="duotone" />
-            {isCreating ? "Creating..." : "Save Account"}
+            {isCreating ? "Saving..." : editingAccountId ? "Update Account" : "Save Account"}
           </button>
         </div>
       </div>
-
-      {editingAccount && (
-        <EditAccountModal
-          isOpen={true}
-          onClose={() => setEditingAccount(null)}
-          account={editingAccount}
-          onAccountUpdated={handleAccountUpdated}
-        />
-      )}
 
       <MasonryModal
         isOpen={!!deletingAccount}

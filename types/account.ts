@@ -7,6 +7,7 @@ export type AccountUser = {
   role: UserRole;
   createdAt: string;
   disabled: boolean;
+  permissions?: string[];
 };
 
 export type CreateAccountRequest = {
@@ -14,10 +15,12 @@ export type CreateAccountRequest = {
   password: string;
   displayName: string;
   role: UserRole;
+  permissions?: string[];
 };
 
 export type UpdateAccountRequest = {
   displayName?: string;
   role?: UserRole;
   disabled?: boolean;
+  permissions?: string[];
 };
