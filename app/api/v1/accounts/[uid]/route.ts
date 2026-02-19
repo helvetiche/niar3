@@ -76,7 +76,7 @@ export const PATCH = withApiAuth(
 
       console.error("Error updating account:", error);
       return NextResponse.json(
-        { error: "Server is broken" },
+        { error: "Something went wrong" },
         { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
       );
     }
@@ -102,7 +102,7 @@ export const DELETE = withApiAuth(
     } catch (error) {
       console.error("Error deleting account:", error);
       return NextResponse.json(
-        { error: "Server is broken" },
+        { error: "Something went wrong" },
         { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
       );
     }

@@ -20,7 +20,7 @@ export async function fetchAccounts(
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
     };
-    throw new Error(data.error ?? "Server is broken");
+    throw new Error(data.error ?? "Something went wrong");
   }
 
   return (await response.json()) as {
@@ -43,7 +43,7 @@ export async function createAccount(
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
     };
-    throw new Error(data.error ?? "Server is broken");
+    throw new Error(data.error ?? "Something went wrong");
   }
 
   return (await response.json()) as AccountUser;
@@ -64,7 +64,7 @@ export async function updateAccount(
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
     };
-    throw new Error(data.error ?? "Server is broken");
+    throw new Error(data.error ?? "Something went wrong");
   }
 
   return (await response.json()) as AccountUser;
@@ -80,6 +80,6 @@ export async function deleteAccount(uid: string): Promise<void> {
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
     };
-    throw new Error(data.error ?? "Server is broken");
+    throw new Error(data.error ?? "Something went wrong");
   }
 }

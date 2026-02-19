@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Error creating custom token:", error);
     return NextResponse.json(
-      { error: "Server is broken" },
+      { error: "Something went wrong" },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
     );
   }

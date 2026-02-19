@@ -106,7 +106,7 @@ export function AccountManagement() {
       setCurrentPage(data.pagination.page);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Server is broken";
+        error instanceof Error ? error.message : "Something went wrong";
       toast.error(message);
     } finally {
       setLoading(false);
@@ -195,7 +195,7 @@ export function AccountManagement() {
       await loadAccounts(currentPage);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Server is broken";
+        error instanceof Error ? error.message : "Something went wrong";
       toast.error(message);
       await loadAccounts(currentPage);
     } finally {
@@ -273,7 +273,7 @@ export function AccountManagement() {
       await loadAccounts(1);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Server is broken";
+        error instanceof Error ? error.message : "Something went wrong";
       toast.error(message);
       await loadAccounts(currentPage);
     } finally {
