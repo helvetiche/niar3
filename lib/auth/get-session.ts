@@ -20,10 +20,19 @@ export async function getSession(): Promise<
     const auth = getAdminAuth();
     const decoded = await auth.verifySessionCookie(token, true);
 
+    const userRecord = await auth.getUser(decoded.uid);
+
+    console.log("[DEBUG] Session decoded:", {
+      uid: decoded.uid,
+      email: decoded.email,
+      customClaims: userRecord.customClaims,
+    });
+
     const user: AuthUser = {
       uid: decoded.uid,
       email: decoded.email ?? null,
       emailVerified: decoded.email_verified ?? false,
+      customClaims: userRecord.customClaims,
     };
 
     return { user };

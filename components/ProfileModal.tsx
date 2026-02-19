@@ -11,6 +11,7 @@ import {
   UserIcon,
   CalendarBlankIcon,
   EnvelopeIcon,
+  CheckCircleIcon,
 } from "@phosphor-icons/react";
 import type { AuthUser } from "@/types/auth";
 import type { UserProfile } from "@/types/profile";
@@ -131,11 +132,28 @@ export function ProfileModal({
     >
       <div
         ref={panelRef}
-        className="absolute bottom-0 left-1/2 z-[201] w-full min-w-[280px] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-y-auto rounded-t-2xl bg-emerald-900 p-6 shadow-xl sm:max-w-2xl"
+        className="absolute bottom-0 left-1/2 z-[201] w-full min-w-[280px] max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-y-auto rounded-t-2xl border border-emerald-700/60 bg-emerald-900/95 p-6 shadow-xl backdrop-blur-md sm:max-w-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-6 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white">Profile settings</h3>
+          <div>
+            <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
+              <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+                <UserIcon size={18} weight="duotone" className="text-white" />
+              </span>
+              Profile Settings
+            </h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+                <UserIcon size={12} className="text-white" />
+                Personal Info
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+                <KeyIcon size={12} className="text-white" />
+                Security
+              </span>
+            </div>
+          </div>
           <button
             type="button"
             onClick={handleClose}
@@ -145,26 +163,26 @@ export function ProfileModal({
             <XIcon size={20} weight="bold" />
           </button>
         </div>
-        <p className="mb-6 text-sm text-emerald-200/90">
+        <p className="mb-6 text-justify text-sm text-white/85">
           Store your details here for quick access across tools. Some features
           will automatically fill forms and credentials based on the information
-          you provide.
+          you provide. Keep your profile updated for seamless workflow integration.
         </p>
 
         <div className="space-y-4">
-          <div>
-            <div className="mb-1 flex items-center gap-2">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+            <div className="mb-3 flex items-center gap-2">
               <UserIcon
                 size={16}
                 weight="duotone"
                 className="text-emerald-300"
               />
-              <label className="text-xs font-medium text-emerald-200/80">
-                Name
+              <label className="text-sm font-medium text-white">
+                Full Name
               </label>
             </div>
-            <p className="mb-1.5 text-xs text-white/60">
-              First, middle, and last name.
+            <p className="mb-3 text-xs text-white/70">
+              Enter your complete name as it appears on official documents.
             </p>
             <div className="flex gap-3">
               <div className="min-w-0 flex-1">
@@ -175,7 +193,7 @@ export function ProfileModal({
                     setProfile((p) => ({ ...p, first: e.target.value }))
                   }
                   placeholder="First"
-                  className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
+                  className="w-full rounded-lg border border-white/20 bg-emerald-900/30 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
                 />
               </div>
               <div className="min-w-0 flex-1">
@@ -186,7 +204,7 @@ export function ProfileModal({
                     setProfile((p) => ({ ...p, middle: e.target.value }))
                   }
                   placeholder="Middle"
-                  className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
+                  className="w-full rounded-lg border border-white/20 bg-emerald-900/30 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
                 />
               </div>
               <div className="min-w-0 flex-1">
@@ -197,24 +215,25 @@ export function ProfileModal({
                     setProfile((p) => ({ ...p, last: e.target.value }))
                   }
                   placeholder="Last"
-                  className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
+                  className="w-full rounded-lg border border-white/20 bg-emerald-900/30 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
                 />
               </div>
             </div>
           </div>
-          <div>
-            <div className="mb-1 flex items-center gap-2">
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+            <div className="mb-3 flex items-center gap-2">
               <CalendarBlankIcon
                 size={16}
                 weight="duotone"
                 className="text-emerald-300"
               />
-              <label className="text-xs font-medium text-emerald-200/80">
-                Birthday
+              <label className="text-sm font-medium text-white">
+                Date of Birth
               </label>
             </div>
-            <p className="mb-1.5 text-xs text-white/60">
-              Date of birth for records.
+            <p className="mb-3 text-xs text-white/70">
+              Your birthday for record keeping and age verification purposes.
             </p>
             <input
               type="date"
@@ -222,44 +241,46 @@ export function ProfileModal({
               onChange={(e) =>
                 setProfile((p) => ({ ...p, birthday: e.target.value }))
               }
-              className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 [color-scheme:dark]"
+              className="w-full rounded-lg border border-white/20 bg-emerald-900/30 px-3 py-2 text-sm text-white focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40 [color-scheme:dark]"
             />
           </div>
-          <div>
-            <div className="mb-1 flex items-center gap-2">
+
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+            <div className="mb-3 flex items-center gap-2">
               <EnvelopeIcon
                 size={16}
                 weight="duotone"
                 className="text-emerald-300"
               />
-              <label className="text-xs font-medium text-emerald-200/80">
-                Email
+              <label className="text-sm font-medium text-white">
+                Email Address
               </label>
             </div>
-            <p className="mb-1.5 text-xs text-white/60">
-              Your login email. Cannot be changed.
+            <p className="mb-3 text-xs text-white/70">
+              Your login email address. This cannot be changed for security reasons.
             </p>
             <input
               type="email"
               value={user.email ?? ""}
               readOnly
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70"
+              className="w-full rounded-lg border border-white/20 bg-emerald-900/20 px-3 py-2 text-sm text-white/70"
             />
           </div>
         </div>
 
-        <div className="mt-6 space-y-3 border-t border-emerald-800 pt-6">
-          <p className="mb-2 text-xs font-medium text-emerald-200/80">
-            Utilities
-          </p>
-          <div className="mb-1 text-xs text-white/60">
-            Receive a reset link at your email to set a new password.
+        <div className="mt-6 space-y-3 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+          <div className="mb-2 flex items-center gap-2">
+            <KeyIcon size={16} weight="duotone" className="text-emerald-300" />
+            <p className="text-sm font-medium text-white">Security Settings</p>
           </div>
+          <p className="text-xs text-white/70">
+            Receive a password reset link at your email to set a new password securely.
+          </p>
           <button
             type="button"
             onClick={handleChangePassword}
             disabled={changePasswordSent || !user.email}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/20 bg-emerald-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {changePasswordSent ? (
               <>
@@ -269,7 +290,7 @@ export function ProfileModal({
             ) : (
               <>
                 <KeyIcon size={18} weight="duotone" />
-                Change password (email send)
+                Send password reset email
               </>
             )}
           </button>
@@ -278,9 +299,10 @@ export function ProfileModal({
         <button
           type="button"
           onClick={handleSave}
-          className="mt-6 w-full rounded-lg bg-white py-2.5 text-sm font-semibold text-emerald-900 transition hover:bg-white/90"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-white py-2.5 text-sm font-semibold text-emerald-900 transition hover:bg-white/90"
         >
-          Save changes
+          <CheckCircleIcon size={18} weight="duotone" />
+          Save Changes
         </button>
       </div>
     </div>,

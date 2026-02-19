@@ -155,15 +155,24 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               setIsSubmitting(true);
               try {
                 const { getClientAuth } = await import("@/lib/firebase/config");
-                const { signInWithEmailAndPassword } =
+                const { signInWithEmailAndPassword, signOut } =
                   await import("firebase/auth");
                 const auth = getClientAuth();
+                
+                await signOut(auth);
+                
                 const cred = await signInWithEmailAndPassword(
                   auth,
                   email,
                   password,
                 );
-                const token = await cred.user.getIdToken();
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                const token = await cred.user.getIdToken(true);
+                
+                console.log("[DEBUG] Token obtained, sending to server");
+                
                 const res = await fetch("/api/v1/auth/session", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },

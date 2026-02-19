@@ -17,6 +17,7 @@ import {
   PencilSimpleIcon,
   SignOutIcon,
   XIcon,
+  UsersThreeIcon,
 } from "@phosphor-icons/react";
 import type { AuthUser } from "@/types/auth";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
@@ -85,6 +86,13 @@ const TOOLS = [
     description: "Scan and extract data from IFR documents automatically.",
     icon: MagnifyingGlassIcon,
   },
+  {
+    id: "accounts" as const,
+    name: "ACCOUNTS",
+    description: "Manage user accounts and permissions in the system.",
+    icon: UsersThreeIcon,
+    requiresSuperAdmin: true,
+  },
 ] as const;
 
 function getDisplayName(profile: UserProfile, email: string | null): string {
@@ -115,7 +123,12 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
   const { selectedTab, setSelectedTab } = useWorkspaceTab();
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -202,12 +215,17 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
     user.email?.[0] ||
     "U"
   ).toUpperCase();
+  const isSuperAdmin = user.customClaims?.role === "super-admin";
 
-  const filteredTools = TOOLS.filter(
-    (tool) =>
+  const filteredTools = TOOLS.filter((tool) => {
+    if ("requiresSuperAdmin" in tool && tool.requiresSuperAdmin && !isSuperAdmin) {
+      return false;
+    }
+    return (
       tool.name.toLowerCase().includes(search.toLowerCase()) ||
-      tool.description.toLowerCase().includes(search.toLowerCase()),
-  );
+      tool.description.toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   const effectiveCollapsed = collapsed && isDesktop;
   const navItems = effectiveCollapsed ? TOOLS : filteredTools;
@@ -504,6 +522,15 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
                     <p className="truncate text-xs text-emerald-200/80">
                       {user.email ?? "—"}
                     </p>
+                    {isMounted && (
+                      <p className="mt-0.5 truncate text-xs font-medium text-emerald-300/90">
+                        {isSuperAdmin
+                          ? "Super Admin"
+                          : user.customClaims?.role === "admin"
+                            ? "Admin"
+                            : "User"}
+                      </p>
+                    )}
                   </div>
                   <PencilSimpleIcon
                     size={18}

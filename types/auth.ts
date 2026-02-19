@@ -2,6 +2,7 @@ export interface AuthUser {
   uid: string;
   email: string | null;
   emailVerified: boolean;
+  customClaims?: Record<string, unknown>;
 }
 
 export type AuthResult =

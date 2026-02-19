@@ -9,6 +9,7 @@ import { LipaSummaryTool } from "@/components/LipaSummaryTool";
 import { WorkspaceHub } from "@/components/WorkspaceHub";
 import { TemplatesTool } from "@/components/TemplatesTool";
 import { WorkspaceToolPlaceholder } from "@/components/WorkspaceToolPlaceholder";
+import { AccountManagement } from "@/components/AccountManagement";
 import {
   useWorkspaceTab,
   type WorkspaceTab,
@@ -42,6 +43,10 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   "ifr-scanner": {
     name: "IFR SCANNER",
     description: "Scan and extract data from IFR documents automatically.",
+  },
+  accounts: {
+    name: "ACCOUNTS",
+    description: "Manage user accounts and permissions in the system.",
   },
 };
 
@@ -93,6 +98,8 @@ export default function WorkspacePage() {
             <ConsolidateIfrTool />
           ) : selectedTab === "merge-files" ? (
             <MergeFilesTool />
+          ) : selectedTab === "accounts" ? (
+            <AccountManagement />
           ) : (
             TOOL_CONTENT[selectedTab] && (
               <WorkspaceToolPlaceholder

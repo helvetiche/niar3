@@ -16,6 +16,7 @@ export const WORKSPACE_TABS = [
   "consolidate-ifr",
   "merge-files",
   "ifr-scanner",
+  "accounts",
 ] as const;
 export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
 

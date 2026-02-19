@@ -1,19 +1,18 @@
-/**
- * API Route auth pattern.
- *
- * Every API route must use withAuth from @/lib/auth.
- *
- * @example Require specific permission
- * import { withAuth } from '@/lib/auth'
- * import { PERMISSIONS } from '@/constants/permissions'
- *
- * export async function GET(request: Request) {
- *   const auth = await withAuth(request, PERMISSIONS.USERS_READ)
- *   if (auth instanceof Response) return auth
- *   const { user } = auth
- *   // ... handle request
- * }
- *
- * @example Require auth only (any logged-in user)
- * const auth = await withAuth(request)
- */
+import "server-only";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth/with-auth";
+import type { AuthUser } from "@/types/auth";
+
+type ApiHandler<T = unknown> = (
+  request: Request,
+  user: AuthUser,
+  context?: T,
+) => Promise<NextResponse>;
+
+export function withApiAuth<T = unknown>(handler: ApiHandler<T>) {
+  return async (request: Request, context?: T) => {
+    const auth = await withAuth(request);
+    if (auth instanceof NextResponse) return auth;
+    return handler(request, auth.user, context);
+  };
+}
