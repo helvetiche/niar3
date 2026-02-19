@@ -129,7 +129,9 @@ export async function PATCH(
     const fileRaw = formData.get("file");
 
     const nextName =
-      typeof nameRaw === "string" && nameRaw.trim() ? nameRaw.trim() : undefined;
+      typeof nameRaw === "string" && nameRaw.trim()
+        ? nameRaw.trim()
+        : undefined;
     const hasFile = fileRaw instanceof File;
 
     if (!nextName && !hasFile) {
@@ -173,7 +175,10 @@ export async function PATCH(
     );
 
     if (!saved) {
-      return NextResponse.json({ error: "Template not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Template not found" },
+        { status: 404 },
+      );
     }
 
     await logAuditTrailEntry({

@@ -171,15 +171,15 @@ export async function POST(request: Request) {
     await uploadBufferToStorage(storagePath, buffer, contentType);
     const saved = await createTemplateRecord(
       {
-      id,
-      name:
-        typeof customName === "string" && customName.trim()
-          ? customName.trim()
-          : file.name,
-      scope,
-      storagePath,
-      contentType,
-      sizeBytes: file.size,
+        id,
+        name:
+          typeof customName === "string" && customName.trim()
+            ? customName.trim()
+            : file.name,
+        scope,
+        storagePath,
+        contentType,
+        sizeBytes: file.size,
       },
       result.user.uid,
     );
@@ -212,6 +212,9 @@ export async function POST(request: Request) {
       httpStatus: 500,
       errorMessage: "Failed to save template",
     });
-    return NextResponse.json({ error: "Failed to save template" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to save template" },
+      { status: 500 },
+    );
   }
 }

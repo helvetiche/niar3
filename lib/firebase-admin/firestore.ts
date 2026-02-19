@@ -192,7 +192,10 @@ export async function updateTemplateRecord(
   if (typeof updates.contentType === "string" && updates.contentType.trim()) {
     payload.contentType = updates.contentType.trim();
   }
-  if (typeof updates.sizeBytes === "number" && Number.isFinite(updates.sizeBytes)) {
+  if (
+    typeof updates.sizeBytes === "number" &&
+    Number.isFinite(updates.sizeBytes)
+  ) {
     payload.sizeBytes = updates.sizeBytes;
   }
 
@@ -201,8 +204,6 @@ export async function updateTemplateRecord(
   return asStoredTemplate(next.id, next.data());
 }
 
-export async function deleteTemplateRecord(
-  templateId: string,
-): Promise<void> {
+export async function deleteTemplateRecord(templateId: string): Promise<void> {
   await templateCollection().doc(templateId).delete();
 }

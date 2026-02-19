@@ -148,8 +148,7 @@ export async function buildConsolidatedWorkbook(
 
     const rowLabel = String(targetRow);
 
-    const perFileIA =
-      extracted.accountDetails[0]?.nameOfIA?.trim() || iaValue;
+    const perFileIA = extracted.accountDetails[0]?.nameOfIA?.trim() || iaValue;
     const perFileDivision =
       extracted.accountDetails[0]?.division?.trim() || divisionValue;
 

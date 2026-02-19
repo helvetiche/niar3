@@ -115,7 +115,9 @@ export function WorkspaceLoadingScreen({
           <div className="h-4 overflow-hidden rounded-full bg-emerald-950/80 ring-2 ring-white/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
             <div
               className="h-full origin-left rounded-full bg-white shadow-[0_0_20px_rgba(255,255,255,0.5),0_0_40px_rgba(255,255,255,0.2)] transition-transform duration-75 ease-out"
-              style={{ transform: `scaleX(${Math.min(1, Math.max(0, progress / 100))})` }}
+              style={{
+                transform: `scaleX(${Math.min(1, Math.max(0, progress / 100))})`,
+              }}
             />
           </div>
         </div>

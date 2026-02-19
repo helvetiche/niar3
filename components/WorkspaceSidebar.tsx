@@ -160,8 +160,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   }, [selectedTab, isDesktop]);
 
   const toggleCollapsed = () => setCollapsed((c) => !c);
-  const handleToggleMobileMenu = () =>
-    setIsMobileMenuOpen((isOpen) => !isOpen);
+  const handleToggleMobileMenu = () => setIsMobileMenuOpen((isOpen) => !isOpen);
   const handleOpenLogoutModal = () => {
     setLogoutError("");
     setIsLogoutModalOpen(true);
@@ -265,7 +264,9 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
             type="button"
             onClick={toggleCollapsed}
             className="hidden shrink-0 rounded-lg p-2 transition hover:bg-emerald-800 lg:inline-flex"
-            aria-label={effectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={
+              effectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"
+            }
           >
             {effectiveCollapsed ? (
               <CaretRightIcon size={20} weight="bold" className="text-white" />
@@ -277,12 +278,18 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
             type="button"
             onClick={handleToggleMobileMenu}
             className="inline-flex shrink-0 rounded-lg p-2 transition hover:bg-emerald-800 lg:hidden"
-            aria-label={isMobileMenuOpen ? "Close workspace menu" : "Open workspace menu"}
+            aria-label={
+              isMobileMenuOpen ? "Close workspace menu" : "Open workspace menu"
+            }
           >
             {isMobileMenuOpen ? (
               <XIcon size={20} weight="bold" className="text-white" />
             ) : (
-              <ListBulletsIcon size={20} weight="duotone" className="text-white" />
+              <ListBulletsIcon
+                size={20}
+                weight="duotone"
+                className="text-white"
+              />
             )}
           </button>
         </div>
@@ -337,7 +344,10 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
         className={mobileBackdropClassName}
         onClick={() => setIsMobileMenuOpen(false)}
       />
-      <div className={mobileNavPanelClassName} aria-hidden={!showSidebarContent}>
+      <div
+        className={mobileNavPanelClassName}
+        aria-hidden={!showSidebarContent}
+      >
         <div className="min-h-0 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
           {!effectiveCollapsed && showSidebarContent && (
             <div className="flex items-center gap-2 border-b border-emerald-800 p-2 lg:hidden">
@@ -394,13 +404,19 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
                       <button
                         type="button"
                         onClick={() => setSelectedTab(item.id)}
-                        title={"description" in item ? item.description : undefined}
+                        title={
+                          "description" in item ? item.description : undefined
+                        }
                         className={`flex w-full flex-col items-center gap-2 rounded-lg p-3 transition hover:bg-emerald-800 ${
                           isActive ? "bg-emerald-800" : ""
                         }`}
                       >
                         <div className="flex shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-white p-2.5">
-                          <Icon size={24} weight="duotone" className="text-white" />
+                          <Icon
+                            size={24}
+                            weight="duotone"
+                            className="text-white"
+                          />
                         </div>
                         <p className="text-center text-xs font-medium text-white line-clamp-2">
                           {item.name}
@@ -462,7 +478,9 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
               type="button"
               onClick={() => setIsProfileOpen(true)}
               title={
-                effectiveCollapsed ? `${displayName} (${user.email ?? "—"})` : undefined
+                effectiveCollapsed
+                  ? `${displayName} (${user.email ?? "—"})`
+                  : undefined
               }
               className={`flex w-full items-center rounded-lg transition hover:bg-emerald-800 ${
                 effectiveCollapsed
@@ -515,7 +533,9 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
               </div>
               {!effectiveCollapsed && (
                 <div className="min-w-0 flex-1 overflow-hidden">
-                  <p className="truncate text-sm font-medium text-white">Logout</p>
+                  <p className="truncate text-sm font-medium text-white">
+                    Logout
+                  </p>
                   <p className="truncate text-xs text-emerald-200/80">
                     End current session safely
                   </p>

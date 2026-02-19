@@ -9,12 +9,16 @@ import { LipaSummaryTool } from "@/components/LipaSummaryTool";
 import { WorkspaceHub } from "@/components/WorkspaceHub";
 import { TemplatesTool } from "@/components/TemplatesTool";
 import { WorkspaceToolPlaceholder } from "@/components/WorkspaceToolPlaceholder";
-import { useWorkspaceTab, type WorkspaceTab } from "@/contexts/WorkspaceContext";
+import {
+  useWorkspaceTab,
+  type WorkspaceTab,
+} from "@/contexts/WorkspaceContext";
 
 const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   hub: {
     name: "HUB",
-    description: "Central workspace hub for quick access to all productivity tools.",
+    description:
+      "Central workspace hub for quick access to all productivity tools.",
   },
   "template-manager": {
     name: "TEMPLATE MANAGER",

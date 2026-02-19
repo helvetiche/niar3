@@ -95,7 +95,9 @@ export function TemplateManager({
       if (updateInputRef.current) updateInputRef.current.value = "";
       return;
     }
-    const selected = templates.find((template) => template.id === selectedTemplateId);
+    const selected = templates.find(
+      (template) => template.id === selectedTemplateId,
+    );
     setUpdateName(selected?.name ?? "");
   }, [selectedTemplateId, templates]);
 
@@ -176,9 +178,7 @@ export function TemplateManager({
       <section className="mt-6 rounded-xl border border-white/45 bg-white/15 p-4 shadow-lg shadow-black/10 backdrop-blur-md">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-medium text-white">
-              Template Manager
-            </h3>
+            <h3 className="text-sm font-medium text-white">Template Manager</h3>
             <p className="mt-1 text-xs text-white/80">
               {selectedTemplateId
                 ? "Saved template selected"

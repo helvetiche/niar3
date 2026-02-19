@@ -114,7 +114,10 @@ export async function POST(request: Request) {
 
     let templateBuffer: Buffer;
     if (template instanceof File) {
-      const templateValidation = validateUploads([template], templateUploadLimits);
+      const templateValidation = validateUploads(
+        [template],
+        templateUploadLimits,
+      );
       if (!templateValidation.ok) {
         await logAuditTrailEntry({
           uid: result.user.uid,
@@ -133,9 +136,7 @@ export async function POST(request: Request) {
       }
       templateBuffer = Buffer.from(await template.arrayBuffer());
     } else {
-      const savedTemplate = await getTemplateRecord(
-        String(templateId).trim(),
-      );
+      const savedTemplate = await getTemplateRecord(String(templateId).trim());
       if (!savedTemplate) {
         await logAuditTrailEntry({
           uid: result.user.uid,

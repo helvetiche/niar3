@@ -39,7 +39,9 @@ const hasAllowedType = (file: File, limits: UploadLimits): boolean => {
   const mimeAllowed =
     !allowedMimeSubstrings ||
     allowedMimeSubstrings.length === 0 ||
-    allowedMimeSubstrings.some((value) => file.type.toLowerCase().includes(value));
+    allowedMimeSubstrings.some((value) =>
+      file.type.toLowerCase().includes(value),
+    );
 
   if (
     (!allowedExtensions || allowedExtensions.length === 0) &&

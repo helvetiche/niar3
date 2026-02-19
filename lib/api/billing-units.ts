@@ -87,4 +87,3 @@ export const generateBillingUnitsZip = async (
 
   return response.blob();
 };
-

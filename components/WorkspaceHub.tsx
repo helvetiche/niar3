@@ -24,7 +24,10 @@ import {
   StackIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
-import { useWorkspaceTab, type WorkspaceTab } from "@/contexts/WorkspaceContext";
+import {
+  useWorkspaceTab,
+  type WorkspaceTab,
+} from "@/contexts/WorkspaceContext";
 
 type HubTag = {
   id: string;
@@ -157,8 +160,8 @@ export function WorkspaceHub() {
           </span>
         </div>
         <p className="mt-2 max-w-3xl text-sm text-white/85">
-          Choose a tool to start your workflow. Each option takes you directly to
-          the feature page with all controls ready so you can upload files,
+          Choose a tool to start your workflow. Each option takes you directly
+          to the feature page with all controls ready so you can upload files,
           configure inputs, and generate outputs faster.
         </p>
         <div className="mt-4 w-full max-w-md">
@@ -214,7 +217,11 @@ export function WorkspaceHub() {
                       key={tag.id}
                       className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm transition sm:gap-2 sm:px-4 sm:py-1.5 sm:text-sm group-hover:bg-white/30"
                     >
-                      <TagIcon size={13} weight="duotone" className="shrink-0" />
+                      <TagIcon
+                        size={13}
+                        weight="duotone"
+                        className="shrink-0"
+                      />
                       {tag.label}
                     </span>
                   );
