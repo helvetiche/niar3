@@ -81,3 +81,20 @@ export const ensureXlsxExtension = (
     ? baseName
     : `${baseName}.xlsx`;
 };
+
+/**
+ * Sanitize filename for Content-Disposition header to prevent header injection.
+ * Strips control chars, quotes, and other characters that could break the header.
+ */
+export const safeContentDispositionFilename = (
+  value: string,
+  fallback = "download",
+): string => {
+  const sanitized = value
+    .replace(/[\x00-\x1F\x7F"\\]/g, "-")
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+  return sanitized || fallback;
+};

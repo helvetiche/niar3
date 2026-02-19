@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { safeContentDispositionFilename } from "@/lib/file-utils";
 
 /**
  * Centralized security headers for all responses.
@@ -45,6 +46,32 @@ export function applySecurityHeaders<T extends Response>(
     });
   }
   return response;
+}
+
+/**
+ * Build a binary file response with security headers and safe Content-Disposition.
+ * Prevents header injection via filename.
+ */
+export function secureFileResponse(
+  buffer: Uint8Array | Buffer,
+  options: {
+    contentType: string;
+    filename: string;
+    extraHeaders?: Record<string, string>;
+  },
+): Response {
+  const safeFilename = safeContentDispositionFilename(
+    options.filename,
+    "download",
+  );
+  const response = new NextResponse(new Uint8Array(buffer), {
+    headers: {
+      "Content-Type": options.contentType,
+      "Content-Disposition": `attachment; filename="${safeFilename}"`,
+      ...options.extraHeaders,
+    },
+  });
+  return applySecurityHeaders(response);
 }
 
 /**

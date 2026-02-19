@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/get-session";
+import { withAuth } from "@/lib/auth";
+import {
+  applySecurityHeaders,
+  secureFileResponse,
+} from "@/lib/security-headers";
 import { mergeExcelBuffers, mergePdfBuffers } from "@/lib/merge-files";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 import { validateUploads } from "@/lib/upload-limits";
+import { withHeavyOperationRateLimit } from "@/lib/rate-limit/with-api-rate-limit";
+import { logger } from "@/lib/logger";
 
 type MergeMode = "pdf" | "excel";
 
@@ -31,7 +37,12 @@ const isMergeMode = (value: unknown): value is MergeMode =>
 const parsePageOrder = (value: FormDataEntryValue | null): PageOrderItem[] => {
   if (typeof value !== "string" || !value.trim()) return [];
 
-  const parsed = JSON.parse(value) as unknown;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error("Invalid PDF page order payload.");
+  }
   if (!Array.isArray(parsed)) {
     throw new Error("Invalid PDF page order payload.");
   }
@@ -67,7 +78,12 @@ const parsePageOrder = (value: FormDataEntryValue | null): PageOrderItem[] => {
 
 const parseExcelPageNames = (value: FormDataEntryValue | null): string[] => {
   if (typeof value !== "string" || !value.trim()) return [];
-  const parsed = JSON.parse(value) as unknown;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error("Invalid Excel page names payload.");
+  }
   if (!Array.isArray(parsed)) {
     throw new Error("Invalid Excel page names payload.");
   }
@@ -76,19 +92,23 @@ const parseExcelPageNames = (value: FormDataEntryValue | null): string[] => {
 };
 
 export async function POST(request: Request) {
-  const session = await getSession();
-  if (!session.user) {
+  const rateLimitResponse = await withHeavyOperationRateLimit(request);
+  if (rateLimitResponse) {
     await logAuditTrailEntry({
       action: "merge-files.post",
       status: "rejected",
       route: "/api/v1/merge-files",
       method: "POST",
       request,
-      httpStatus: 401,
-      details: { reason: "unauthorized" },
+      httpStatus: 429,
+      details: { reason: "rate-limited" },
     });
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return rateLimitResponse;
   }
+
+  const auth = await withAuth(request, { action: "merge-files.post" });
+  if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
 
   try {
     const formData = await request.formData();
@@ -100,7 +120,7 @@ export async function POST(request: Request) {
 
     if (!isMergeMode(modeValue)) {
       await logAuditTrailEntry({
-        uid: session.user.uid,
+        uid: user.uid,
         action: "merge-files.post",
         status: "rejected",
         route: "/api/v1/merge-files",
@@ -109,15 +129,17 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "invalid-mode", mode: modeValue },
       });
-      return NextResponse.json(
-        { error: "Invalid merge mode. Use pdf or excel." },
-        { status: 400 },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: "Invalid merge mode. Use pdf or excel." },
+          { status: 400 },
+        ),
       );
     }
 
     if (files.length < 2) {
       await logAuditTrailEntry({
-        uid: session.user.uid,
+        uid: user.uid,
         action: "merge-files.post",
         status: "rejected",
         route: "/api/v1/merge-files",
@@ -126,9 +148,11 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "insufficient-files", fileCount: files.length },
       });
-      return NextResponse.json(
-        { error: "Please upload at least two files to merge." },
-        { status: 400 },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: "Please upload at least two files to merge." },
+          { status: 400 },
+        ),
       );
     }
 
@@ -138,7 +162,7 @@ export async function POST(request: Request) {
     );
     if (!uploadValidation.ok) {
       await logAuditTrailEntry({
-        uid: session.user.uid,
+        uid: user.uid,
         action: "merge-files.post",
         status: "rejected",
         route: "/api/v1/merge-files",
@@ -147,9 +171,11 @@ export async function POST(request: Request) {
         httpStatus: uploadValidation.status,
         details: { reason: uploadValidation.reason, mode: modeValue },
       });
-      return NextResponse.json(
-        { error: uploadValidation.message },
-        { status: uploadValidation.status },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: uploadValidation.message },
+          { status: uploadValidation.status },
+        ),
       );
     }
 
@@ -171,7 +197,7 @@ export async function POST(request: Request) {
       });
 
       await logAuditTrailEntry({
-        uid: session.user.uid,
+        uid: user.uid,
         action: "merge-files.post",
         status: "success",
         route: "/api/v1/merge-files",
@@ -186,12 +212,10 @@ export async function POST(request: Request) {
         },
       });
 
-      return new NextResponse(new Uint8Array(buffer), {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="${outputName}"`,
-          "X-Merged-Count": String(mergedPageCount),
-        },
+      return secureFileResponse(buffer, {
+        contentType: "application/pdf",
+        filename: outputName,
+        extraHeaders: { "X-Merged-Count": String(mergedPageCount) },
       });
     }
 
@@ -204,7 +228,7 @@ export async function POST(request: Request) {
     });
 
     await logAuditTrailEntry({
-      uid: session.user.uid,
+      uid: user.uid,
       action: "merge-files.post",
       status: "success",
       route: "/api/v1/merge-files",
@@ -219,16 +243,14 @@ export async function POST(request: Request) {
       },
     });
 
-    return new NextResponse(new Uint8Array(buffer), {
-      headers: {
-        "Content-Type":
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="${outputName}"`,
-        "X-Merged-Count": String(mergedSheetCount),
-      },
+    return secureFileResponse(buffer, {
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: outputName,
+      extraHeaders: { "X-Merged-Count": String(mergedSheetCount) },
     });
   } catch (error) {
-    console.error("[api/merge-files POST]", error);
+    logger.error("[api/merge-files POST]", error);
     const message =
       error instanceof Error ? error.message : "Failed to merge files";
     const isClientSafeError =
@@ -236,7 +258,7 @@ export async function POST(request: Request) {
       message.includes("PDF page order") ||
       message.includes("Invalid Excel page names payload");
     await logAuditTrailEntry({
-      uid: session.user.uid,
+      uid: user.uid,
       action: "merge-files.post",
       status: "error",
       route: "/api/v1/merge-files",
@@ -245,9 +267,11 @@ export async function POST(request: Request) {
       httpStatus: 500,
       errorMessage: message,
     });
-    return NextResponse.json(
-      { error: isClientSafeError ? message : "Failed to merge files." },
-      { status: 500 },
+    return applySecurityHeaders(
+      NextResponse.json(
+        { error: isClientSafeError ? message : "Failed to merge files." },
+        { status: 500 },
+      ),
     );
   }
 }

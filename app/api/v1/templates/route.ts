@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/get-session";
+import { withAuth } from "@/lib/auth";
+import { applySecurityHeaders } from "@/lib/security-headers";
 import {
   createTemplateRecord,
   listTemplates,
@@ -9,6 +10,7 @@ import {
 import { uploadBufferToStorage } from "@/lib/firebase-admin/storage";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 import { validateUploads } from "@/lib/upload-limits";
+import { logger } from "@/lib/logger";
 
 const isScope = (value: unknown): value is TemplateScope =>
   value === "ifr-scanner" || value === "consolidate-ifr";
@@ -24,25 +26,15 @@ const templateUploadLimits = {
 } as const;
 
 export async function GET(request: Request) {
-  const result = await getSession();
-  if (!result.user) {
-    await logAuditTrailEntry({
-      action: "templates.get",
-      status: "rejected",
-      route: "/api/v1/templates",
-      method: "GET",
-      request,
-      httpStatus: 401,
-      details: { reason: "unauthorized" },
-    });
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await withAuth(request, { action: "templates.get" });
+  if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
 
   const url = new URL(request.url);
   const scopeRaw = url.searchParams.get("scope");
   if (scopeRaw && !isScope(scopeRaw)) {
     await logAuditTrailEntry({
-      uid: result.user.uid,
+      uid: user.uid,
       action: "templates.get",
       status: "rejected",
       route: "/api/v1/templates",
@@ -51,14 +43,16 @@ export async function GET(request: Request) {
       httpStatus: 400,
       details: { reason: "invalid-scope", scope: scopeRaw },
     });
-    return NextResponse.json({ error: "Invalid scope" }, { status: 400 });
+    return applySecurityHeaders(
+      NextResponse.json({ error: "Invalid scope" }, { status: 400 }),
+    );
   }
   const scope = isScope(scopeRaw) ? scopeRaw : undefined;
 
   try {
     const templates = await listTemplates(scope);
     await logAuditTrailEntry({
-      uid: result.user.uid,
+      uid: user.uid,
       action: "templates.get",
       status: "success",
       route: "/api/v1/templates",
@@ -67,11 +61,11 @@ export async function GET(request: Request) {
       httpStatus: 200,
       details: { scope: scope ?? null, templateCount: templates.length },
     });
-    return NextResponse.json({ templates });
+    return applySecurityHeaders(NextResponse.json({ templates }));
   } catch (error) {
-    console.error("[api/templates GET]", error);
+    logger.error("[api/templates GET]", error);
     await logAuditTrailEntry({
-      uid: result.user.uid,
+      uid: user.uid,
       action: "templates.get",
       status: "error",
       route: "/api/v1/templates",
@@ -80,27 +74,19 @@ export async function GET(request: Request) {
       httpStatus: 500,
       errorMessage: "Failed to list templates",
     });
-    return NextResponse.json(
-      { error: "Failed to list templates" },
-      { status: 500 },
+    return applySecurityHeaders(
+      NextResponse.json(
+        { error: "Failed to list templates" },
+        { status: 500 },
+      ),
     );
   }
 }
 
 export async function POST(request: Request) {
-  const result = await getSession();
-  if (!result.user) {
-    await logAuditTrailEntry({
-      action: "templates.post",
-      status: "rejected",
-      route: "/api/v1/templates",
-      method: "POST",
-      request,
-      httpStatus: 401,
-      details: { reason: "unauthorized" },
-    });
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await withAuth(request, { action: "templates.post" });
+  if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
 
   try {
     const formData = await request.formData();
@@ -110,7 +96,7 @@ export async function POST(request: Request) {
 
     if (!(file instanceof File)) {
       await logAuditTrailEntry({
-        uid: result.user.uid,
+        uid: user.uid,
         action: "templates.post",
         status: "rejected",
         route: "/api/v1/templates",
@@ -119,16 +105,18 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "missing-file" },
       });
-      return NextResponse.json(
-        { error: "Template file is required" },
-        { status: 400 },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: "Template file is required" },
+          { status: 400 },
+        ),
       );
     }
 
     const uploadValidation = validateUploads([file], templateUploadLimits);
     if (!uploadValidation.ok) {
       await logAuditTrailEntry({
-        uid: result.user.uid,
+        uid: user.uid,
         action: "templates.post",
         status: "rejected",
         route: "/api/v1/templates",
@@ -137,14 +125,16 @@ export async function POST(request: Request) {
         httpStatus: uploadValidation.status,
         details: { reason: uploadValidation.reason },
       });
-      return NextResponse.json(
-        { error: uploadValidation.message },
-        { status: uploadValidation.status },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: uploadValidation.message },
+          { status: uploadValidation.status },
+        ),
       );
     }
     if (!isScope(scope)) {
       await logAuditTrailEntry({
-        uid: result.user.uid,
+        uid: user.uid,
         action: "templates.post",
         status: "rejected",
         route: "/api/v1/templates",
@@ -153,9 +143,11 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "invalid-scope", scope },
       });
-      return NextResponse.json(
-        { error: "Invalid template scope" },
-        { status: 400 },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: "Invalid template scope" },
+          { status: 400 },
+        ),
       );
     }
 
@@ -181,11 +173,11 @@ export async function POST(request: Request) {
         contentType,
         sizeBytes: file.size,
       },
-      result.user.uid,
+      user.uid,
     );
 
     await logAuditTrailEntry({
-      uid: result.user.uid,
+      uid: user.uid,
       action: "templates.post",
       status: "success",
       route: "/api/v1/templates",
@@ -199,11 +191,13 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(saved, { status: 201 });
+    return applySecurityHeaders(
+      NextResponse.json(saved, { status: 201 }),
+    );
   } catch (error) {
-    console.error("[api/templates POST]", error);
+    logger.error("[api/templates POST]", error);
     await logAuditTrailEntry({
-      uid: result.user.uid,
+      uid: user.uid,
       action: "templates.post",
       status: "error",
       route: "/api/v1/templates",
@@ -212,9 +206,11 @@ export async function POST(request: Request) {
       httpStatus: 500,
       errorMessage: "Failed to save template",
     });
-    return NextResponse.json(
-      { error: "Failed to save template" },
-      { status: 500 },
+    return applySecurityHeaders(
+      NextResponse.json(
+        { error: "Failed to save template" },
+        { status: 500 },
+      ),
     );
   }
 }

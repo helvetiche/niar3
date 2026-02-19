@@ -15,6 +15,7 @@ import {
 import type { AuthUser } from "@/types/auth";
 import type { UserProfile } from "@/types/profile";
 import { saveProfile } from "@/lib/api/profile";
+import { logger } from "@/lib/logger";
 
 export function ProfileModal({
   isOpen,
@@ -113,7 +114,7 @@ export function ProfileModal({
       setChangePasswordSent(true);
       toast.success("Password reset email sent—check your inbox");
     } catch (err) {
-      console.error(err);
+      logger.error(err);
     }
   };
 

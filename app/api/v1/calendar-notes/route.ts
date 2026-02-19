@@ -1,27 +1,20 @@
 import { NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/get-session";
+import { withAuth } from "@/lib/auth";
+import { applySecurityHeaders } from "@/lib/security-headers";
 import { getCalendarNotes } from "@/lib/firebase-admin/firestore";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { logger } from "@/lib/logger";
 
 /** GET /api/v1/calendar-notes - Get all calendar notes for current user */
 export async function GET(request: Request) {
-  const result = await getSession();
-  if (!result.user) {
-    await logAuditTrailEntry({
-      action: "calendar-notes.get",
-      status: "rejected",
-      route: "/api/v1/calendar-notes",
-      method: "GET",
-      request,
-      httpStatus: 401,
-      details: { reason: "unauthorized" },
-    });
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await withAuth(request, { action: "calendar-notes.get" });
+  if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
+
   try {
-    const notes = await getCalendarNotes(result.user.uid);
+    const notes = await getCalendarNotes(user.uid);
     await logAuditTrailEntry({
-      uid: result.user.uid,
+      uid: user.uid,
       action: "calendar-notes.get",
       status: "success",
       route: "/api/v1/calendar-notes",
@@ -30,11 +23,11 @@ export async function GET(request: Request) {
       httpStatus: 200,
       details: { dateCount: Object.keys(notes).length },
     });
-    return NextResponse.json(notes);
+    return applySecurityHeaders(NextResponse.json(notes));
   } catch (err) {
-    console.error("[api/calendar-notes GET]", err);
+    logger.error("[api/calendar-notes GET]", err);
     await logAuditTrailEntry({
-      uid: result.user.uid,
+      uid: user.uid,
       action: "calendar-notes.get",
       status: "error",
       route: "/api/v1/calendar-notes",
@@ -43,9 +36,11 @@ export async function GET(request: Request) {
       httpStatus: 500,
       errorMessage: "Failed to load notes",
     });
-    return NextResponse.json(
-      { error: "Failed to load notes" },
-      { status: 500 },
+    return applySecurityHeaders(
+      NextResponse.json(
+        { error: "Failed to load notes" },
+        { status: 500 },
+      ),
     );
   }
 }

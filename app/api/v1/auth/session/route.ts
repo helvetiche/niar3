@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { getAdminAuth } from "@/lib/firebase-admin/app";
+import { applySecurityHeaders } from "@/lib/security-headers";
 import {
   authRateLimit,
   getClientIdentifier,
   isRateLimitEnabled,
 } from "@/lib/rate-limit";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { logger } from "@/lib/logger";
 
 const SESSION_COOKIE = "__session";
 const MAX_AGE = 60 * 60 * 24 * 5; // 5 days
@@ -32,9 +34,11 @@ export async function POST(request: Request) {
         httpStatus: 429,
         details: { reason: "rate-limited" },
       });
-      return NextResponse.json(
-        { error: "Too many requests. Try again later." },
-        { status: 429 },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: "Too many requests. Try again later." },
+          { status: 429 },
+        ),
       );
     }
   }
@@ -52,7 +56,9 @@ export async function POST(request: Request) {
       httpStatus: 400,
       details: { reason: "invalid-json-body" },
     });
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    return applySecurityHeaders(
+      NextResponse.json({ error: "Invalid JSON body" }, { status: 400 }),
+    );
   }
 
   const token = typeof body.token === "string" ? body.token.trim() : null;
@@ -66,7 +72,9 @@ export async function POST(request: Request) {
       httpStatus: 400,
       details: { reason: "missing-token" },
     });
-    return NextResponse.json({ error: "Token is required" }, { status: 400 });
+    return applySecurityHeaders(
+      NextResponse.json({ error: "Token is required" }, { status: 400 }),
+    );
   }
 
   try {
@@ -95,7 +103,9 @@ export async function POST(request: Request) {
       httpStatus: 200,
     });
 
-    return NextResponse.json({ ok: true, uid: decoded.uid });
+    return applySecurityHeaders(
+      NextResponse.json({ ok: true, uid: decoded.uid }),
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (
@@ -113,12 +123,14 @@ export async function POST(request: Request) {
         errorMessage: message,
         details: { reason: "invalid-or-expired-token" },
       });
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: "Invalid or expired token" },
+          { status: 401 },
+        ),
       );
     }
-    console.error("[auth/session]", err);
+    logger.error("[auth/session]", err);
     await logAuditTrailEntry({
       action: "auth.session.post",
       status: "error",
@@ -128,9 +140,11 @@ export async function POST(request: Request) {
       httpStatus: 500,
       errorMessage: message,
     });
-    return NextResponse.json(
-      { error: "Authentication failed" },
-      { status: 500 },
+    return applySecurityHeaders(
+      NextResponse.json(
+        { error: "Authentication failed" },
+        { status: 500 },
+      ),
     );
   }
 }
@@ -166,10 +180,10 @@ export async function DELETE(request: Request) {
       request,
       httpStatus: 200,
     });
-    return NextResponse.json({ ok: true });
+    return applySecurityHeaders(NextResponse.json({ ok: true }));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[auth/session DELETE]", err);
+    logger.error("[auth/session DELETE]", err);
     await logAuditTrailEntry({
       action: "auth.session.delete",
       status: "error",
@@ -179,6 +193,8 @@ export async function DELETE(request: Request) {
       httpStatus: 500,
       errorMessage: message,
     });
-    return NextResponse.json({ error: "Failed to logout" }, { status: 500 });
+    return applySecurityHeaders(
+      NextResponse.json({ error: "Failed to logout" }, { status: 500 }),
+    );
   }
 }

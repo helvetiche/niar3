@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/get-session";
+import { applySecurityHeaders } from "@/lib/security-headers";
 import {
   deleteTemplateRecord,
   getTemplateRecord,
@@ -10,6 +11,7 @@ import {
   uploadBufferToStorage,
 } from "@/lib/firebase-admin/storage";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { logger } from "@/lib/logger";
 
 export async function DELETE(
   request: Request,
@@ -26,7 +28,9 @@ export async function DELETE(
       httpStatus: 401,
       details: { reason: "unauthorized" },
     });
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return applySecurityHeaders(
+      NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    );
   }
 
   const params = await context.params;
@@ -45,9 +49,27 @@ export async function DELETE(
         httpStatus: 404,
         details: { reason: "template-not-found", templateId },
       });
-      return NextResponse.json(
-        { error: "Template not found" },
-        { status: 404 },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: "Template not found" },
+          { status: 404 },
+        ),
+      );
+    }
+
+    if (template.uploaderUid !== result.user.uid) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "templates.template-id.delete",
+        status: "rejected",
+        route: "/api/v1/templates/[templateId]",
+        method: "DELETE",
+        request,
+        httpStatus: 403,
+        details: { reason: "forbidden-not-owner", templateId },
+      });
+      return applySecurityHeaders(
+        NextResponse.json({ error: "Forbidden" }, { status: 403 }),
       );
     }
 
@@ -63,9 +85,9 @@ export async function DELETE(
       httpStatus: 200,
       details: { templateId, scope: template.scope },
     });
-    return NextResponse.json({ ok: true });
+    return applySecurityHeaders(NextResponse.json({ ok: true }));
   } catch (error) {
-    console.error("[api/templates/:id DELETE]", error);
+    logger.error("[api/templates/:id DELETE]", error);
     await logAuditTrailEntry({
       uid: result.user.uid,
       action: "templates.template-id.delete",
@@ -77,9 +99,11 @@ export async function DELETE(
       errorMessage: "Failed to delete template",
       details: { templateId },
     });
-    return NextResponse.json(
-      { error: "Failed to delete template" },
-      { status: 500 },
+    return applySecurityHeaders(
+      NextResponse.json(
+        { error: "Failed to delete template" },
+        { status: 500 },
+      ),
     );
   }
 }
@@ -99,7 +123,9 @@ export async function PATCH(
       httpStatus: 401,
       details: { reason: "unauthorized" },
     });
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return applySecurityHeaders(
+      NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    );
   }
 
   const params = await context.params;
@@ -118,9 +144,27 @@ export async function PATCH(
         httpStatus: 404,
         details: { reason: "template-not-found", templateId },
       });
-      return NextResponse.json(
-        { error: "Template not found" },
-        { status: 404 },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: "Template not found" },
+          { status: 404 },
+        ),
+      );
+    }
+
+    if (existing.uploaderUid !== result.user.uid) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "templates.template-id.patch",
+        status: "rejected",
+        route: "/api/v1/templates/[templateId]",
+        method: "PATCH",
+        request,
+        httpStatus: 403,
+        details: { reason: "forbidden-not-owner", templateId },
+      });
+      return applySecurityHeaders(
+        NextResponse.json({ error: "Forbidden" }, { status: 403 }),
       );
     }
 
@@ -145,9 +189,11 @@ export async function PATCH(
         httpStatus: 400,
         details: { reason: "no-updates", templateId },
       });
-      return NextResponse.json(
-        { error: "No template updates provided" },
-        { status: 400 },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: "No template updates provided" },
+          { status: 400 },
+        ),
       );
     }
 
@@ -175,9 +221,11 @@ export async function PATCH(
     );
 
     if (!saved) {
-      return NextResponse.json(
-        { error: "Template not found" },
-        { status: 404 },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: "Template not found" },
+          { status: 404 },
+        ),
       );
     }
 
@@ -196,9 +244,9 @@ export async function PATCH(
         replacedFile: hasFile,
       },
     });
-    return NextResponse.json(saved);
+    return applySecurityHeaders(NextResponse.json(saved));
   } catch (error) {
-    console.error("[api/templates/:id PATCH]", error);
+    logger.error("[api/templates/:id PATCH]", error);
     await logAuditTrailEntry({
       uid: result.user.uid,
       action: "templates.template-id.patch",
@@ -210,9 +258,11 @@ export async function PATCH(
       errorMessage: "Failed to update template",
       details: { templateId },
     });
-    return NextResponse.json(
-      { error: "Failed to update template" },
-      { status: 500 },
+    return applySecurityHeaders(
+      NextResponse.json(
+        { error: "Failed to update template" },
+        { status: 500 },
+      ),
     );
   }
 }

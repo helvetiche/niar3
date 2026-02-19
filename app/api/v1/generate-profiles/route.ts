@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import JSZip from "jszip";
-import { getSession } from "@/lib/auth/get-session";
+import {
+  applySecurityHeaders,
+  secureFileResponse,
+} from "@/lib/security-headers";
+import { withAuth } from "@/lib/auth";
 import { parseExcelFile } from "@/lib/excelParser";
 import { processMastersList } from "@/lib/mastersListProcessor";
 import { generateProfileBuffer } from "@/lib/profileGenerator";
@@ -23,6 +27,8 @@ import {
 import { HTTP_STATUS } from "@/constants/http-status";
 import { ERROR_MESSAGES } from "@/constants/error-messages";
 import { getErrorMessage } from "@/lib/utils";
+import { withHeavyOperationRateLimit } from "@/lib/rate-limit/with-api-rate-limit";
+import { logger } from "@/lib/logger";
 
 const sourceUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_BATCH;
 const templateUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_SINGLE;
@@ -52,22 +58,23 @@ const parseTextMap = (
 };
 
 export async function POST(request: Request) {
-  const result = await getSession();
-  if (!result.user) {
+  const rateLimitResponse = await withHeavyOperationRateLimit(request);
+  if (rateLimitResponse) {
     await logAuditTrailEntry({
       action: "generate-profiles.post",
       status: "rejected",
       route: "/api/v1/generate-profiles",
       method: "POST",
       request,
-      httpStatus: 401,
-      details: { reason: "unauthorized" },
+      httpStatus: 429,
+      details: { reason: "rate-limited" },
     });
-    return NextResponse.json(
-      { error: ERROR_MESSAGES.UNAUTHORIZED },
-      { status: HTTP_STATUS.UNAUTHORIZED },
-    );
+    return rateLimitResponse;
   }
+
+  const auth = await withAuth(request, { action: "generate-profiles.post" });
+  if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
 
   try {
     const formData = await request.formData();
@@ -146,7 +153,7 @@ export async function POST(request: Request) {
     );
     if (!sourceUploadValidation.ok) {
       await logAuditTrailEntry({
-        uid: result.user.uid,
+        uid: user.uid,
         action: "generate-profiles.post",
         status: "rejected",
         route: "/api/v1/generate-profiles",
@@ -155,15 +162,17 @@ export async function POST(request: Request) {
         httpStatus: sourceUploadValidation.status,
         details: { reason: sourceUploadValidation.reason },
       });
-      return NextResponse.json(
-        { error: sourceUploadValidation.message },
-        { status: sourceUploadValidation.status },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: sourceUploadValidation.message },
+          { status: sourceUploadValidation.status },
+        ),
       );
     }
 
     if (sourceFiles.length === 0) {
       await logAuditTrailEntry({
-        uid: result.user.uid,
+        uid: user.uid,
         action: "generate-profiles.post",
         status: "rejected",
         route: "/api/v1/generate-profiles",
@@ -172,9 +181,11 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "no-source-files" },
       });
-      return NextResponse.json(
-        { error: ERROR_MESSAGES.NO_SOURCE_FILES },
-        { status: HTTP_STATUS.BAD_REQUEST },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: ERROR_MESSAGES.NO_SOURCE_FILES },
+          { status: HTTP_STATUS.BAD_REQUEST },
+        ),
       );
     }
     if (
@@ -182,7 +193,7 @@ export async function POST(request: Request) {
       !(typeof templateId === "string" && templateId.trim())
     ) {
       await logAuditTrailEntry({
-        uid: result.user.uid,
+        uid: user.uid,
         action: "generate-profiles.post",
         status: "rejected",
         route: "/api/v1/generate-profiles",
@@ -191,14 +202,16 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "missing-template" },
       });
-      return NextResponse.json(
-        { error: ERROR_MESSAGES.MISSING_TEMPLATE },
-        { status: HTTP_STATUS.BAD_REQUEST },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: ERROR_MESSAGES.MISSING_TEMPLATE },
+          { status: HTTP_STATUS.BAD_REQUEST },
+        ),
       );
     }
     if (createConsolidation && !consolidationTemplateId) {
       await logAuditTrailEntry({
-        uid: result.user.uid,
+        uid: user.uid,
         action: "generate-profiles.post",
         status: "rejected",
         route: "/api/v1/generate-profiles",
@@ -207,9 +220,11 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "missing-consolidation-template" },
       });
-      return NextResponse.json(
-        { error: ERROR_MESSAGES.MISSING_CONSOLIDATION_TEMPLATE },
-        { status: HTTP_STATUS.BAD_REQUEST },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: ERROR_MESSAGES.MISSING_CONSOLIDATION_TEMPLATE },
+          { status: HTTP_STATUS.BAD_REQUEST },
+        ),
       );
     }
 
@@ -221,7 +236,7 @@ export async function POST(request: Request) {
       );
       if (!templateValidation.ok) {
         await logAuditTrailEntry({
-          uid: result.user.uid,
+          uid: user.uid,
           action: "generate-profiles.post",
           status: "rejected",
           route: "/api/v1/generate-profiles",
@@ -230,9 +245,11 @@ export async function POST(request: Request) {
           httpStatus: templateValidation.status,
           details: { reason: templateValidation.reason },
         });
-        return NextResponse.json(
-          { error: templateValidation.message },
-          { status: templateValidation.status },
+        return applySecurityHeaders(
+          NextResponse.json(
+            { error: templateValidation.message },
+            { status: templateValidation.status },
+          ),
         );
       }
       templateBuffer = Buffer.from(await template.arrayBuffer());
@@ -240,7 +257,7 @@ export async function POST(request: Request) {
       const savedTemplate = await getTemplateRecord(templateId.trim());
       if (!savedTemplate) {
         await logAuditTrailEntry({
-          uid: result.user.uid,
+          uid: user.uid,
           action: "generate-profiles.post",
           status: "rejected",
           route: "/api/v1/generate-profiles",
@@ -252,18 +269,22 @@ export async function POST(request: Request) {
             templateId: templateId.trim(),
           },
         });
-        return NextResponse.json(
-          { error: ERROR_MESSAGES.TEMPLATE_NOT_FOUND },
-          { status: HTTP_STATUS.NOT_FOUND },
+        return applySecurityHeaders(
+          NextResponse.json(
+            { error: ERROR_MESSAGES.TEMPLATE_NOT_FOUND },
+            { status: HTTP_STATUS.NOT_FOUND },
+          ),
         );
       }
       templateBuffer = await downloadBufferFromStorage(
         savedTemplate.storagePath,
       );
     } else {
-      return NextResponse.json(
-        { error: ERROR_MESSAGES.MISSING_TEMPLATE },
-        { status: HTTP_STATUS.BAD_REQUEST },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: ERROR_MESSAGES.MISSING_TEMPLATE },
+          { status: HTTP_STATUS.BAD_REQUEST },
+        ),
       );
     }
 
@@ -282,7 +303,7 @@ export async function POST(request: Request) {
       );
       if (!consolidationTemplate) {
         await logAuditTrailEntry({
-          uid: result.user.uid,
+          uid: user.uid,
           action: "generate-profiles.post",
           status: "rejected",
           route: "/api/v1/generate-profiles",
@@ -294,9 +315,11 @@ export async function POST(request: Request) {
             consolidationTemplateId,
           },
         });
-        return NextResponse.json(
-          { error: ERROR_MESSAGES.CONSOLIDATION_TEMPLATE_NOT_FOUND },
-          { status: HTTP_STATUS.NOT_FOUND },
+        return applySecurityHeaders(
+          NextResponse.json(
+            { error: ERROR_MESSAGES.CONSOLIDATION_TEMPLATE_NOT_FOUND },
+            { status: HTTP_STATUS.NOT_FOUND },
+          ),
         );
       }
       consolidationTemplateBuffer = await downloadBufferFromStorage(
@@ -407,7 +430,7 @@ export async function POST(request: Request) {
 
     if (totalGeneratedProfiles === 0) {
       await logAuditTrailEntry({
-        uid: result.user.uid,
+        uid: user.uid,
         action: "generate-profiles.post",
         status: "rejected",
         route: "/api/v1/generate-profiles",
@@ -416,9 +439,11 @@ export async function POST(request: Request) {
         httpStatus: 400,
         details: { reason: "no-lot-records-found" },
       });
-      return NextResponse.json(
-        { error: ERROR_MESSAGES.NO_LOT_RECORDS },
-        { status: HTTP_STATUS.BAD_REQUEST },
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: ERROR_MESSAGES.NO_LOT_RECORDS },
+          { status: HTTP_STATUS.BAD_REQUEST },
+        ),
       );
     }
 
@@ -429,7 +454,7 @@ export async function POST(request: Request) {
     });
 
     await logAuditTrailEntry({
-      uid: result.user.uid,
+      uid: user.uid,
       action: "generate-profiles.post",
       status: "success",
       route: "/api/v1/generate-profiles",
@@ -446,20 +471,18 @@ export async function POST(request: Request) {
       },
     });
 
-    return new NextResponse(new Uint8Array(zipBuffer), {
-      headers: {
-        "Content-Type": "application/zip",
-        "Content-Disposition": 'attachment; filename="BILLING UNITS.zip"',
-      },
+    return secureFileResponse(zipBuffer, {
+      contentType: "application/zip",
+      filename: "BILLING UNITS.zip",
     });
   } catch (error) {
-    console.error("[api/generate-profiles POST]", error);
+    logger.error("[api/generate-profiles POST]", error);
     const message = getErrorMessage(
       error,
       ERROR_MESSAGES.FAILED_GENERATE_PROFILES,
     );
     await logAuditTrailEntry({
-      uid: result.user.uid,
+      uid: user.uid,
       action: "generate-profiles.post",
       status: "error",
       route: "/api/v1/generate-profiles",
@@ -468,9 +491,11 @@ export async function POST(request: Request) {
       httpStatus: HTTP_STATUS.INTERNAL_SERVER_ERROR,
       errorMessage: message,
     });
-    return NextResponse.json(
-      { error: ERROR_MESSAGES.FAILED_GENERATE_PROFILES },
-      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
+    return applySecurityHeaders(
+      NextResponse.json(
+        { error: ERROR_MESSAGES.FAILED_GENERATE_PROFILES },
+        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
+      ),
     );
   }
 }

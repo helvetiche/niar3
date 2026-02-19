@@ -52,19 +52,18 @@ export function TemplateManager({
       ) {
         onSelectedTemplateIdChange("");
         window.localStorage.removeItem(getTemplateStorageKey(scope));
-        return;
       }
 
-      if (!selectedTemplateId) {
+      const hasValidSelection = selectedTemplateId && items.some((t) => t.id === selectedTemplateId);
+      if (!hasValidSelection && items.length > 0) {
         const savedTemplateId = window.localStorage.getItem(
           getTemplateStorageKey(scope),
         );
-        if (
-          savedTemplateId &&
-          items.some((template) => template.id === savedTemplateId)
-        ) {
-          onSelectedTemplateIdChange(savedTemplateId);
-        }
+        const defaultId =
+          savedTemplateId && items.some((t) => t.id === savedTemplateId)
+            ? savedTemplateId
+            : items[0].id;
+        onSelectedTemplateIdChange(defaultId);
       }
     } catch (error) {
       setMessage(

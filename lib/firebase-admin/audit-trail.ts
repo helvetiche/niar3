@@ -1,5 +1,6 @@
 import "server-only";
 import { getAdminRealtimeDatabase } from "./realtime-db";
+import { logger } from "@/lib/logger";
 
 export type AuditTrailStatus = "success" | "error" | "rejected";
 
@@ -35,8 +36,25 @@ const MAX_STRING_LENGTH = 500;
 const MAX_ARRAY_LENGTH = 50;
 const MAX_OBJECT_KEYS = 50;
 const MAX_DEPTH = 3;
-let isAuditTrailDisabled = false;
-let hasReportedDisabledAuditTrail = false;
+const MAX_ERROR_MESSAGE_LENGTH = 200;
+
+/** Safe error message for audit logs. Strips paths, stack traces, tokens. */
+const sanitizeErrorMessage = (value: string): string => {
+  return value
+    .slice(0, MAX_ERROR_MESSAGE_LENGTH)
+    .replace(/\/[^\s]+\.[jt]sx?/g, "[redacted]")
+    .replace(/at\s+\S+/g, "")
+    .replace(/\b[A-Za-z0-9_-]{20,}\b/g, (m) =>
+      m.length > 32 ? "[redacted]" : m,
+    )
+    .replace(/\s{2,}/g, " ")
+    .trim();
+};
+
+const auditTrailState = {
+  isDisabled: false,
+  hasReportedDisabled: false,
+};
 
 const isAuditTrailConfigurationError = (error: unknown): boolean => {
   if (!(error instanceof Error)) return false;
@@ -44,7 +62,8 @@ const isAuditTrailConfigurationError = (error: unknown): boolean => {
   return (
     message.includes("can't determine firebase database url") ||
     message.includes("realtime database url is missing") ||
-    message.includes("firebase admin credentials missing")
+    message.includes("firebase admin credentials missing") ||
+    message.includes("contains undefined")
   );
 };
 
@@ -54,7 +73,7 @@ const truncateString = (value: string): string =>
     : value;
 
 const sanitizeValue = (value: unknown, depth = 0): unknown => {
-  if (value === null || value === undefined) return value;
+  if (value === null || value === undefined) return null;
 
   if (typeof value === "string") return truncateString(value);
   if (typeof value === "number" || typeof value === "boolean") {
@@ -67,7 +86,8 @@ const sanitizeValue = (value: unknown, depth = 0): unknown => {
   if (Array.isArray(value)) {
     return value
       .slice(0, MAX_ARRAY_LENGTH)
-      .map((item) => sanitizeValue(item, depth + 1));
+      .map((item) => sanitizeValue(item, depth + 1))
+      .filter((item) => item !== undefined);
   }
 
   if (typeof value === "object") {
@@ -75,12 +95,20 @@ const sanitizeValue = (value: unknown, depth = 0): unknown => {
       0,
       MAX_OBJECT_KEYS,
     );
-    return Object.fromEntries(
-      entries.map(([key, item]) => [key, sanitizeValue(item, depth + 1)]),
-    );
+    const filtered = entries
+      .map(([key, item]) => [key, sanitizeValue(item, depth + 1)])
+      .filter(([, item]) => item !== undefined) as [string, unknown][];
+    return Object.fromEntries(filtered);
   }
 
   return String(value);
+};
+
+/** Firebase Realtime DB rejects undefined. Strip undefined keys before write. */
+const omitUndefined = <T extends Record<string, unknown>>(obj: T): T => {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as T;
 };
 
 const resolveIpAddress = (request?: Request): string | null => {
@@ -97,7 +125,7 @@ const resolveIpAddress = (request?: Request): string | null => {
 export async function logAuditTrailEntry(
   input: LogAuditTrailInput,
 ): Promise<void> {
-  if (isAuditTrailDisabled) return;
+  if (auditTrailState.isDisabled) return;
 
   try {
     const db = getAdminRealtimeDatabase();
@@ -111,38 +139,41 @@ export async function logAuditTrailEntry(
     const collectionRef = db.ref(`audit_trails/${safeUid}`);
     const newEntryRef = collectionRef.push();
 
-    const payload: Omit<AuditTrailEntry, "id"> = {
+    const rawPayload: Record<string, unknown> = {
       uid: safeUid,
       action,
       status: input.status,
       route,
       method,
-      httpStatus: input.httpStatus,
-      errorMessage: input.errorMessage
-        ? truncateString(input.errorMessage)
-        : undefined,
-      details: input.details
-        ? (sanitizeValue(input.details) as Record<string, unknown>)
-        : undefined,
       ipAddress: resolveIpAddress(input.request),
       userAgent: userAgent ? truncateString(userAgent) : null,
       createdAt,
       createdAtIso: new Date(createdAt).toISOString(),
     };
+    if (input.httpStatus !== undefined) rawPayload.httpStatus = input.httpStatus;
+    if (input.errorMessage?.trim()) {
+      rawPayload.errorMessage = sanitizeErrorMessage(
+        truncateString(input.errorMessage),
+      );
+    }
+    if (input.details) {
+      rawPayload.details = sanitizeValue(input.details) as Record<string, unknown>;
+    }
 
+    const payload = omitUndefined(rawPayload);
     await newEntryRef.set(payload);
   } catch (error) {
     if (isAuditTrailConfigurationError(error)) {
-      isAuditTrailDisabled = true;
-      if (!hasReportedDisabledAuditTrail) {
-        hasReportedDisabledAuditTrail = true;
-        console.warn(
+      auditTrailState.isDisabled = true;
+      if (!auditTrailState.hasReportedDisabled) {
+        auditTrailState.hasReportedDisabled = true;
+        logger.warn(
           "[audit-trail] Disabled because Firebase Realtime Database is not configured correctly.",
         );
       }
       return;
     }
-    console.error("[audit-trail] Failed to write audit log", error);
+    logger.error("[audit-trail] Failed to write audit log", error);
   }
 }
 

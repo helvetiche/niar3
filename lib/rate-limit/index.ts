@@ -50,11 +50,32 @@ export const publicRateLimit = redis
     })
   : null;
 
+/**
+ * Stricter limit for heavy operations (merge, consolidate, generate-profiles, lipa-summary).
+ * 5 requests per minute per IP to prevent DoS.
+ */
+export const heavyOperationRateLimit = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, "1 m"),
+      analytics: true,
+      prefix: "rl:heavy",
+    })
+  : null;
+
+/**
+ * Returns a stable identifier for rate limiting.
+ * Trusts x-forwarded-for / x-real-ip set by the reverse proxy (e.g. Vercel).
+ * In production behind a proxy, the platform overwrites client-set headers.
+ * Sanitizes output to prevent Redis key injection (max 64 chars, alphanumeric + dots/hyphens).
+ */
 export function getClientIdentifier(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   const realIp = request.headers.get("x-real-ip");
-  const ip = forwarded?.split(",")[0]?.trim() ?? realIp ?? "anonymous";
-  return ip;
+  const raw =
+    forwarded?.split(",")[0]?.trim() ?? realIp?.trim() ?? "anonymous";
+  const sanitized = raw.replace(/[^a-zA-Z0-9.:\-]/g, "").slice(0, 64);
+  return sanitized || "anonymous";
 }
 
 export function isRateLimitEnabled(): boolean {

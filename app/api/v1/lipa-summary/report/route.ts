@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getSession } from "@/lib/auth/get-session";
+import { withAuth } from "@/lib/auth";
+import {
+  applySecurityHeaders,
+  secureFileResponse,
+} from "@/lib/security-headers";
 import { generateLipaReportWorkbook } from "@/lib/lipa-report-generator";
 import {
   buildLipaReportDataFromScannedFiles,
   type LipaScannedFile,
 } from "@/lib/lipa-summary";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { withHeavyOperationRateLimit } from "@/lib/rate-limit/with-api-rate-limit";
+import { logger } from "@/lib/logger";
 
 const scannedFileSchema = z.object({
   fileName: z.string().min(1),
@@ -32,19 +38,23 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const session = await getSession();
-  if (!session.user) {
+  const rateLimitResponse = await withHeavyOperationRateLimit(request);
+  if (rateLimitResponse) {
     await logAuditTrailEntry({
       action: "lipa-summary.report.post",
       status: "rejected",
       route: "/api/v1/lipa-summary/report",
       method: "POST",
       request,
-      httpStatus: 401,
-      details: { reason: "unauthorized" },
+      httpStatus: 429,
+      details: { reason: "rate-limited" },
     });
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return rateLimitResponse;
   }
+
+  const auth = await withAuth(request, { action: "lipa-summary.report.post" });
+  if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
 
   try {
     const raw = await request.json();
@@ -61,7 +71,7 @@ export async function POST(request: Request) {
     });
 
     await logAuditTrailEntry({
-      uid: session.user.uid,
+      uid: user.uid,
       action: "lipa-summary.report.post",
       status: "success",
       route: "/api/v1/lipa-summary/report",
@@ -77,11 +87,11 @@ export async function POST(request: Request) {
       },
     });
 
-    return new NextResponse(new Uint8Array(buffer), {
-      headers: {
-        "Content-Type":
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="${outputName}"`,
+    return secureFileResponse(buffer, {
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: outputName,
+      extraHeaders: {
         "X-Scanned-Files": String(data.scannedFiles),
         "X-Extracted-Associations": String(data.extractedAssociations),
         "X-Average-Confidence": String(data.averageConfidence),
@@ -89,14 +99,14 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("[api/lipa-summary/report POST]", error);
+    logger.error("[api/lipa-summary/report POST]", error);
     const message =
       error instanceof Error
         ? error.message
         : "Failed to build LIPA report output";
     const isValidationError = error instanceof z.ZodError;
     await logAuditTrailEntry({
-      uid: session.user.uid,
+      uid: user.uid,
       action: "lipa-summary.report.post",
       status: "error",
       route: "/api/v1/lipa-summary/report",
@@ -105,13 +115,15 @@ export async function POST(request: Request) {
       httpStatus: isValidationError ? 400 : 500,
       errorMessage: message,
     });
-    return NextResponse.json(
-      {
-        error: isValidationError
-          ? "Invalid report payload."
-          : "Failed to build LIPA report output.",
-      },
-      { status: isValidationError ? 400 : 500 },
+    return applySecurityHeaders(
+      NextResponse.json(
+        {
+          error: isValidationError
+            ? "Invalid report payload."
+            : "Failed to build LIPA report output.",
+        },
+        { status: isValidationError ? 400 : 500 },
+      ),
     );
   }
 }

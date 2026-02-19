@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 /**
  * Server-side env validation. Fails fast at startup if required vars are missing.
@@ -13,6 +14,7 @@ const serverSchema = z.object({
   FIREBASE_ADMIN_PROJECT_ID: z.string().optional(),
   FIREBASE_ADMIN_CLIENT_EMAIL: z.string().optional(),
   FIREBASE_ADMIN_PRIVATE_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().min(1).optional(),
 });
 
 /**
@@ -30,8 +32,8 @@ const clientSchema = z.object({
 function validateServerEnv() {
   const parsed = serverSchema.safeParse(process.env);
   if (!parsed.success) {
-    console.error("❌ Invalid server environment variables:");
-    console.error(parsed.error.flatten().fieldErrors);
+    logger.error("[env] Invalid server environment variables:");
+    logger.error(parsed.error.flatten().fieldErrors);
     throw new Error("Invalid server environment variables");
   }
   return parsed.data;
@@ -51,8 +53,8 @@ function validateClientEnv() {
     NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
   });
   if (!parsed.success) {
-    console.error("❌ Invalid client environment variables:");
-    console.error(parsed.error.flatten().fieldErrors);
+    logger.error("[env] Invalid client environment variables:");
+    logger.error(parsed.error.flatten().fieldErrors);
     throw new Error("Invalid client environment variables");
   }
   return parsed.data;
