@@ -10,15 +10,10 @@ export function RefreshSessionButton() {
   const refreshSession = async () => {
     if (isRefreshing) return;
 
-    try {
-      setIsRefreshing(true);
-      toast.loading("Refreshing session...", { id: "refresh" });
-      
-      window.location.reload();
-    } catch (error) {
-      toast.error("Server is broken", { id: "refresh" });
-      setIsRefreshing(false);
-    }
+    setIsRefreshing(true);
+    toast.loading("Refreshing session...", { id: "refresh" });
+    
+    window.location.reload();
   };
 
   return (

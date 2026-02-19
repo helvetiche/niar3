@@ -281,12 +281,7 @@ export function AccountManagement() {
     }
   };
 
-  const handleAccountUpdated = (updatedAccount: AccountUser) => {
-    setAccounts((prev) =>
-      prev.map((acc) => (acc.uid === updatedAccount.uid ? updatedAccount : acc)),
-    );
-    setEditingAccountId(null);
-  };
+
 
   const startEditingAccount = (account: AccountUser) => {
     const nameParts = account.displayName?.split(" ") || [];
