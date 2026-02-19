@@ -26,22 +26,20 @@ export function WorkspaceLoadingScreen({
   onComplete?: () => void;
   durationMs?: number;
 }) {
-  const getRandomQuote = () =>
-    QUOTES[Math.floor(Math.random() * QUOTES.length)] ?? QUOTES[0];
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const progressTweenRef = useRef<gsap.core.Tween | null>(null);
   const [progress, setProgress] = useState(0);
   const [isDone, setIsDone] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const [quote, setQuote] = useState(QUOTES[0] ?? "");
+  const [quote] = useState(
+    () => QUOTES[Math.floor(Math.random() * QUOTES.length)] ?? QUOTES[0],
+  );
 
   useEffect(() => {
-    setQuote(getRandomQuote());
-  }, []);
-
-  useEffect(() => {
-    setProgress(0);
-    setIsDone(false);
+    const timeoutId = setTimeout(() => {
+      setProgress(0);
+      setIsDone(false);
+    }, 0);
     const progressState = { value: 0 };
     progressTweenRef.current = gsap.to(progressState, {
       value: 100,
@@ -57,6 +55,7 @@ export function WorkspaceLoadingScreen({
     });
 
     return () => {
+      clearTimeout(timeoutId);
       progressTweenRef.current?.kill();
       progressTweenRef.current = null;
     };

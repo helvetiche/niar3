@@ -56,9 +56,14 @@ export default function WorkspacePage() {
 
     if (previousTabRef.current === selectedTab) return;
     previousTabRef.current = selectedTab;
-    setLoadingDurationMs(250);
-    setLoadingInstanceKey((previous) => previous + 1);
-    setIsLoadingVisible(true);
+
+    const timeoutId = setTimeout(() => {
+      setLoadingDurationMs(250);
+      setLoadingInstanceKey((prev) => prev + 1);
+      setIsLoadingVisible(true);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [selectedTab]);
 
   return (

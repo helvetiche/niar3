@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { gsap } from "gsap";
 
@@ -13,6 +13,14 @@ const handleKeyDown = (
   event.preventDefault();
   handleClose();
 };
+
+const ModalContentRenderer = ({
+  render,
+  onClose,
+}: {
+  render: (onClose: () => void) => React.ReactNode;
+  onClose: () => void;
+}) => render(onClose);
 
 interface MasonryModalProps {
   isOpen: boolean;
@@ -48,7 +56,8 @@ export function MasonryModal({
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setIsMounted(true);
+    const timeoutId = setTimeout(() => setIsMounted(true), 0);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
@@ -201,16 +210,32 @@ export function MasonryModal({
     });
   };
 
+  const handleCloseRef = useRef(handleClose);
   useEffect(() => {
-    const bound = (e: KeyboardEvent) => handleKeyDown(e, isOpen, handleClose);
+    handleCloseRef.current = handleClose;
+  });
+  const closeProp = useCallback(() => {
+    handleCloseRef.current();
+  }, []);
+
+  useEffect(() => {
+    const bound = (e: KeyboardEvent) =>
+      handleKeyDown(e, isOpen, () => handleCloseRef.current());
     window.addEventListener("keydown", bound);
     return () => window.removeEventListener("keydown", bound);
-  }, [isOpen, handleClose]);
+  }, [isOpen]);
 
   if (!isOpen || !isMounted) return null;
 
   const content =
-    typeof children === "function" ? children(handleClose) : children;
+    typeof children === "function" ? (
+      <ModalContentRenderer
+        render={(onClose) => children(onClose)}
+        onClose={closeProp}
+      />
+    ) : (
+      children
+    );
 
   return createPortal(
     <div
