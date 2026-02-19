@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  getCachedTemplates,
+  setCachedTemplates,
+  invalidateTemplateCache,
+} from "@/lib/services/template-cache";
+
 export type TemplateScope = "ifr-scanner" | "consolidate-ifr";
 
 export type StoredTemplate = {
@@ -18,6 +24,9 @@ export type StoredTemplate = {
 export async function listTemplates(
   scope: TemplateScope,
 ): Promise<StoredTemplate[]> {
+  const cached = getCachedTemplates(scope);
+  if (cached) return cached;
+
   const response = await fetch(`/api/v1/templates?scope=${scope}`, {
     credentials: "include",
   });
@@ -28,7 +37,10 @@ export async function listTemplates(
     );
   }
   const data = (await response.json()) as { templates?: StoredTemplate[] };
-  return data.templates ?? [];
+  const templates = data.templates ?? [];
+
+  setCachedTemplates(scope, templates);
+  return templates;
 }
 
 export async function uploadTemplate(
@@ -54,6 +66,8 @@ export async function uploadTemplate(
       (data as { error?: string }).error ?? "Failed to upload template",
     );
   }
+
+  invalidateTemplateCache(scope);
   return response.json() as Promise<StoredTemplate>;
 }
 
@@ -68,6 +82,8 @@ export async function deleteTemplate(templateId: string): Promise<void> {
       (data as { error?: string }).error ?? "Failed to delete template",
     );
   }
+
+  invalidateTemplateCache();
 }
 
 export async function updateTemplate(
@@ -96,5 +112,7 @@ export async function updateTemplate(
       (data as { error?: string }).error ?? "Failed to update template",
     );
   }
+
+  invalidateTemplateCache();
   return response.json() as Promise<StoredTemplate>;
 }

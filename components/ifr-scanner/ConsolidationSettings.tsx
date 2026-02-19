@@ -36,7 +36,9 @@ export function ConsolidationSettings({
           type="checkbox"
           className="mt-1 h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-800 focus:ring-white/60"
           checked={createConsolidation}
-          onChange={(event) => onCreateConsolidationChange(event.target.checked)}
+          onChange={(event) =>
+            onCreateConsolidationChange(event.target.checked)
+          }
           aria-label="Create consolidation file from generated billing units"
         />
         <span>
@@ -75,7 +77,8 @@ export function ConsolidationSettings({
             </select>
             <span className="mt-2 block text-xs text-white/80">
               Uses saved templates from Consolidate Billing Unit scope. This
-              template is used to build the combined workbook included in the ZIP.
+              template is used to build the combined workbook included in the
+              ZIP.
             </span>
           </label>
 
@@ -96,8 +99,8 @@ export function ConsolidationSettings({
                   Create Merged XLSX File
                 </span>
                 <span className="mt-1 block text-xs text-white/80">
-                  Combine all generated consolidation files into one workbook with
-                  separate sheets for each source file.
+                  Combine all generated consolidation files into one workbook
+                  with separate sheets for each source file.
                 </span>
               </span>
             </label>

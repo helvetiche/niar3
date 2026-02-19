@@ -55,7 +55,9 @@ export function SourceFileMapping({
           aria-label="Set billing unit folder name"
           value={billingUnitFolderName}
           onChange={(event) =>
-            onBillingUnitFolderNameChange(sanitizeFolderName(event.target.value))
+            onBillingUnitFolderNameChange(
+              sanitizeFolderName(event.target.value),
+            )
           }
           className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
           placeholder={defaultBillingUnitFolderName}
@@ -65,12 +67,15 @@ export function SourceFileMapping({
       <div className="mt-4 space-y-4">
         {files.map((file) => {
           const fileKey = getFileKey(file);
-          const folderName = sourceFolderNames[fileKey] || getBaseName(file.name);
+          const folderName =
+            sourceFolderNames[fileKey] || getBaseName(file.name);
           const profilesFolder =
             billingUnitFolderName.trim() || defaultBillingUnitFolderName;
           const divisionValue =
-            sourceConsolidationDivisions[fileKey] ?? defaultConsolidationDivision;
-          const iaValue = sourceConsolidationIAs[fileKey] ?? defaultConsolidationIA;
+            sourceConsolidationDivisions[fileKey] ??
+            defaultConsolidationDivision;
+          const iaValue =
+            sourceConsolidationIAs[fileKey] ?? defaultConsolidationIA;
           const consolidationFileName = buildConsolidationFileName(
             divisionValue,
             iaValue,
@@ -126,7 +131,9 @@ export function SourceFileMapping({
                       type="text"
                       aria-label={`Set consolidation IA for ${file.name}`}
                       value={iaValue}
-                      onChange={(event) => onIAChange(fileKey, event.target.value)}
+                      onChange={(event) =>
+                        onIAChange(fileKey, event.target.value)
+                      }
                       className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                       placeholder={defaultConsolidationIA}
                     />

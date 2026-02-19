@@ -54,7 +54,8 @@ export function TemplateManager({
         window.localStorage.removeItem(getTemplateStorageKey(scope));
       }
 
-      const hasValidSelection = selectedTemplateId && items.some((t) => t.id === selectedTemplateId);
+      const hasValidSelection =
+        selectedTemplateId && items.some((t) => t.id === selectedTemplateId);
       if (!hasValidSelection && items.length > 0) {
         const savedTemplateId = window.localStorage.getItem(
           getTemplateStorageKey(scope),

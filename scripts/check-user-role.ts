@@ -15,7 +15,7 @@ function initializeFirebaseAdmin() {
 
   if (!projectId || !clientEmail || !privateKey) {
     throw new Error(
-      "Firebase Admin credentials missing. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY."
+      "Firebase Admin credentials missing. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY.",
     );
   }
 
@@ -32,14 +32,13 @@ async function checkUserRole(email: string) {
   try {
     initializeFirebaseAdmin();
     const auth = getAuth();
-    
+
     const user = await auth.getUserByEmail(email);
-    
+
     console.log(`\n📧 Email: ${user.email}`);
     console.log(`🆔 UID: ${user.uid}`);
     console.log(`🔐 Custom Claims:`, user.customClaims);
     console.log(`👤 Role: ${user.customClaims?.role ?? "user"}`);
-    
   } catch (error) {
     console.error("❌ Error checking user:", error);
     process.exit(1);

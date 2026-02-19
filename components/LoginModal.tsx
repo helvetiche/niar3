@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { gsap } from "gsap";
 import { SignInIcon, XIcon, PaperPlaneRightIcon } from "@phosphor-icons/react";
+import { useModalAnimation } from "@/hooks/useModalAnimation";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -15,8 +15,10 @@ type ModalView = "login" | "forgot-password";
 
 export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const router = useRouter();
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const { overlayRef, panelRef, closeWithAnimation } = useModalAnimation(
+    isOpen,
+    onClose,
+  );
   const [view, setView] = useState<ModalView>("login");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,64 +30,13 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!overlayRef.current || !panelRef.current) return;
-
-    if (isOpen) {
-      gsap.set(overlayRef.current, { display: "block", opacity: 0 });
-      gsap.set(panelRef.current, { y: "100%", opacity: 0 });
-
-      gsap.to(overlayRef.current, {
-        opacity: 1,
-        duration: 0.3,
-        ease: "power2.out",
-      });
-      gsap.to(panelRef.current, {
-        y: 0,
-        opacity: 1,
-        duration: 0.4,
-        ease: "power3.out",
-      });
-    } else {
-      gsap.to(panelRef.current, {
-        y: "100%",
-        opacity: 0,
-        duration: 0.3,
-        ease: "power3.in",
-      });
-      gsap.to(overlayRef.current, {
-        opacity: 0,
-        duration: 0.25,
-        delay: 0.15,
-        ease: "power2.in",
-      });
-    }
-  }, [isOpen]);
-
-  const handleClose = () => {
-    if (!panelRef.current || !overlayRef.current) return;
-    gsap.to(panelRef.current, {
-      y: "100%",
-      opacity: 0,
-      duration: 0.3,
-      ease: "power3.in",
-      onComplete: onClose,
-    });
-    gsap.to(overlayRef.current, {
-      opacity: 0,
-      duration: 0.25,
-      delay: 0.1,
-      ease: "power2.in",
-    });
-  };
-
   if (!isOpen) return null;
 
   return (
     <div
       ref={overlayRef}
       className="fixed inset-0 z-50 bg-black/50 opacity-0"
-      onClick={handleClose}
+      onClick={closeWithAnimation}
       role="dialog"
       aria-modal="true"
       aria-label="Login"
@@ -115,7 +66,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           </div>
           <button
             type="button"
-            onClick={handleClose}
+            onClick={closeWithAnimation}
             className="rounded-full p-1.5 text-white/70 transition hover:bg-white/10 hover:text-white"
             aria-label="Close"
           >
@@ -158,19 +109,19 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 const { signInWithEmailAndPassword, signOut } =
                   await import("firebase/auth");
                 const auth = getClientAuth();
-                
+
                 await signOut(auth);
-                
+
                 const cred = await signInWithEmailAndPassword(
                   auth,
                   email,
                   password,
                 );
-                
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
+
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+
                 const token = await cred.user.getIdToken(true);
-                
+
                 const res = await fetch("/api/v1/auth/session", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },

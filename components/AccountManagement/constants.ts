@@ -54,5 +54,7 @@ export const AVAILABLE_TOOLS: AvailableTool[] = [
   },
 ];
 
-export const BASIC_TOOLS = AVAILABLE_TOOLS.filter((t) => t.isBasic).map((t) => t.id);
+export const BASIC_TOOLS = AVAILABLE_TOOLS.filter((t) => t.isBasic).map(
+  (t) => t.id,
+);
 export const ALL_TOOLS = AVAILABLE_TOOLS.map((t) => t.id);

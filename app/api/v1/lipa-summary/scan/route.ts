@@ -56,10 +56,7 @@ export async function POST(request: Request) {
         details: { reason: "missing-file" },
       });
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "PDF file is required." },
-          { status: 400 },
-        ),
+        NextResponse.json({ error: "PDF file is required." }, { status: 400 }),
       );
     }
     const uploadValidation = validateUploads([file], scanUploadLimits);

@@ -75,10 +75,7 @@ export async function GET(request: Request) {
       errorMessage: "Failed to list templates",
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Failed to list templates" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to list templates" }, { status: 500 }),
     );
   }
 }
@@ -144,10 +141,7 @@ export async function POST(request: Request) {
         details: { reason: "invalid-scope", scope },
       });
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "Invalid template scope" },
-          { status: 400 },
-        ),
+        NextResponse.json({ error: "Invalid template scope" }, { status: 400 }),
       );
     }
 
@@ -191,9 +185,7 @@ export async function POST(request: Request) {
       },
     });
 
-    return applySecurityHeaders(
-      NextResponse.json(saved, { status: 201 }),
-    );
+    return applySecurityHeaders(NextResponse.json(saved, { status: 201 }));
   } catch (error) {
     logger.error("[api/templates POST]", error);
     await logAuditTrailEntry({
@@ -207,10 +199,7 @@ export async function POST(request: Request) {
       errorMessage: "Failed to save template",
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Failed to save template" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to save template" }, { status: 500 }),
     );
   }
 }

@@ -218,7 +218,11 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const isSuperAdmin = user.customClaims?.role === "super-admin";
 
   const filteredTools = TOOLS.filter((tool) => {
-    if ("requiresSuperAdmin" in tool && tool.requiresSuperAdmin && !isSuperAdmin) {
+    if (
+      "requiresSuperAdmin" in tool &&
+      tool.requiresSuperAdmin &&
+      !isSuperAdmin
+    ) {
       return false;
     }
     return (

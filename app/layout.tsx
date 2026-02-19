@@ -16,7 +16,8 @@ const jetbrainsMono = JetBrains_Mono({
   adjustFontFallback: false,
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://niatools.vercel.app";
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://niatools.vercel.app";
 const SITE_NAME = "NIA Productivity Tools";
 const SITE_DESCRIPTION =
   "NIA Region 3 productivity tools. Automate manual processes into minute-level results. Features: LIPA Summary, Consolidate Billing Unit, Merge Files, IFR Scanner. National Irrigation Administration Region 3.";

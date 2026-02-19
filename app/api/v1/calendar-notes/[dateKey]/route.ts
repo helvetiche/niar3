@@ -95,10 +95,7 @@ export async function PUT(
       details: { dateKey },
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Failed to save notes" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to save notes" }, { status: 500 }),
     );
   }
 }

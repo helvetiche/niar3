@@ -167,7 +167,8 @@ export function ProfileModal({
         <p className="mb-6 text-justify text-sm text-white/85">
           Store your details here for quick access across tools. Some features
           will automatically fill forms and credentials based on the information
-          you provide. Keep your profile updated for seamless workflow integration.
+          you provide. Keep your profile updated for seamless workflow
+          integration.
         </p>
 
         <div className="space-y-4">
@@ -258,7 +259,8 @@ export function ProfileModal({
               </label>
             </div>
             <p className="mb-3 text-xs text-white/70">
-              Your login email address. This cannot be changed for security reasons.
+              Your login email address. This cannot be changed for security
+              reasons.
             </p>
             <input
               type="email"
@@ -275,7 +277,8 @@ export function ProfileModal({
             <p className="text-sm font-medium text-white">Security Settings</p>
           </div>
           <p className="text-xs text-white/70">
-            Receive a password reset link at your email to set a new password securely.
+            Receive a password reset link at your email to set a new password
+            securely.
           </p>
           <button
             type="button"

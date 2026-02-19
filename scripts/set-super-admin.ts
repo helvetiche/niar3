@@ -15,7 +15,7 @@ function initializeFirebaseAdmin() {
 
   if (!projectId || !clientEmail || !privateKey) {
     throw new Error(
-      "Firebase Admin credentials missing. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY."
+      "Firebase Admin credentials missing. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY.",
     );
   }
 
@@ -32,9 +32,9 @@ async function setSuperAdmin(email: string) {
   try {
     initializeFirebaseAdmin();
     const auth = getAuth();
-    
+
     const user = await auth.getUserByEmail(email);
-    
+
     await auth.setCustomUserClaims(user.uid, {
       role: "super-admin",
     });
@@ -43,11 +43,12 @@ async function setSuperAdmin(email: string) {
 
     console.log(`✅ Successfully set super-admin role for ${email}`);
     console.log(`User UID: ${user.uid}`);
-    console.log(`⚠️  User must log out and log back in for changes to take effect`);
-    
+    console.log(
+      `⚠️  User must log out and log back in for changes to take effect`,
+    );
+
     const updatedUser = await auth.getUser(user.uid);
     console.log("Custom claims:", updatedUser.customClaims);
-    
   } catch (error) {
     console.error("❌ Error setting super-admin:", error);
     process.exit(1);

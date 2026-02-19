@@ -1,13 +1,18 @@
 const ANIMATION_OFFSET_PX = 200;
 
-export type AnimateFromDirection = "bottom" | "top" | "left" | "right" | "center";
+export type AnimateFromDirection =
+  | "bottom"
+  | "top"
+  | "left"
+  | "right"
+  | "center";
 
 export const getAnimationOffset = (): number => ANIMATION_OFFSET_PX;
 
 export const getOpenFromCoords = (
   animateFrom: AnimateFromDirection,
   rect: { width: number; height: number },
-  viewport: { width: number; height: number }
+  viewport: { width: number; height: number },
 ): { fromY: number; fromX: number } => {
   switch (animateFrom) {
     case "top":
@@ -27,7 +32,7 @@ export const getOpenFromCoords = (
 
 export const getCloseToCoords = (
   animateFrom: AnimateFromDirection,
-  viewport: { width: number; height: number }
+  viewport: { width: number; height: number },
 ): { toY: number; toX: number } => {
   switch (animateFrom) {
     case "top":

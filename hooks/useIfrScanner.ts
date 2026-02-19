@@ -80,7 +80,10 @@ export function useIfrScanner() {
         const savedTemplateId = window.localStorage.getItem(
           SCANNER_CONSOLIDATION_TEMPLATE_KEY,
         );
-        if (savedTemplateId && items.some((item) => item.id === savedTemplateId)) {
+        if (
+          savedTemplateId &&
+          items.some((item) => item.id === savedTemplateId)
+        ) {
           return savedTemplateId;
         }
         return items[0]?.id ?? "";

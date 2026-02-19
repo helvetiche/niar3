@@ -47,18 +47,18 @@ export function useAccountForm() {
       setIsConfirmModalOpen(true);
       return;
     }
-    
+
     const newTools = selectedTools.includes(toolId)
       ? selectedTools.filter((id) => id !== toolId)
       : [...selectedTools, toolId];
-    
+
     setSelectedTools(newTools);
     updateRolePresetBasedOnTools(newTools);
   };
 
   const handleRolePresetChange = (preset: RolePreset) => {
     setRolePreset(preset);
-    
+
     if (preset === "basic") {
       setSelectedTools(BASIC_TOOLS);
     } else if (preset === "advanced") {

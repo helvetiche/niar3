@@ -13,7 +13,8 @@ export const ERROR_MESSAGES = {
   FAILED_UPLOAD_TEMPLATE: "Failed to upload template",
   FAILED_GENERATE_PROFILES: "Failed to generate profiles.",
   TEMPLATE_NOT_FOUND: "Selected template not found",
-  CONSOLIDATION_TEMPLATE_NOT_FOUND: "Selected consolidation template not found.",
+  CONSOLIDATION_TEMPLATE_NOT_FOUND:
+    "Selected consolidation template not found.",
   NO_LOT_RECORDS:
     "No lot records found in uploaded files. Check spreadsheet format and upload valid source files.",
 } as const;

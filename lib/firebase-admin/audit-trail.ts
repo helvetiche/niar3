@@ -150,14 +150,18 @@ export async function logAuditTrailEntry(
       createdAt,
       createdAtIso: new Date(createdAt).toISOString(),
     };
-    if (input.httpStatus !== undefined) rawPayload.httpStatus = input.httpStatus;
+    if (input.httpStatus !== undefined)
+      rawPayload.httpStatus = input.httpStatus;
     if (input.errorMessage?.trim()) {
       rawPayload.errorMessage = sanitizeErrorMessage(
         truncateString(input.errorMessage),
       );
     }
     if (input.details) {
-      rawPayload.details = sanitizeValue(input.details) as Record<string, unknown>;
+      rawPayload.details = sanitizeValue(input.details) as Record<
+        string,
+        unknown
+      >;
     }
 
     const payload = omitUndefined(rawPayload);

@@ -66,7 +66,8 @@ export const buildConsolidationFileName = (
   return includeExtension ? `${name}.xlsx` : name;
 };
 
-export const DEFAULT_MERGED_CONSOLIDATION_FILE_NAME = "ALL DIVISION CONSOLIDATED";
+export const DEFAULT_MERGED_CONSOLIDATION_FILE_NAME =
+  "ALL DIVISION CONSOLIDATED";
 
 export const ensureXlsxExtension = (
   value: string,

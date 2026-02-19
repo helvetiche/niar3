@@ -80,7 +80,7 @@ export async function POST(request: Request) {
   try {
     const auth = getAdminAuth();
     const decoded = await auth.verifyIdToken(token);
-    
+
     const sessionCookie = await auth.createSessionCookie(token, {
       expiresIn: EXPIRES_IN_MS,
     });
@@ -142,10 +142,7 @@ export async function POST(request: Request) {
       errorMessage: message,
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Authentication failed" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Authentication failed" }, { status: 500 }),
     );
   }
 }

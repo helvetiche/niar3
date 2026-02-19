@@ -72,8 +72,7 @@ export const heavyOperationRateLimit = redis
 export function getClientIdentifier(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   const realIp = request.headers.get("x-real-ip");
-  const raw =
-    forwarded?.split(",")[0]?.trim() ?? realIp?.trim() ?? "anonymous";
+  const raw = forwarded?.split(",")[0]?.trim() ?? realIp?.trim() ?? "anonymous";
   const sanitized = raw.replace(/[^a-zA-Z0-9.:\-]/g, "").slice(0, 64);
   return sanitized || "anonymous";
 }

@@ -37,10 +37,7 @@ export async function GET(request: Request) {
       errorMessage: "Failed to load notes",
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Failed to load notes" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to load notes" }, { status: 500 }),
     );
   }
 }

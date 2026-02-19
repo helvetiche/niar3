@@ -2,13 +2,18 @@ import type { AuthUser } from "@/types/auth";
 import type { Permission } from "@/constants/permissions";
 
 /**
- * Check if user has the required permission.
- * All authenticated users have access (no custom claims).
+ * Check if user has the required permission based on role and custom claims.
+ * Super-admins have all permissions. Admins and users checked against custom claims.
  */
-export function hasPermission(_user: AuthUser, _required: Permission): boolean {
-  void _user;
-  void _required;
-  return true;
+export function hasPermission(user: AuthUser, required: Permission): boolean {
+  const role = user.customClaims?.role as string | undefined;
+
+  if (role === "super-admin") return true;
+
+  const permissions = user.customClaims?.permissions as string[] | undefined;
+  if (!permissions || !Array.isArray(permissions)) return false;
+
+  return permissions.includes(required);
 }
 
 /**

@@ -14,6 +14,23 @@ const createAccountSchema = z.object({
   permissions: z.array(z.string()).optional(),
 });
 
+import { NextResponse } from "next/server";
+import { withApiAuth } from "@/guards/with-api-auth";
+import { getAdminAuth } from "@/lib/firebase-admin/app";
+import { getAccountsPaginated } from "@/lib/firebase-admin/accounts";
+import { isSuperAdmin } from "@/lib/auth/check-super-admin";
+import { HTTP_STATUS } from "@/constants/http-status";
+import type { CreateAccountRequest } from "@/types/account";
+import { z } from "zod";
+
+const createAccountSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  displayName: z.string().min(1),
+  role: z.enum(["super-admin", "admin", "user"]),
+  permissions: z.array(z.string()).optional(),
+});
+
 export const GET = withApiAuth(async (req, user) => {
   if (!isSuperAdmin(user)) {
     return NextResponse.json(
@@ -25,33 +42,16 @@ export const GET = withApiAuth(async (req, user) => {
   try {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "8", 10);
-    const page = parseInt(searchParams.get("page") || "1", 10);
+    const pageToken = searchParams.get("pageToken") || undefined;
 
-    const auth = getAdminAuth();
-    const listResult = await auth.listUsers(1000);
-
-    const allAccounts = listResult.users.map((u) => ({
-      uid: u.uid,
-      email: u.email ?? "",
-      displayName: u.displayName ?? "",
-      role: u.customClaims?.role ?? "user",
-      createdAt: u.metadata.creationTime,
-      disabled: u.disabled,
-      permissions: u.customClaims?.permissions ?? [],
-    }));
-
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const accounts = allAccounts.slice(startIndex, endIndex);
-    const totalPages = Math.ceil(allAccounts.length / limit);
+    const result = await getAccountsPaginated(limit, pageToken);
 
     return NextResponse.json({
-      accounts,
+      accounts: result.accounts,
       pagination: {
-        page,
         limit,
-        total: allAccounts.length,
-        totalPages,
+        hasMore: result.hasMore,
+        nextPageToken: result.nextPageToken,
       },
     });
   } catch (error) {

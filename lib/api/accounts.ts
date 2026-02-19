@@ -7,14 +7,19 @@ import type {
 export async function fetchAccounts(
   page = 1,
   limit = 8,
-): Promise<{ accounts: AccountUser[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
-  const response = await fetch(
-    `/api/v1/accounts?page=${page}&limit=${limit}`,
-    {
-      method: "GET",
-      credentials: "include",
-    },
-  );
+): Promise<{
+  accounts: AccountUser[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}> {
+  const response = await fetch(`/api/v1/accounts?page=${page}&limit=${limit}`, {
+    method: "GET",
+    credentials: "include",
+  });
 
   if (!response.ok) {
     const data = (await response.json().catch(() => ({}))) as {
@@ -25,7 +30,12 @@ export async function fetchAccounts(
 
   return (await response.json()) as {
     accounts: AccountUser[];
-    pagination: { page: number; limit: number; total: number; totalPages: number };
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
   };
 }
 

@@ -33,7 +33,7 @@ export function EditAccountModal({
 
     try {
       setIsSubmitting(true);
-      
+
       const optimisticUpdate = {
         ...account,
         displayName,
@@ -47,7 +47,7 @@ export function EditAccountModal({
         role,
         disabled,
       });
-      
+
       onAccountUpdated(updatedAccount);
       toast.success("Account updated successfully");
       onClose();

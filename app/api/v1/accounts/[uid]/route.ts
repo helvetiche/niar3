@@ -48,11 +48,13 @@ export const PATCH = withApiAuth(
       if (validated.role !== undefined || validated.permissions !== undefined) {
         const currentUser = await auth.getUser(uid);
         const currentClaims = currentUser.customClaims || {};
-        
+
         await auth.setCustomUserClaims(uid, {
           ...currentClaims,
           ...(validated.role !== undefined && { role: validated.role }),
-          ...(validated.permissions !== undefined && { permissions: validated.permissions }),
+          ...(validated.permissions !== undefined && {
+            permissions: validated.permissions,
+          }),
         });
       }
 

@@ -6,7 +6,11 @@ function getDb() {
   return getFirestore(getFirebaseAdminApp());
 }
 
-/** Get profile for a user. Path: users/{uid}/profile/default */
+/**
+ * Retrieves user profile data from Firestore.
+ * @param uid - Firebase user ID
+ * @returns Profile object with first, middle, last name and birthday
+ */
 export async function getProfile(uid: string): Promise<{
   first: string;
   middle: string;
@@ -27,7 +31,11 @@ export async function getProfile(uid: string): Promise<{
   return { first: "", middle: "", last: "", birthday: "" };
 }
 
-/** Save profile to Firestore */
+/**
+ * Saves user profile to Firestore using merge strategy.
+ * @param uid - Firebase user ID
+ * @param profile - Profile data to save
+ */
 export async function setProfile(
   uid: string,
   profile: { first: string; middle: string; last: string; birthday: string },
@@ -36,7 +44,11 @@ export async function setProfile(
   await ref.set(profile, { merge: true });
 }
 
-/** Get calendar notes for a user. Path: users/{uid}/calendar_notes */
+/**
+ * Retrieves all calendar notes for a user.
+ * @param uid - Firebase user ID
+ * @returns Record of date keys mapped to arrays of note items
+ */
 export async function getCalendarNotes(
   uid: string,
 ): Promise<Record<string, { text: string; color: string }[]>> {
@@ -54,7 +66,12 @@ export async function getCalendarNotes(
   return out;
 }
 
-/** Save a single date's notes */
+/**
+ * Saves calendar notes for a specific date.
+ * @param uid - Firebase user ID
+ * @param dateKey - Date identifier (e.g., "2024-01-15")
+ * @param items - Array of note items with text and color
+ */
 export async function setCalendarNotesForDate(
   uid: string,
   dateKey: string,

@@ -17,7 +17,8 @@ export function useAccounts() {
       setTotalPages(data.pagination.totalPages);
       setCurrentPage(data.pagination.page);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load accounts";
+      const message =
+        error instanceof Error ? error.message : "Failed to load accounts";
       toast.error(message);
     } finally {
       setLoading(false);

@@ -72,7 +72,11 @@ export function MasonryModal({
     if (isOpen) {
       const panel = panelRef.current;
       const panelRect = panel.getBoundingClientRect();
-      const { fromY, fromX } = getOpenFromCoords(animateFrom, panelRect, viewport);
+      const { fromY, fromX } = getOpenFromCoords(
+        animateFrom,
+        panelRect,
+        viewport,
+      );
 
       gsap.set(overlayRef.current, { display: "flex", opacity: 0 });
       gsap.set(panel, {

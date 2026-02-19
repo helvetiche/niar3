@@ -65,7 +65,9 @@ export function WorkspaceCalendar() {
       })
       .catch((err) => {
         if (!cancelled) {
-          toast.error(err instanceof Error ? err.message : "Failed to load notes");
+          toast.error(
+            err instanceof Error ? err.message : "Failed to load notes",
+          );
         }
       });
     return () => {

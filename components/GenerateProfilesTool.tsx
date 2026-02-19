@@ -2,33 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  CheckSquareIcon,
-  CheckCircleIcon,
-  ClockCountdownIcon,
   DownloadSimpleIcon,
   FileXlsIcon,
   MagnifyingGlassIcon,
-  UploadSimpleIcon,
-  WrenchIcon,
 } from "@phosphor-icons/react";
 import { generateBillingUnitsZip } from "@/lib/api/billing-units";
 import { TemplateManager } from "@/components/TemplateManager";
-import { listTemplates, type StoredTemplate } from "@/lib/api/templates";
+import { useTemplates } from "@/hooks/useTemplates";
 import {
   getBaseName,
   getFileKey,
   detectDivisionAndIAFromFilename,
   sanitizeFolderName,
-  buildConsolidationFileName,
 } from "@/lib/file-utils";
 import { downloadBlob, getErrorMessage } from "@/lib/utils";
 import { DEFAULT_MERGED_CONSOLIDATION_FILE_NAME } from "@/lib/file-utils";
 import { ERROR_MESSAGES } from "@/constants/error-messages";
+import { FileUploadZone } from "@/components/ifr-scanner/FileUploadZone";
+import { SourceFileList } from "@/components/ifr-scanner/SourceFileList";
+import { ConsolidationConfig } from "@/components/ifr-scanner/ConsolidationConfig";
+import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
 
 const defaultZipName = "BILLING UNITS";
 const defaultBillingUnitFolderName = "billing unit";
-const defaultConsolidationDivision = "0";
-const defaultConsolidationIA = "IA";
 const scannerConsolidationTemplateStorageKey =
   "ifr-scanner:last-consolidation-template-id";
 const OVERLAY_OPAQUE_MS = 280;
@@ -40,13 +36,6 @@ const wait = async (ms: number): Promise<void> =>
     window.setTimeout(resolve, ms);
   });
 
-const formatElapsedTime = (seconds: number): string => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  if (mins <= 0) return `${String(secs)}s`;
-  return `${String(mins)}m ${String(secs).padStart(2, "0")}s`;
-};
-
 export function GenerateProfilesTool() {
   const [sourceFiles, setSourceFiles] = useState<File[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
@@ -56,9 +45,6 @@ export function GenerateProfilesTool() {
     useState(false);
   const [mergedConsolidationFileName, setMergedConsolidationFileName] =
     useState(DEFAULT_MERGED_CONSOLIDATION_FILE_NAME);
-  const [consolidationTemplates, setConsolidationTemplates] = useState<
-    StoredTemplate[]
-  >([]);
   const [consolidationTemplateId, setConsolidationTemplateId] = useState("");
   const [billingUnitFolderName, setBillingUnitFolderName] = useState(
     defaultBillingUnitFolderName,
@@ -71,8 +57,6 @@ export function GenerateProfilesTool() {
   const [sourceConsolidationIAs, setSourceConsolidationIAs] = useState<
     Record<string, string>
   >({});
-  const [isLoadingConsolidationTemplates, setIsLoadingConsolidationTemplates] =
-    useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState("");
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
@@ -80,51 +64,43 @@ export function GenerateProfilesTool() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isFinalizing, setIsFinalizing] = useState(false);
 
-  const sourceInputRef = useRef<HTMLInputElement | null>(null);
   const elapsedIntervalRef = useRef<number | null>(null);
 
-  const handleSourceSelection = (incoming: FileList | null) => {
-    setSourceFiles(Array.from(incoming ?? []));
-  };
+  const {
+    data: consolidationTemplates = [],
+    isLoading: isLoadingConsolidationTemplates,
+    error: templatesError,
+  } = useTemplates(createConsolidation ? "consolidate-ifr" : ("" as never));
 
   useEffect(() => {
-    if (!createConsolidation) return;
+    if (templatesError) {
+      setMessage(
+        getErrorMessage(templatesError, ERROR_MESSAGES.FAILED_LOAD_TEMPLATES),
+      );
+    }
+  }, [templatesError]);
 
-    let active = true;
-    const loadTemplates = async () => {
-      setIsLoadingConsolidationTemplates(true);
-      try {
-        const items = await listTemplates("consolidate-ifr");
-        if (!active) return;
-        setConsolidationTemplates(items);
-        setConsolidationTemplateId((previous) => {
-          if (previous && items.some((item) => item.id === previous))
-            return previous;
-          const savedTemplateId = window.localStorage.getItem(
-            scannerConsolidationTemplateStorageKey,
-          );
-          if (
-            savedTemplateId &&
-            items.some((item) => item.id === savedTemplateId)
-          ) {
-            return savedTemplateId;
-          }
-          return items[0]?.id ?? "";
-        });
-      } catch (error) {
-        if (!active) return;
-        setMessage(
-          getErrorMessage(error, ERROR_MESSAGES.FAILED_LOAD_TEMPLATES),
-        );
-      } finally {
-        if (active) setIsLoadingConsolidationTemplates(false);
+  useEffect(() => {
+    if (!createConsolidation || !consolidationTemplates.length) return;
+
+    setConsolidationTemplateId((previous) => {
+      if (
+        previous &&
+        consolidationTemplates.some((item) => item.id === previous)
+      )
+        return previous;
+      const savedTemplateId = window.localStorage.getItem(
+        scannerConsolidationTemplateStorageKey,
+      );
+      if (
+        savedTemplateId &&
+        consolidationTemplates.some((item) => item.id === savedTemplateId)
+      ) {
+        return savedTemplateId;
       }
-    };
-    void loadTemplates();
-    return () => {
-      active = false;
-    };
-  }, [createConsolidation]);
+      return consolidationTemplates[0]?.id ?? "";
+    });
+  }, [createConsolidation, consolidationTemplates]);
 
   useEffect(() => {
     if (sourceFiles.length === 0) {
@@ -176,7 +152,7 @@ export function GenerateProfilesTool() {
     );
   }, [consolidationTemplateId]);
 
-  const handleGenerateProfiles = async () => {
+  const generateBillingUnits = async () => {
     if (sourceFiles.length === 0) {
       setMessage("Please upload one or more source Excel files first.");
       return;
@@ -250,7 +226,7 @@ export function GenerateProfilesTool() {
     }
   };
 
-  const handleClearFiles = () => {
+  const clearAllSelections = () => {
     setSourceFiles([]);
     setSelectedTemplateId("");
     setCreateConsolidation(false);
@@ -262,7 +238,6 @@ export function GenerateProfilesTool() {
     setSourceConsolidationDivisions({});
     setSourceConsolidationIAs({});
     setMessage("");
-    if (sourceInputRef.current) sourceInputRef.current.value = "";
   };
 
   useEffect(() => {
@@ -273,7 +248,7 @@ export function GenerateProfilesTool() {
     };
   }, []);
 
-  const handleFolderNameChange = (fileKey: string, value: string) => {
+  const updateFolderName = (fileKey: string, value: string) => {
     const sanitized = sanitizeFolderName(value);
     setSourceFolderNames((previous) => ({
       ...previous,
@@ -281,14 +256,14 @@ export function GenerateProfilesTool() {
     }));
   };
 
-  const handleDivisionChange = (fileKey: string, value: string) => {
+  const updateDivision = (fileKey: string, value: string) => {
     setSourceConsolidationDivisions((previous) => ({
       ...previous,
       [fileKey]: value.replace(/[^0-9]/g, ""),
     }));
   };
 
-  const handleIAChange = (fileKey: string, value: string) => {
+  const updateIA = (fileKey: string, value: string) => {
     setSourceConsolidationIAs((previous) => ({
       ...previous,
       [fileKey]: value.trimStart(),
@@ -336,177 +311,25 @@ export function GenerateProfilesTool() {
       </div>
 
       <div className="grid gap-4">
-        <div className="block">
-          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
-            <FileXlsIcon size={18} className="text-white" />
-            IFR Source Files (Required)
-          </span>
-
-          <input
-            id="source-files-input"
-            ref={sourceInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            multiple
-            aria-label="Upload one or more source Excel files"
-            onChange={(event) => {
-              handleSourceSelection(event.target.files);
-            }}
-            className="hidden"
-          />
-
-          <button
-            type="button"
-            aria-label="Choose source Excel files"
-            onClick={() => sourceInputRef.current?.click()}
-            onDragOver={(event) => {
-              event.preventDefault();
-            }}
-            onDrop={(event) => {
-              event.preventDefault();
-              handleSourceSelection(event.dataTransfer.files);
-            }}
-            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/10 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/15"
-          >
-            <UploadSimpleIcon size={34} className="text-white" />
-            <span className="font-medium">
-              Drag and drop IFR source files, or click to browse
-            </span>
-          </button>
-
-          <div className="mt-2 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
-              <FileXlsIcon size={12} className="text-white" />
-              Supported: .xlsx, .xls
-            </span>
-          </div>
-
-          <p className="mt-2 text-xs text-white/80">
-            Upload one or many .xlsx/.xls files. Each uploaded file is processed
-            as a separate division folder in the ZIP with one{" "}
-            <span className="font-medium">billing unit</span> subfolder.
-          </p>
-        </div>
+        <FileUploadZone
+          onFilesSelected={setSourceFiles}
+          label="IFR Source Files (Required)"
+          description="Upload one or many .xlsx/.xls files. Each uploaded file is processed as a separate division folder in the ZIP with one billing unit subfolder."
+        />
       </div>
 
-      {sourceFiles.length > 0 && (
-        <section className="mt-3 rounded-xl border border-white/35 bg-white/10 p-4">
-          <p className="flex items-center gap-2 text-sm text-white">
-            <FileXlsIcon size={16} className="text-white" />
-            Selected source files: {String(sourceFiles.length)}
-          </p>
-
-          <label className="mt-4 block">
-            <span className="mb-2 block text-sm font-medium text-white/90">
-              Billing Unit Folder Name
-            </span>
-            <input
-              type="text"
-              aria-label="Set billing unit folder name"
-              value={billingUnitFolderName}
-              onChange={(event) =>
-                setBillingUnitFolderName(
-                  sanitizeFolderName(event.target.value),
-                )
-              }
-              className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-              placeholder={defaultBillingUnitFolderName}
-            />
-          </label>
-
-          <div className="mt-4 space-y-4">
-            {sourceFiles.map((file) => {
-              const fileKey = getFileKey(file);
-              const folderName =
-                sourceFolderNames[fileKey] || getBaseName(file.name);
-              const profilesFolder =
-                billingUnitFolderName.trim() || defaultBillingUnitFolderName;
-              const divisionValue =
-                sourceConsolidationDivisions[fileKey] ??
-                defaultConsolidationDivision;
-              const iaValue =
-                sourceConsolidationIAs[fileKey] ?? defaultConsolidationIA;
-              const consolidationFileName = buildConsolidationFileName(
-                divisionValue,
-                iaValue,
-                true,
-              );
-
-              return (
-                <div
-                  key={fileKey}
-                  className="rounded-lg border border-white/30 bg-white/10 p-3"
-                >
-                  <label className="block">
-                    <span className="mb-2 block text-xs font-medium text-white/85">
-                      Division Folder Name for {file.name}
-                    </span>
-                    <input
-                      type="text"
-                      aria-label={`Set division folder name for ${file.name}`}
-                      value={folderName}
-                      onChange={(event) =>
-                        handleFolderNameChange(fileKey, event.target.value)
-                      }
-                      className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                      placeholder={getBaseName(file.name)}
-                    />
-                  </label>
-
-                  {createConsolidation && (
-                    <div className="mt-3 grid gap-3 md:grid-cols-2">
-                      <label className="block">
-                        <span className="mb-2 block text-xs font-medium text-white/85">
-                          Division for {file.name}
-                        </span>
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          min="0"
-                          step="1"
-                          aria-label={`Set consolidation division for ${file.name}`}
-                          value={divisionValue}
-                          onChange={(event) =>
-                            handleDivisionChange(fileKey, event.target.value)
-                          }
-                          className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                          placeholder={defaultConsolidationDivision}
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="mb-2 block text-xs font-medium text-white/85">
-                          IA for {file.name}
-                        </span>
-                        <input
-                          type="text"
-                          aria-label={`Set consolidation IA for ${file.name}`}
-                          value={iaValue}
-                          onChange={(event) =>
-                            handleIAChange(fileKey, event.target.value)
-                          }
-                          className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                          placeholder={defaultConsolidationIA}
-                        />
-                      </label>
-                    </div>
-                  )}
-
-                  <div className="mt-3 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs text-white">
-                    <p className="font-medium">{folderName || "division"}/</p>
-                    {createConsolidation && (
-                      <p className="pl-4">{consolidationFileName}</p>
-                    )}
-                    <p className="pl-4">{profilesFolder}/</p>
-                    <p className="pl-8 text-white/70">
-                      ...generated billing unit files
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      <SourceFileList
+        files={sourceFiles}
+        billingUnitFolderName={billingUnitFolderName}
+        sourceFolderNames={sourceFolderNames}
+        sourceConsolidationDivisions={sourceConsolidationDivisions}
+        sourceConsolidationIAs={sourceConsolidationIAs}
+        createConsolidation={createConsolidation}
+        onFolderNameChange={updateFolderName}
+        onDivisionChange={updateDivision}
+        onIAChange={updateIA}
+        onBillingUnitFolderNameChange={setBillingUnitFolderName}
+      />
 
       <label className="mt-4 block" htmlFor="zip-name-input">
         <span className="mb-2 block text-sm font-medium text-white/90">
@@ -517,7 +340,7 @@ export function GenerateProfilesTool() {
           type="text"
           aria-label="Set output zip file name"
           value={zipName}
-          onChange={(event) => setZipName(event.target.value)}
+          onChange={(e) => setZipName(e.target.value)}
           className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
           placeholder={defaultZipName}
         />
@@ -532,9 +355,7 @@ export function GenerateProfilesTool() {
       <TemplateManager
         scope="ifr-scanner"
         selectedTemplateId={selectedTemplateId}
-        onSelectedTemplateIdChange={(id) => {
-          setSelectedTemplateId(id);
-        }}
+        onSelectedTemplateIdChange={setSelectedTemplateId}
       />
       <p className="mt-2 text-xs leading-5 text-white/80">
         Select the saved IFR Scanner template used to generate each lot billing
@@ -542,129 +363,25 @@ export function GenerateProfilesTool() {
         cell mapping.
       </p>
 
-      <section className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
-        <label className="flex cursor-pointer items-start gap-3">
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-800 focus:ring-white/60"
-            checked={createConsolidation}
-            onChange={(event) => {
-              const nextChecked = event.target.checked;
-              setCreateConsolidation(nextChecked);
-              if (!nextChecked) {
-                setCreateMergedConsolidation(false);
-              }
-            }}
-            aria-label="Create consolidation file from generated billing units"
-          />
-          <span>
-            <span className="flex items-center gap-2 text-sm font-medium text-white">
-              <CheckSquareIcon size={16} className="text-white" />
-              Create Consolidation
-            </span>
-            <span className="mt-1 block text-xs text-white/80">
-              Enable this to generate a consolidated XLSX and include it in the
-              same ZIP.
-            </span>
-          </span>
-        </label>
-
-        {createConsolidation && (
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-white/90">
-                Consolidation Template
-              </span>
-              <select
-                aria-label="Select consolidation template"
-                value={consolidationTemplateId}
-                onChange={(event) =>
-                  setConsolidationTemplateId(event.target.value)
-                }
-                disabled={isLoadingConsolidationTemplates}
-                className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-              >
-                <option value="">Select template...</option>
-                {consolidationTemplates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
-              <span className="mt-2 block text-xs text-white/80">
-                Uses saved templates from Consolidate Billing Unit scope. This
-                template is used to build the combined workbook included in the
-                ZIP.
-              </span>
-            </label>
-
-            <div className="md:col-span-2 rounded-lg border border-white/30 bg-white/10 p-3">
-              <label className="flex cursor-pointer items-start gap-3">
-                <input
-                  type="checkbox"
-                  className="mt-1 h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-800 focus:ring-white/60"
-                  checked={createMergedConsolidation}
-                  onChange={(event) =>
-                    setCreateMergedConsolidation(event.target.checked)
-                  }
-                  aria-label="Create merged xlsx file from all consolidated outputs"
-                />
-                <span>
-                  <span className="flex items-center gap-2 text-sm font-medium text-white">
-                    <CheckSquareIcon size={16} className="text-white" />
-                    Create Merged XLSX File
-                  </span>
-                  <span className="mt-1 block text-xs text-white/80">
-                    Combine all generated consolidation files into one workbook
-                    with separate sheets for each source file.
-                  </span>
-                </span>
-              </label>
-
-              {createMergedConsolidation && (
-                <label className="mt-3 block">
-                  <span className="mb-2 block text-sm font-medium text-white/90">
-                    Combined Consolidation File Name
-                  </span>
-                  <input
-                    type="text"
-                    aria-label="Set merged consolidation file name"
-                    value={mergedConsolidationFileName}
-                    onChange={(event) =>
-                      setMergedConsolidationFileName(event.target.value)
-                    }
-                    className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                    placeholder={DEFAULT_MERGED_CONSOLIDATION_FILE_NAME}
-                  />
-                  <span className="mt-2 block text-xs text-white/80">
-                    This filename is used for the merged workbook added to the
-                    ZIP root.
-                  </span>
-                </label>
-              )}
-            </div>
-
-            <p className="md:col-span-2 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs text-white/85">
-              Consolidation filename is automatic per file:{" "}
-              <span className="font-medium">
-                [Division (2 digits)] [IA NAME] CONSOLIDATED.xlsx
-              </span>
-              . Example:{" "}
-              <span className="font-medium">
-                08 BAGONG PAG-ASA CONSOLIDATED.xlsx
-              </span>
-              .
-            </p>
-          </div>
-        )}
-      </section>
+      <ConsolidationConfig
+        createConsolidation={createConsolidation}
+        createMergedConsolidation={createMergedConsolidation}
+        mergedConsolidationFileName={mergedConsolidationFileName}
+        consolidationTemplates={consolidationTemplates}
+        consolidationTemplateId={consolidationTemplateId}
+        isLoadingTemplates={isLoadingConsolidationTemplates}
+        onCreateConsolidationChange={setCreateConsolidation}
+        onCreateMergedConsolidationChange={setCreateMergedConsolidation}
+        onMergedFileNameChange={setMergedConsolidationFileName}
+        onTemplateIdChange={setConsolidationTemplateId}
+      />
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <button
           type="button"
           aria-label="Generate billing unit zip file"
           onClick={() => {
-            void handleGenerateProfiles();
+            void generateBillingUnits();
           }}
           disabled={
             isGenerating ||
@@ -681,7 +398,7 @@ export function GenerateProfilesTool() {
         <button
           type="button"
           aria-label="Clear uploaded files"
-          onClick={handleClearFiles}
+          onClick={clearAllSelections}
           disabled={isGenerating}
           className="inline-flex items-center rounded-lg border border-white/40 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:text-white/60"
         >
@@ -714,68 +431,12 @@ export function GenerateProfilesTool() {
         </p>
       )}
 
-      {isOverlayVisible && (
-        <div
-          className={`fixed inset-0 z-50 flex items-center justify-center bg-emerald-900/90 backdrop-blur-sm transition-opacity duration-300 ${
-            isOverlayOpaque ? "opacity-100" : "opacity-0"
-          }`}
-          aria-live="polite"
-        >
-          <div className="w-[92%] max-w-lg rounded-2xl border border-white/15 bg-emerald-950/55 p-6 text-white shadow-2xl">
-            <div className="mb-4 flex items-center gap-3">
-              {isFinalizing ? (
-                <CheckCircleIcon
-                  size={28}
-                  weight="fill"
-                  className="text-white"
-                />
-              ) : (
-                <WrenchIcon size={28} weight="duotone" className="text-white" />
-              )}
-              <p className="text-lg font-medium">
-                {isFinalizing ? "Done" : "Processing IFR"}
-              </p>
-            </div>
-
-            <div className="relative h-4 overflow-hidden rounded-full bg-emerald-950/80 ring-2 ring-white/20 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)]">
-              <div className="scanner-loading-bar absolute left-0 top-0 h-full w-2/5 rounded-full bg-white" />
-            </div>
-
-            <div className="mt-3 flex items-center justify-between text-sm text-white/90">
-              <p>
-                {isFinalizing
-                  ? "Finalizing and preparing download..."
-                  : "Please wait..."}
-              </p>
-              <p className="inline-flex items-center gap-1 tabular-nums font-medium">
-                <ClockCountdownIcon size={14} />
-                Time Elapsed: {formatElapsedTime(elapsedSeconds)}
-              </p>
-            </div>
-
-            <p className="mt-2 text-xs text-white/80">
-              Do not interrupt or close this window while processing.
-            </p>
-          </div>
-        </div>
-      )}
-      <style jsx>{`
-        .scanner-loading-bar {
-          animation: scanner-loading-slide 1.2s ease-in-out infinite;
-        }
-
-        @keyframes scanner-loading-slide {
-          0% {
-            transform: translateX(-120%);
-          }
-          50% {
-            transform: translateX(170%);
-          }
-          100% {
-            transform: translateX(-120%);
-          }
-        }
-      `}</style>
+      <ProcessingOverlay
+        isVisible={isOverlayVisible}
+        isOpaque={isOverlayOpaque}
+        isFinalizing={isFinalizing}
+        elapsedSeconds={elapsedSeconds}
+      />
     </section>
   );
 }

@@ -43,10 +43,9 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
           setIsUploading(false);
           if (xhr.status >= 200 && xhr.status < 300) {
             const contentType = xhr.getResponseHeader("content-type");
-            const responseBody =
-              contentType?.includes("application/json")
-                ? xhr.response
-                : xhr.responseText;
+            const responseBody = contentType?.includes("application/json")
+              ? xhr.response
+              : xhr.responseText;
 
             resolve(
               new Response(responseBody, {

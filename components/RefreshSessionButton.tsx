@@ -12,7 +12,7 @@ export function RefreshSessionButton() {
 
     setIsRefreshing(true);
     toast.loading("Refreshing session...", { id: "refresh" });
-    
+
     window.location.reload();
   };
 

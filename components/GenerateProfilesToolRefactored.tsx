@@ -170,8 +170,8 @@ export function GenerateProfilesToolRefactored() {
           billing unit workbook per lot with consistent naming and folder
           structure. Select your template, configure optional consolidation, and
           download everything in one ZIP. This flow streamlines repetitive
-          encoding, reduces manual errors, and accelerates report preparation for
-          field teams across all divisions.
+          encoding, reduces manual errors, and accelerates report preparation
+          for field teams across all divisions.
         </p>
       </div>
 
@@ -211,8 +211,8 @@ export function GenerateProfilesToolRefactored() {
         <span className="mt-2 block text-xs leading-5 text-white/80">
           Sets the final downloaded ZIP name that contains all generated billing
           unit files. Use a clear batch label like{" "}
-          <span className="font-medium">division-3-week-7</span> so your team can
-          quickly identify the correct output.
+          <span className="font-medium">division-3-week-7</span> so your team
+          can quickly identify the correct output.
         </span>
       </label>
 
@@ -223,8 +223,8 @@ export function GenerateProfilesToolRefactored() {
       />
       <p className="mt-2 text-xs leading-5 text-white/80">
         Select the saved IFR Scanner template used to generate each lot billing
-        unit workbook. This template controls the output workbook layout and cell
-        mapping.
+        unit workbook. This template controls the output workbook layout and
+        cell mapping.
       </p>
 
       <ConsolidationSettings

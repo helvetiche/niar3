@@ -50,10 +50,7 @@ export async function DELETE(
         details: { reason: "template-not-found", templateId },
       });
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "Template not found" },
-          { status: 404 },
-        ),
+        NextResponse.json({ error: "Template not found" }, { status: 404 }),
       );
     }
 
@@ -145,10 +142,7 @@ export async function PATCH(
         details: { reason: "template-not-found", templateId },
       });
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "Template not found" },
-          { status: 404 },
-        ),
+        NextResponse.json({ error: "Template not found" }, { status: 404 }),
       );
     }
 
@@ -222,10 +216,7 @@ export async function PATCH(
 
     if (!saved) {
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "Template not found" },
-          { status: 404 },
-        ),
+        NextResponse.json({ error: "Template not found" }, { status: 404 }),
       );
     }
 

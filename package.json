@@ -14,6 +14,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@phosphor-icons/react": "^2.1.10",
+    "@sentry/nextjs": "^10.39.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.36.2",
     "class-variance-authority": "^0.7.1",
@@ -33,6 +34,7 @@
     "react-hot-toast": "^2.6.0",
     "sanitize-html": "^2.17.0",
     "server-only": "^0.0.1",
+    "swr": "^2.4.0",
     "tailwind-merge": "^3.4.1",
     "validator": "^13.15.26",
     "xlsx": "^0.18.5",
