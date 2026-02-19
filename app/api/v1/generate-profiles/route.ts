@@ -154,7 +154,9 @@ export async function POST(request: Request) {
     );
     const consolidationDivisionRaw = formData.get("consolidationDivision");
     const consolidationIARaw = formData.get("consolidationIA");
-    const profileFolderNameRaw = formData.get("profileFolderName");
+    const billingUnitFolderNameRaw =
+      formData.get("billingUnitFolderName") ??
+      formData.get("profileFolderName");
     const sourceFolderNamesRaw = formData.get("sourceFolderNames");
     const sourceConsolidationDivisionsRaw = formData.get(
       "sourceConsolidationDivisions",
@@ -184,10 +186,11 @@ export async function POST(request: Request) {
       typeof consolidationIARaw === "string" && consolidationIARaw.trim()
         ? consolidationIARaw.trim()
         : "IA";
-    const profileFolderName =
-      typeof profileFolderNameRaw === "string" && profileFolderNameRaw.trim()
-        ? sanitizeFolderName(profileFolderNameRaw)
-        : "land account";
+    const billingUnitFolderName =
+      typeof billingUnitFolderNameRaw === "string" &&
+      billingUnitFolderNameRaw.trim()
+        ? sanitizeFolderName(billingUnitFolderNameRaw)
+        : "billing unit";
     const sourceFolderNames = parseTextMap(
       sourceFolderNamesRaw,
       sanitizeFolderName,
@@ -204,7 +207,10 @@ export async function POST(request: Request) {
     const sourceFiles =
       files.length > 0 ? files : singleFile instanceof File ? [singleFile] : [];
 
-    const sourceUploadValidation = validateUploads(sourceFiles, sourceUploadLimits);
+    const sourceUploadValidation = validateUploads(
+      sourceFiles,
+      sourceUploadLimits,
+    );
     if (!sourceUploadValidation.ok) {
       await logAuditTrailEntry({
         uid: result.user.uid,
@@ -282,7 +288,10 @@ export async function POST(request: Request) {
 
     let templateBuffer: Buffer;
     if (template instanceof File) {
-      const templateValidation = validateUploads([template], templateUploadLimits);
+      const templateValidation = validateUploads(
+        [template],
+        templateUploadLimits,
+      );
       if (!templateValidation.ok) {
         await logAuditTrailEntry({
           uid: result.user.uid,
@@ -301,9 +310,7 @@ export async function POST(request: Request) {
       }
       templateBuffer = Buffer.from(await template.arrayBuffer());
     } else if (typeof templateId === "string" && templateId.trim()) {
-      const savedTemplate = await getTemplateRecord(
-        templateId.trim(),
-      );
+      const savedTemplate = await getTemplateRecord(templateId.trim());
       if (!savedTemplate) {
         await logAuditTrailEntry({
           uid: result.user.uid,
@@ -339,8 +346,10 @@ export async function POST(request: Request) {
     const zip = new JSZip();
     const seenDivisionFolders = new Map<string, number>();
     let totalGeneratedProfiles = 0;
-    const consolidatedFilesForMerge: Array<{ fileName: string; buffer: Buffer }> =
-      [];
+    const consolidatedFilesForMerge: Array<{
+      fileName: string;
+      buffer: Buffer;
+    }> = [];
 
     let consolidationTemplateBuffer: Buffer | null = null;
     if (createConsolidation) {
@@ -394,11 +403,11 @@ export async function POST(request: Request) {
       }
 
       const profilesFolder = divisionFolder.folder(
-        profileFolderName || "land account",
+        billingUnitFolderName || "billing unit",
       );
       if (!profilesFolder) {
         throw new Error(
-          `Unable to create folder: ${divisionFolderName}/${profileFolderName}`,
+          `Unable to create folder: ${divisionFolderName}/${billingUnitFolderName}`,
         );
       }
 
@@ -517,7 +526,7 @@ export async function POST(request: Request) {
     return new NextResponse(new Uint8Array(zipBuffer), {
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": 'attachment; filename="farmer-profiles.zip"',
+        "Content-Disposition": 'attachment; filename="BILLING UNITS.zip"',
       },
     });
   } catch (error) {

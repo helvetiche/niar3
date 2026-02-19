@@ -75,9 +75,9 @@ const HUB_TOOLS: HubTool[] = [
   },
   {
     id: "consolidate-ifr",
-    name: "CONSOLIDATE LAND PROFILE",
+    name: "CONSOLIDATE BILLING UNIT",
     description:
-      "Combine multiple land profile documents into one consistent file, preserve essential information, remove duplication, and simplify verification across records quickly.",
+      "Combine multiple billing unit documents into one consistent file, preserve essential information, remove duplication, and simplify verification across records quickly.",
     icon: StackIcon,
     tags: [
       { id: "combine", label: "Combine", icon: FilesIcon },

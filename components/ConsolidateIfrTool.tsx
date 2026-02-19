@@ -106,7 +106,7 @@ export function ConsolidateIfrTool() {
           <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
             <ArrowsMergeIcon size={18} className="text-white" />
           </span>
-          Consolidate Land Profile
+          Consolidate Billing Unit
         </h2>
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">

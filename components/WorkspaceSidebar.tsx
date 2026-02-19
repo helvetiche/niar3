@@ -21,6 +21,7 @@ import {
 import type { AuthUser } from "@/types/auth";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
 import type { UserProfile } from "@/types/profile";
+import { MasonryModal } from "./MasonryModal";
 import { ProfileModal } from "./ProfileModal";
 
 const SIDEBAR_COLLAPSED_KEY = "sidebar_collapsed";
@@ -66,9 +67,9 @@ const TOOLS = [
   },
   {
     id: "consolidate-ifr" as const,
-    name: "CONSOLIDATE LAND PROFILE",
+    name: "CONSOLIDATE BILLING UNIT",
     description:
-      "Merge and consolidate land profile documents into a single file.",
+      "Merge and consolidate billing unit documents into a single file.",
     icon: StackIcon,
   },
   {
@@ -531,23 +532,20 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
         profile={profile}
         onProfileChange={setProfile}
       />
-      {isLogoutModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Logout confirmation"
-          onClick={handleCloseLogoutModal}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              event.preventDefault();
-              handleCloseLogoutModal();
-            }
-          }}
-        >
+      <MasonryModal
+        isOpen={isLogoutModalOpen}
+        onClose={handleCloseLogoutModal}
+        animateFrom="center"
+        blurToFocus={false}
+        panelClassName="max-w-md"
+        duration={0.35}
+      >
+        {(close) => (
           <div
-            className="w-full max-w-md rounded-2xl border border-white/20 bg-emerald-950 p-5 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
+            className="rounded-2xl border border-white/20 bg-emerald-950 p-5 shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Logout confirmation"
           >
             <h3 className="text-lg font-medium text-white">Confirm Logout</h3>
             <p className="mt-2 text-sm text-white/85">
@@ -561,7 +559,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={handleCloseLogoutModal}
+                onClick={close}
                 disabled={isLoggingOut}
                 aria-label="Cancel logout"
                 className="rounded-lg border border-white/35 px-3 py-2 text-sm text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/60"
@@ -582,8 +580,8 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </MasonryModal>
     </aside>
   );
 }

@@ -3,6 +3,16 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 
+const handleKeyDown = (
+  event: KeyboardEvent,
+  isOpen: boolean,
+  handleClose: () => void,
+) => {
+  if (!isOpen || event.key !== "Escape") return;
+  event.preventDefault();
+  handleClose();
+};
+
 interface MasonryModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -14,6 +24,8 @@ interface MasonryModalProps {
   blurToFocus?: boolean;
   duration?: number;
   ease?: string;
+  /** Extra classes for the inner panel (e.g. max-w-2xl). Default: max-w-sm */
+  panelClassName?: string;
 }
 
 /**
@@ -28,6 +40,7 @@ export function MasonryModal({
   blurToFocus = true,
   duration = 0.6,
   ease = "power3.out",
+  panelClassName = "max-w-sm",
 }: MasonryModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -58,8 +71,8 @@ export function MasonryModal({
           fromX = window.innerWidth + 200;
           break;
         case "center":
-          fromY = window.innerHeight / 2 - panelRect.height / 2;
-          fromX = window.innerWidth / 2 - panelRect.width / 2;
+          fromY = 0;
+          fromX = 0;
           break;
         default:
           fromY = window.innerHeight + 200;
@@ -71,6 +84,7 @@ export function MasonryModal({
         opacity: 0,
         y: animateFrom === "left" || animateFrom === "right" ? 0 : fromY,
         x: animateFrom === "left" || animateFrom === "right" ? fromX : 0,
+        ...(animateFrom === "center" && { scale: 0.96 }),
         ...(blurToFocus && { filter: "blur(10px)" }),
       });
 
@@ -83,6 +97,7 @@ export function MasonryModal({
         opacity: 1,
         y: 0,
         x: 0,
+        ...(animateFrom === "center" && { scale: 1 }),
         ...(blurToFocus && { filter: "blur(0px)" }),
         duration,
         ease,
@@ -109,8 +124,8 @@ export function MasonryModal({
           toX = window.innerWidth + 200;
           break;
         case "center":
-          toY = window.innerHeight / 2;
-          toX = window.innerWidth / 2;
+          toY = 0;
+          toX = 0;
           break;
         default:
           toY = window.innerHeight + 200;
@@ -121,6 +136,7 @@ export function MasonryModal({
         opacity: 0,
         y: animateFrom === "left" || animateFrom === "right" ? 0 : toY,
         x: animateFrom === "left" || animateFrom === "right" ? toX : 0,
+        ...(animateFrom === "center" && { scale: 0.96 }),
         ...(blurToFocus && { filter: "blur(10px)" }),
         duration: duration * 0.6,
         ease: "power3.in",
@@ -140,26 +156,37 @@ export function MasonryModal({
       return;
     }
     const panel = panelRef.current;
-    const toY =
-      animateFrom === "top"
-        ? -window.innerHeight - 200
-        : window.innerHeight + 200;
-    const toX =
-      animateFrom === "left"
-        ? -window.innerWidth - 200
-        : animateFrom === "right"
-          ? window.innerWidth + 200
-          : 0;
 
-    gsap.to(panel, {
-      opacity: 0,
-      y: animateFrom === "left" || animateFrom === "right" ? 0 : toY,
-      x: animateFrom === "left" || animateFrom === "right" ? toX : 0,
-      ...(blurToFocus && { filter: "blur(10px)" }),
-      duration: 0.4,
-      ease: "power3.in",
-      onComplete: onClose,
-    });
+    if (animateFrom === "center") {
+      gsap.to(panel, {
+        opacity: 0,
+        scale: 0.96,
+        duration: 0.25,
+        ease: "power2.in",
+        onComplete: onClose,
+      });
+    } else {
+      const toY =
+        animateFrom === "top"
+          ? -window.innerHeight - 200
+          : window.innerHeight + 200;
+      const toX =
+        animateFrom === "left"
+          ? -window.innerWidth - 200
+          : animateFrom === "right"
+            ? window.innerWidth + 200
+            : 0;
+
+      gsap.to(panel, {
+        opacity: 0,
+        y: animateFrom === "left" || animateFrom === "right" ? 0 : toY,
+        x: animateFrom === "left" || animateFrom === "right" ? toX : 0,
+        ...(blurToFocus && { filter: "blur(10px)" }),
+        duration: 0.4,
+        ease: "power3.in",
+        onComplete: onClose,
+      });
+    }
     gsap.to(overlayRef.current, {
       opacity: 0,
       duration: 0.25,
@@ -168,20 +195,27 @@ export function MasonryModal({
     });
   };
 
+  useEffect(() => {
+    const bound = (e: KeyboardEvent) => handleKeyDown(e, isOpen, handleClose);
+    window.addEventListener("keydown", bound);
+    return () => window.removeEventListener("keydown", bound);
+  }, [isOpen, handleClose]);
+
   if (!isOpen) return null;
 
-  const content = typeof children === "function" ? children(onClose) : children;
+  const content =
+    typeof children === "function" ? children(handleClose) : children;
 
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-emerald-900/90 backdrop-blur-sm p-4"
       onClick={handleClose}
       style={{ display: "none" }}
     >
       <div
         ref={panelRef}
-        className="relative w-full max-w-sm"
+        className={`relative w-full ${panelClassName}`}
         onClick={(e) => e.stopPropagation()}
       >
         {content}

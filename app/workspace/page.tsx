@@ -19,16 +19,16 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   "template-manager": {
     name: "TEMPLATE MANAGER",
     description:
-      "Manage shared templates used by IFR Scanner and Consolidate Land Profile.",
+      "Manage shared templates used by IFR Scanner and Consolidate Billing Unit.",
   },
   "lipa-summary": {
     name: "LIPA SUMMARY",
     description: "Generate summary reports for LIPA documents and records.",
   },
   "consolidate-ifr": {
-    name: "CONSOLIDATE LAND PROFILE",
+    name: "CONSOLIDATE BILLING UNIT",
     description:
-      "Merge and consolidate land profile documents into a single file.",
+      "Merge and consolidate billing unit documents into a single file.",
   },
   "merge-files": {
     name: "MERGE FILES",

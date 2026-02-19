@@ -39,7 +39,7 @@ export function TemplatesTool() {
         </div>
         <p className="mt-2 text-sm text-white/85 text-justify">
           Use this page as the centralized template workspace for IFR Scanner and
-          Consolidate Land Profile. You can review saved templates, select active
+          Consolidate Billing Unit. You can review saved templates, select active
           ones, upload replacements, rename outdated files, and keep a clean
           list that stays consistent for every authenticated user. This prevents
           duplicate uploads per account, improves alignment across teams, and
@@ -64,7 +64,7 @@ export function TemplatesTool() {
         <section className="rounded-xl border border-white/35 bg-white/10 p-4">
           <p className="flex items-center gap-2 text-sm font-medium text-white">
             <StackIcon size={16} className="text-white" />
-            Consolidate Land Profile Templates
+            Consolidate Billing Unit Templates
           </p>
           <TemplateManager
             scope="consolidate-ifr"

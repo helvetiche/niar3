@@ -11,15 +11,15 @@ import {
   UploadSimpleIcon,
   WrenchIcon,
 } from "@phosphor-icons/react";
-import { generateProfilesZip } from "@/lib/api/farmer-profiles";
+import { generateBillingUnitsZip } from "@/lib/api/billing-units";
 import { TemplateManager } from "@/components/TemplateManager";
 import { listTemplates, type StoredTemplate } from "@/lib/api/templates";
 
-const defaultZipName = "farmer-profiles";
+const defaultZipName = "BILLING UNITS";
 const defaultConsolidationDivision = "0";
 const defaultConsolidationIA = "IA";
 const defaultMergedConsolidationFileName = "ALL DIVISION CONSOLIDATED";
-const defaultProfileFolderName = "land account";
+const defaultBillingUnitFolderName = "billing unit";
 const scannerConsolidationTemplateStorageKey =
   "ifr-scanner:last-consolidation-template-id";
 
@@ -94,8 +94,8 @@ export function GenerateProfilesTool() {
     StoredTemplate[]
   >([]);
   const [consolidationTemplateId, setConsolidationTemplateId] = useState("");
-  const [profileFolderName, setProfileFolderName] = useState(
-    defaultProfileFolderName,
+  const [billingUnitFolderName, setBillingUnitFolderName] = useState(
+    defaultBillingUnitFolderName,
   );
   const [sourceFolderNames, setSourceFolderNames] = useState<
     Record<string, string>
@@ -227,7 +227,7 @@ export function GenerateProfilesTool() {
     }
 
     setIsGenerating(true);
-    setMessage("Generating profile files...");
+    setMessage("Generating billing unit files...");
     setIsFinalizing(false);
     setElapsedSeconds(0);
     setIsOverlayVisible(true);
@@ -243,13 +243,13 @@ export function GenerateProfilesTool() {
     }, 1000);
 
     try {
-      const blob = await generateProfilesZip(sourceFiles, {
+      const blob = await generateBillingUnitsZip(sourceFiles, {
         templateId: selectedTemplateId,
         createConsolidation,
         consolidationTemplateId,
         createMergedConsolidation,
         mergedConsolidationFileName,
-        profileFolderName,
+        billingUnitFolderName,
         sourceFolderNames,
         sourceConsolidationDivisions,
         sourceConsolidationIAs,
@@ -268,7 +268,7 @@ export function GenerateProfilesTool() {
       document.body.removeChild(downloadLink);
       URL.revokeObjectURL(objectUrl);
 
-      setMessage("Success. Profile ZIP has been downloaded.");
+      setMessage("Success. Billing Unit ZIP has been downloaded.");
       setIsFinalizing(true);
       if (elapsedIntervalRef.current !== null) {
         window.clearInterval(elapsedIntervalRef.current);
@@ -282,7 +282,7 @@ export function GenerateProfilesTool() {
       const text =
         error instanceof Error
           ? error.message
-          : "Failed to generate profile files.";
+          : "Failed to generate billing unit files.";
       setMessage(text);
       if (elapsedIntervalRef.current !== null) {
         window.clearInterval(elapsedIntervalRef.current);
@@ -303,7 +303,7 @@ export function GenerateProfilesTool() {
     setCreateMergedConsolidation(false);
     setMergedConsolidationFileName(defaultMergedConsolidationFileName);
     setConsolidationTemplateId("");
-    setProfileFolderName(defaultProfileFolderName);
+    setBillingUnitFolderName(defaultBillingUnitFolderName);
     setSourceFolderNames({});
     setSourceConsolidationDivisions({});
     setSourceConsolidationIAs({});
@@ -364,7 +364,7 @@ export function GenerateProfilesTool() {
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
             <FileXlsIcon size={12} className="text-white" />
-            Profile Extraction
+            Billing Unit Extraction
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
             <DownloadSimpleIcon size={12} className="text-white" />
@@ -373,11 +373,11 @@ export function GenerateProfilesTool() {
         </div>
         <p className="mt-2 text-sm text-white/85 text-justify">
           Upload master lists and scan files to automatically generate one
-          profile workbook per lot with consistent naming and folder structure.
-          Select your template, configure optional consolidation, and download
-          everything in one ZIP. This flow streamlines repetitive encoding,
-          reduces manual errors, and accelerates report preparation for field
-          teams across all divisions.
+          billing unit workbook per lot with consistent naming and folder
+          structure. Select your template, configure optional consolidation, and
+          download everything in one ZIP. This flow streamlines repetitive
+          encoding, reduces manual errors, and accelerates report preparation
+          for field teams across all divisions.
         </p>
       </div>
 
@@ -430,7 +430,7 @@ export function GenerateProfilesTool() {
           <p className="mt-2 text-xs text-white/80">
             Upload one or many .xlsx/.xls files. Each uploaded file is processed
             as a separate division folder in the ZIP with one{" "}
-            <span className="font-medium">land account</span> subfolder.
+            <span className="font-medium">billing unit</span> subfolder.
           </p>
         </div>
       </div>
@@ -444,17 +444,19 @@ export function GenerateProfilesTool() {
 
           <label className="mt-4 block">
             <span className="mb-2 block text-sm font-medium text-white/90">
-              Land Account Folder Name
+              Billing Unit Folder Name
             </span>
             <input
               type="text"
-              aria-label="Set land account folder name"
-              value={profileFolderName}
+              aria-label="Set billing unit folder name"
+              value={billingUnitFolderName}
               onChange={(event) =>
-                setProfileFolderName(sanitizeFolderInput(event.target.value))
+                setBillingUnitFolderName(
+                  sanitizeFolderInput(event.target.value),
+                )
               }
               className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-              placeholder={defaultProfileFolderName}
+              placeholder={defaultBillingUnitFolderName}
             />
           </label>
 
@@ -464,7 +466,7 @@ export function GenerateProfilesTool() {
               const folderName =
                 sourceFolderNames[fileKey] || getBaseName(file.name);
               const profilesFolder =
-                profileFolderName.trim() || defaultProfileFolderName;
+                billingUnitFolderName.trim() || defaultBillingUnitFolderName;
               const divisionValue =
                 sourceConsolidationDivisions[fileKey] ??
                 defaultConsolidationDivision;
@@ -541,7 +543,7 @@ export function GenerateProfilesTool() {
                     )}
                     <p className="pl-4">{profilesFolder}/</p>
                     <p className="pl-8 text-white/70">
-                      ...generated land account files
+                      ...generated billing unit files
                     </p>
                   </div>
                 </div>
@@ -565,8 +567,8 @@ export function GenerateProfilesTool() {
           placeholder={defaultZipName}
         />
         <span className="mt-2 block text-xs leading-5 text-white/80">
-          Sets the final downloaded ZIP name that contains all generated profile
-          files. Use a clear batch label like{" "}
+          Sets the final downloaded ZIP name that contains all generated billing
+          unit files. Use a clear batch label like{" "}
           <span className="font-medium">division-3-week-7</span> so your team
           can quickly identify the correct output.
         </span>
@@ -580,8 +582,9 @@ export function GenerateProfilesTool() {
         }}
       />
       <p className="mt-2 text-xs leading-5 text-white/80">
-        Select the saved IFR Scanner template used to generate each lot profile.
-        This template controls the output workbook layout and cell mapping.
+        Select the saved IFR Scanner template used to generate each lot billing
+        unit workbook. This template controls the output workbook layout and
+        cell mapping.
       </p>
 
       <section className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
@@ -597,7 +600,7 @@ export function GenerateProfilesTool() {
                 setCreateMergedConsolidation(false);
               }
             }}
-            aria-label="Create consolidation file from generated land profiles"
+            aria-label="Create consolidation file from generated billing units"
           />
           <span>
             <span className="flex items-center gap-2 text-sm font-medium text-white">
@@ -634,7 +637,7 @@ export function GenerateProfilesTool() {
                 ))}
               </select>
               <span className="mt-2 block text-xs text-white/80">
-                Uses saved templates from Consolidate Land Profile scope. This
+                Uses saved templates from Consolidate Billing Unit scope. This
                 template is used to build the combined workbook included in the
                 ZIP.
               </span>
@@ -704,7 +707,7 @@ export function GenerateProfilesTool() {
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <button
           type="button"
-          aria-label="Generate profile zip file"
+          aria-label="Generate billing unit zip file"
           onClick={() => {
             void handleGenerateProfiles();
           }}

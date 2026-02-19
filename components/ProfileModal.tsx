@@ -122,7 +122,7 @@ export function ProfileModal({
   return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[200] bg-black/50 opacity-0"
+      className="fixed inset-0 z-[200] bg-emerald-900/90 backdrop-blur-sm opacity-0"
       onClick={handleClose}
       role="dialog"
       aria-modal="true"

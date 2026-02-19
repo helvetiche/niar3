@@ -7,6 +7,7 @@ import {
   UploadSimpleIcon,
   XIcon,
 } from "@phosphor-icons/react";
+import { MasonryModal } from "@/components/MasonryModal";
 import {
   deleteTemplate,
   listTemplates,
@@ -196,18 +197,14 @@ export function TemplateManager({
         </div>
       </section>
 
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="absolute inset-0 bg-black/40"
-            aria-hidden="true"
-            onClick={() => setIsModalOpen(false)}
-          />
-          <section className="relative z-10 max-h-[85dvh] w-full max-w-2xl overflow-y-auto rounded-xl border border-white/45 bg-white/15 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-5">
+      <MasonryModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        panelClassName="max-w-2xl"
+        duration={0.45}
+      >
+        {(close) => (
+          <section className="max-h-[85dvh] overflow-y-auto rounded-xl border border-white/45 bg-white/15 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-5">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-medium text-white">
                 Template Manager
@@ -215,7 +212,7 @@ export function TemplateManager({
               <button
                 type="button"
                 aria-label="Close template manager modal"
-                onClick={() => setIsModalOpen(false)}
+                onClick={close}
                 className="rounded-lg p-2 text-white/90 transition hover:bg-white/25"
               >
                 <XIcon size={16} />
@@ -362,8 +359,8 @@ export function TemplateManager({
 
             {message && <p className="mt-3 text-xs text-white">{message}</p>}
           </section>
-        </div>
-      )}
+        )}
+      </MasonryModal>
     </>
   );
 }

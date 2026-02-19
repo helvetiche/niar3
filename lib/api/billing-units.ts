@@ -1,20 +1,20 @@
 "use client";
 
-export type GenerateProfilesOptions = {
+export type GenerateBillingUnitsOptions = {
   templateId: string;
   createConsolidation?: boolean;
   consolidationTemplateId?: string;
   createMergedConsolidation?: boolean;
   mergedConsolidationFileName?: string;
-  profileFolderName?: string;
+  billingUnitFolderName?: string;
   sourceFolderNames?: Record<string, string>;
   sourceConsolidationDivisions?: Record<string, string>;
   sourceConsolidationIAs?: Record<string, string>;
 };
 
-export const generateProfilesZip = async (
+export const generateBillingUnitsZip = async (
   sourceFiles: File[],
-  options: GenerateProfilesOptions,
+  options: GenerateBillingUnitsOptions,
 ): Promise<Blob> => {
   if (sourceFiles.length === 0) {
     throw new Error("Please upload at least one source Excel file.");
@@ -46,8 +46,11 @@ export const generateProfilesZip = async (
       }
     }
   }
-  if (options.profileFolderName?.trim()) {
-    formData.append("profileFolderName", options.profileFolderName.trim());
+  if (options.billingUnitFolderName?.trim()) {
+    formData.append(
+      "billingUnitFolderName",
+      options.billingUnitFolderName.trim(),
+    );
   }
   if (options.sourceFolderNames) {
     formData.append(
@@ -68,7 +71,7 @@ export const generateProfilesZip = async (
     );
   }
 
-  const response = await fetch("/api/v1/generate-profiles", {
+  const response = await fetch("/api/v1/generate-billing-units", {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -77,9 +80,11 @@ export const generateProfilesZip = async (
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
     throw new Error(
-      (data as { error?: string }).error ?? "Failed to generate profile files",
+      (data as { error?: string }).error ??
+        "Failed to generate billing unit files",
     );
   }
 
   return response.blob();
 };
+

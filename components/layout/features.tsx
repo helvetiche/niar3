@@ -49,10 +49,10 @@ const FEATURES = [
     ] satisfies FeatureTag[],
   },
   {
-    id: "consolidate-land-profile",
-    title: "CONSOLIDATE LAND PROFILE",
+    id: "consolidate-billing-unit",
+    title: "CONSOLIDATE BILLING UNIT",
     description:
-      "Combine multiple land profile documents into one consistent file, preserve essential information, remove duplication, and simplify verification across records quickly.",
+      "Combine multiple billing unit documents into one consistent file, preserve essential information, remove duplication, and simplify verification across records quickly.",
     icon: StackIcon,
     tags: [
       { id: "batch", label: "Combine", icon: FilesIcon },
