@@ -146,7 +146,8 @@ export function useMergeFiles() {
         files,
         fileName: fileName.trim() || defaultFileName,
         pageOrder: mode === "pdf" ? pdfPages : undefined,
-        excelPageNames: mode === "excel" ? Object.values(excelPageNames) : undefined,
+        excelPageNames:
+          mode === "excel" ? Object.values(excelPageNames) : undefined,
       });
 
       downloadBlob(result.blob, result.fileName);
