@@ -81,15 +81,6 @@ export async function POST(request: Request) {
     const auth = getAdminAuth();
     const decoded = await auth.verifyIdToken(token);
     
-    const userRecord = await auth.getUser(decoded.uid);
-    
-    console.log("[DEBUG] Creating session for user:", {
-      uid: decoded.uid,
-      email: decoded.email,
-      tokenClaims: decoded.customClaims,
-      userRecordClaims: userRecord.customClaims,
-    });
-    
     const sessionCookie = await auth.createSessionCookie(token, {
       expiresIn: EXPIRES_IN_MS,
     });

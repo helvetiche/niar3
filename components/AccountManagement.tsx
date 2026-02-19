@@ -209,7 +209,7 @@ export function AccountManagement() {
       return;
     }
 
-    if (password !== confirmPassword) {
+    if (password.length !== confirmPassword.length || password !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
     }

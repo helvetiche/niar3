@@ -171,8 +171,6 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 
                 const token = await cred.user.getIdToken(true);
                 
-                console.log("[DEBUG] Token obtained, sending to server");
-                
                 const res = await fetch("/api/v1/auth/session", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },

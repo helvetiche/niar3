@@ -22,12 +22,6 @@ export async function getSession(): Promise<
 
     const userRecord = await auth.getUser(decoded.uid);
 
-    console.log("[DEBUG] Session decoded:", {
-      uid: decoded.uid,
-      email: decoded.email,
-      customClaims: userRecord.customClaims,
-    });
-
     const user: AuthUser = {
       uid: decoded.uid,
       email: decoded.email ?? null,
