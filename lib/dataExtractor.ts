@@ -13,9 +13,11 @@ export interface Farmer {
 }
 
 export interface AccountDetail {
+  division: string;
   farmer: Farmer;
   lotNo: string;
   lotOwner: LotOwner;
+  nameOfIA: string;
 }
 
 export interface SOADetail {
@@ -178,6 +180,8 @@ export const extractAccountDetails = (sheet: ParsedSheet): AccountDetail[] => {
   const lotNo = getCellValue(sheet.data, headerRow + 1, 2);
   if (!lotNo) return details;
 
+  const division = getCellValue(sheet.data, 3, 2);
+  const nameOfIA = getCellValue(sheet.data, 4, 2);
   const ownerFirstName = getCellValue(sheet.data, headerRow + 5, 2);
   const ownerMiddleName = getCellValue(sheet.data, headerRow + 6, 2);
   const ownerLastName = getCellValue(sheet.data, headerRow + 7, 2);
@@ -197,17 +201,19 @@ export const extractAccountDetails = (sheet: ParsedSheet): AccountDetail[] => {
   }
 
   details.push({
+    division,
+    farmer: {
+      firstName: farmerFirstName,
+      middleName: farmerMiddleName,
+      lastName: farmerLastName,
+    },
     lotNo,
     lotOwner: {
       firstName: ownerFirstName,
       middleName: ownerMiddleName,
       lastName: ownerLastName,
     },
-    farmer: {
-      firstName: farmerFirstName,
-      middleName: farmerMiddleName,
-      lastName: farmerLastName,
-    },
+    nameOfIA,
   });
 
   return details;

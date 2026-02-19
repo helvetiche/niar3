@@ -71,6 +71,8 @@ const setCell = (
 };
 
 type GenerateProfileOptions = {
+  division?: string;
+  nameOfIA?: string;
   templateBuffer?: Buffer;
 };
 
@@ -89,8 +91,13 @@ export const generateProfileBuffer = async (
   const farmerFirst = lotGroup.rows[0]?.farmerFirst ?? "";
   const farmerLast = lotGroup.rows[0]?.farmerLast ?? "";
   const oldAccount = lotGroup.rows[0]?.oldAccount ?? "";
+  const division = options?.division ?? "";
+  const nameOfIA = options?.nameOfIA ?? "";
 
   setCell(workbook, ACC_SHEET, "C3", lotCode);
+  setCell(workbook, ACC_SHEET, "C4", division);
+  workbook.sheet(ACC_SHEET).cell("C4").style("horizontalAlignment", "left");
+  setCell(workbook, ACC_SHEET, "C5", nameOfIA);
   setCell(workbook, ACC_SHEET, "C7", landOwnerFirst);
   setCell(workbook, ACC_SHEET, "C9", landOwnerLast);
   setCell(workbook, ACC_SHEET, "C11", farmerFirst);

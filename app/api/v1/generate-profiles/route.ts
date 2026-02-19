@@ -411,12 +411,26 @@ export async function POST(request: Request) {
         );
       }
 
+      const sourceFileKey = getSourceFileKey(sourceFile);
+      const sourceDivision =
+        sourceConsolidationDivisions[sourceFileKey] ??
+        detectDivisionAndIAFromFilename(sourceFile.name).division ??
+        consolidationDivision ??
+        "0";
+      const sourceIA =
+        sourceConsolidationIAs[sourceFileKey] ??
+        detectDivisionAndIAFromFilename(sourceFile.name).ia ??
+        consolidationIA ??
+        "IA";
+
       const generatedProfileFiles: { fileName: string; buffer: Buffer }[] = [];
       for (const [index, lotGroup] of lotGroups.entries()) {
         const { buffer, filename } = await generateProfileBuffer(
           lotGroup,
           index + 1,
           {
+            division: sourceDivision,
+            nameOfIA: sourceIA,
             templateBuffer,
           },
         );
@@ -427,18 +441,6 @@ export async function POST(request: Request) {
       totalGeneratedProfiles += generatedProfileFiles.length;
 
       if (createConsolidation && consolidationTemplateBuffer) {
-        const sourceFileKey = getSourceFileKey(sourceFile);
-        const detected = detectDivisionAndIAFromFilename(sourceFile.name);
-        const sourceDivision =
-          sourceConsolidationDivisions[sourceFileKey] ??
-          detected.division ??
-          consolidationDivision ??
-          "0";
-        const sourceIA =
-          sourceConsolidationIAs[sourceFileKey] ??
-          detected.ia ??
-          consolidationIA ??
-          "IA";
         const consolidationFileName = buildConsolidationFileName(
           sourceDivision,
           sourceIA,

@@ -148,6 +148,11 @@ export async function buildConsolidatedWorkbook(
 
     const rowLabel = String(targetRow);
 
+    const perFileIA =
+      extracted.accountDetails[0]?.nameOfIA?.trim() || iaValue;
+    const perFileDivision =
+      extracted.accountDetails[0]?.division?.trim() || divisionValue;
+
     if (extracted.accountDetails.length > 0) {
       const detail = extracted.accountDetails[0];
       setTextCell(targetSheet, `B${rowLabel}`, detail.lotNo, {
@@ -170,10 +175,10 @@ export async function buildConsolidatedWorkbook(
       setNumericCellWithFormat(targetSheet, `M${rowLabel}`, detail.total);
     }
 
-    setTextCell(targetSheet, `N${rowLabel}`, iaValue);
+    setTextCell(targetSheet, `N${rowLabel}`, perFileIA);
     targetSheet
       .cell(`O${rowLabel}`)
-      .value(Number.parseInt(divisionValue, 10) || 0);
+      .value(Number.parseInt(perFileDivision.replace(/[^0-9]/g, ""), 10) || 0);
     consolidatedCount += 1;
   }
 

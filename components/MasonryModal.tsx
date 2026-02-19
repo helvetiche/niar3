@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { gsap } from "gsap";
 
 const handleKeyDown = (
@@ -42,8 +43,13 @@ export function MasonryModal({
   ease = "power3.out",
   panelClassName = "max-w-sm",
 }: MasonryModalProps) {
+  const [isMounted, setIsMounted] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!overlayRef.current || !panelRef.current) return;
@@ -201,15 +207,15 @@ export function MasonryModal({
     return () => window.removeEventListener("keydown", bound);
   }, [isOpen, handleClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !isMounted) return null;
 
   const content =
     typeof children === "function" ? children(handleClose) : children;
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-emerald-900/90 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-emerald-900/90 backdrop-blur-sm p-4"
       onClick={handleClose}
       style={{ display: "none" }}
     >
@@ -220,6 +226,7 @@ export function MasonryModal({
       >
         {content}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
