@@ -35,9 +35,17 @@ const normalizeLotCode = (raw: string): string => {
 const emptyIfN = (value: string): string =>
   value.trim().toUpperCase() === "N" ? "" : value.trim();
 
+const buildOwnerGroupKey = (row: MastersListRow): string => {
+  const loLast = (row.landOwnerLast ?? "").trim().toUpperCase();
+  const loFirst = (row.landOwnerFirst ?? "").trim().toUpperCase();
+  const fLast = (row.farmerLast ?? "").trim().toUpperCase();
+  const fFirst = (row.farmerFirst ?? "").trim().toUpperCase();
+  return `${row.lotCode}\0${loLast}\0${loFirst}\0${fLast}\0${fFirst}`;
+};
+
 export const processMastersList = (data: unknown[][]): LotGroup[] => {
   const groups: LotGroup[] = [];
-  const lotToGroupIndex = new Map<string, number>();
+  const groupKeyToIndex = new Map<string, number>();
 
   const COL_LOT = 2;
   const COL_CROP_SEASON = 3;
@@ -70,10 +78,11 @@ export const processMastersList = (data: unknown[][]): LotGroup[] => {
       plantedArea: emptyIfN(getCellString(row, COL_PLANTED_AREA)),
     };
 
-    let groupIndex = lotToGroupIndex.get(lotCode);
+    const ownerGroupKey = buildOwnerGroupKey(rowData);
+    let groupIndex = groupKeyToIndex.get(ownerGroupKey);
     if (groupIndex === undefined) {
       groupIndex = groups.length;
-      lotToGroupIndex.set(lotCode, groupIndex);
+      groupKeyToIndex.set(ownerGroupKey, groupIndex);
       groups.push({
         lotCode,
         landOwnerFirst: rowData.landOwnerFirst,

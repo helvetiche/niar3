@@ -111,13 +111,40 @@ export async function buildConsolidatedWorkbook(
     if (id) rowByFileId.set(id, row);
   }
 
+  const lastTemplateRow =
+    rowByFileId.size > 0
+      ? Math.max(...rowByFileId.values())
+      : 0;
+
   const divisionValue = args.division.replace(/[^0-9]/g, "") || "0";
   const iaValue = args.ia.trim() || "IA";
 
   let consolidatedCount = 0;
   const skippedDetails: ConsolidationSkippedDetail[] = [];
 
-  for (const file of args.inputFiles) {
+  const getTargetRow = (fileId: string): number | null => {
+    const existing = rowByFileId.get(fileId);
+    if (existing) return existing;
+    const fileIdNum = Number.parseInt(fileId, 10);
+    if (Number.isNaN(fileIdNum) || fileIdNum < 1) return null;
+    const newRow = Math.max(lastTemplateRow + 1, fileIdNum);
+    rowByFileId.set(fileId, newRow);
+    return newRow;
+  };
+
+  const sortedFiles = [...args.inputFiles].sort((a, b) => {
+    const idA = parseInt(
+      /^(\d+)\s/.exec(a.fileName)?.[1] ?? "0",
+      10,
+    );
+    const idB = parseInt(
+      /^(\d+)\s/.exec(b.fileName)?.[1] ?? "0",
+      10,
+    );
+    return idA - idB;
+  });
+
+  for (const file of sortedFiles) {
     const parsedSheets = parseExcelFile(file.buffer);
     if (parsedSheets.length === 0) {
       skippedDetails.push({
@@ -136,16 +163,17 @@ export async function buildConsolidatedWorkbook(
       continue;
     }
 
-    const targetRow = rowByFileId.get(extracted.fileId);
+    const targetRow = getTargetRow(extracted.fileId);
     if (!targetRow) {
       skippedDetails.push({
         fileName: file.fileName,
         fileId: extracted.fileId,
-        reason: `No matching row in template column A for file ID ${extracted.fileId}.`,
+        reason: `Cannot assign row for file ID ${extracted.fileId}.`,
       });
       continue;
     }
 
+    targetSheet.cell(`A${String(targetRow)}`).value(Number.parseInt(extracted.fileId, 10) || 0);
     const rowLabel = String(targetRow);
 
     const perFileIA = extracted.accountDetails[0]?.nameOfIA?.trim() || iaValue;
