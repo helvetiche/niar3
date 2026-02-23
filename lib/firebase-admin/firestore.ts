@@ -81,7 +81,7 @@ export async function setCalendarNotesForDate(
   await ref.set({ items }, { merge: true });
 }
 
-export type TemplateScope = "ifr-scanner" | "consolidate-ifr";
+export type TemplateScope = "ifr-scanner" | "consolidate-ifr" | "swrft";
 
 export type StoredTemplate = {
   id: string;
@@ -97,7 +97,7 @@ export type StoredTemplate = {
 };
 
 const isTemplateScope = (value: unknown): value is TemplateScope =>
-  value === "ifr-scanner" || value === "consolidate-ifr";
+  value === "ifr-scanner" || value === "consolidate-ifr" || value === "swrft";
 
 function templateCollection() {
   return getDb().collection("templates");
@@ -223,4 +223,14 @@ export async function updateTemplateRecord(
 
 export async function deleteTemplateRecord(templateId: string): Promise<void> {
   await templateCollection().doc(templateId).delete();
+}
+
+export async function getTemplateBuffer(
+  templateId: string,
+): Promise<Buffer | null> {
+  const template = await getTemplateRecord(templateId);
+  if (!template) return null;
+
+  const { downloadBufferFromStorage } = await import("./storage");
+  return downloadBufferFromStorage(template.storagePath);
 }

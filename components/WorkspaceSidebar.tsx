@@ -10,6 +10,7 @@ import {
   StackIcon,
   ArrowsMergeIcon,
   MagnifyingGlassIcon,
+  CalendarBlankIcon,
   CaretLeftIcon,
   CaretRightIcon,
   ListBulletsIcon,
@@ -72,6 +73,13 @@ const TOOLS = [
     description:
       "Merge and consolidate billing unit documents into a single file.",
     icon: StackIcon,
+  },
+  {
+    id: "swrft" as const,
+    name: "SWRFT GENERATOR",
+    description:
+      "Generate bi-monthly accomplishment reports with automatic weekend detection.",
+    icon: CalendarBlankIcon,
   },
   {
     id: "merge-files" as const,

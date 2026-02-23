@@ -14,7 +14,7 @@ const updateAccountSchema = z.object({
 });
 
 export const PATCH = withApiAuth(
-  async (req, user, { params }: { params: Promise<{ uid: string }> }) => {
+  async (req, user, context) => {
     if (!isSuperAdmin(user)) {
       return NextResponse.json(
         { error: "Only super-admins can update accounts" },
@@ -23,7 +23,7 @@ export const PATCH = withApiAuth(
     }
 
     try {
-      const { uid } = await params;
+      const { uid } = await (context as { params: Promise<{ uid: string }> }).params;
       const body = (await req.json()) as UpdateAccountRequest;
       const validated = updateAccountSchema.parse(body);
 
@@ -86,7 +86,7 @@ export const PATCH = withApiAuth(
 );
 
 export const DELETE = withApiAuth(
-  async (req, user, { params }: { params: Promise<{ uid: string }> }) => {
+  async (req, user, context) => {
     if (!isSuperAdmin(user)) {
       return NextResponse.json(
         { error: "Only super-admins can delete accounts" },
@@ -95,7 +95,7 @@ export const DELETE = withApiAuth(
     }
 
     try {
-      const { uid } = await params;
+      const { uid } = await (context as { params: Promise<{ uid: string }> }).params;
       const auth = getAdminAuth();
 
       await auth.deleteUser(uid);

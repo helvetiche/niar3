@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   ArrowsMergeIcon,
+  CalendarBlankIcon,
   CheckCircleIcon,
   DatabaseIcon,
   GearIcon,
@@ -98,6 +99,18 @@ const HUB_TOOLS: HubTool[] = [
       { id: "accurate", label: "Accurate", icon: CheckCircleIcon },
       { id: "verified", label: "Verified Data", icon: ShieldCheckIcon },
       { id: "quick", label: "Quick Turnaround", icon: SparkleIcon },
+    ],
+  },
+  {
+    id: "swrft",
+    name: "SWRFT GENERATOR",
+    description:
+      "Generate bi-monthly accomplishment reports for an entire year with automatic weekend detection, task population, and merged output file.",
+    icon: CalendarBlankIcon,
+    tags: [
+      { id: "automated", label: "Automated", icon: LightningIcon },
+      { id: "bi-monthly", label: "Bi-Monthly", icon: CalendarBlankIcon },
+      { id: "merged", label: "Auto Merge", icon: ArrowsMergeIcon },
     ],
   },
   {

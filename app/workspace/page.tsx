@@ -6,6 +6,7 @@ import { GenerateProfilesTool } from "@/components/GenerateProfilesTool";
 import { ConsolidateIfrTool } from "@/components/ConsolidateIfrTool";
 import { MergeFilesTool } from "@/components/MergeFilesTool";
 import { LipaSummaryTool } from "@/components/LipaSummaryTool";
+import { SwrftTool } from "@/components/SwrftTool";
 import { WorkspaceHub } from "@/components/WorkspaceHub";
 import { TemplatesTool } from "@/components/TemplatesTool";
 import { WorkspaceToolPlaceholder } from "@/components/WorkspaceToolPlaceholder";
@@ -43,6 +44,11 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   "ifr-scanner": {
     name: "IFR SCANNER",
     description: "Scan and extract data from IFR documents automatically.",
+  },
+  swrft: {
+    name: "SWRFT GENERATOR",
+    description:
+      "Generate bi-monthly accomplishment reports for an entire year with automatic weekend detection.",
   },
   accounts: {
     name: "ACCOUNTS",
@@ -98,6 +104,8 @@ export default function WorkspacePage() {
             <ConsolidateIfrTool />
           ) : selectedTab === "merge-files" ? (
             <MergeFilesTool />
+          ) : selectedTab === "swrft" ? (
+            <SwrftTool />
           ) : selectedTab === "accounts" ? (
             <AccountManagement />
           ) : (

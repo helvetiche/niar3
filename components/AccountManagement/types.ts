@@ -1,14 +1,12 @@
+import type { Icon } from "@phosphor-icons/react";
+
 export type RolePreset = "basic" | "advanced" | "custom";
 
 export type AvailableTool = {
   id: string;
   name: string;
   description: string;
-  icon: React.ComponentType<{
-    size?: number;
-    weight?: string;
-    className?: string;
-  }>;
+  icon: Icon;
   requiresConfirmation?: boolean;
   isAdvanced?: boolean;
   isBasic?: boolean;

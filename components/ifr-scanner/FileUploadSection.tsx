@@ -4,7 +4,7 @@ import { FileXlsIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 
 type FileUploadSectionProps = {
   onFilesSelected: (files: FileList | null) => void;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
 };
 
 export function FileUploadSection({

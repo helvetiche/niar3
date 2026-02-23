@@ -4,7 +4,7 @@ import { HTTP_STATUS } from "@/constants/http-status";
 import { z } from "zod";
 
 const requestSchema = z.object({
-  uid: string(),
+  uid: z.string(),
 });
 
 export async function POST(request: Request) {

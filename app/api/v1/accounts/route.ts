@@ -1,22 +1,6 @@
 import { NextResponse } from "next/server";
 import { withApiAuth } from "@/guards/with-api-auth";
 import { getAdminAuth } from "@/lib/firebase-admin/app";
-import { isSuperAdmin } from "@/lib/auth/check-super-admin";
-import { HTTP_STATUS } from "@/constants/http-status";
-import type { CreateAccountRequest } from "@/types/account";
-import { z } from "zod";
-
-const createAccountSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  displayName: z.string().min(1),
-  role: z.enum(["super-admin", "admin", "user"]),
-  permissions: z.array(z.string()).optional(),
-});
-
-import { NextResponse } from "next/server";
-import { withApiAuth } from "@/guards/with-api-auth";
-import { getAdminAuth } from "@/lib/firebase-admin/app";
 import { getAccountsPaginated } from "@/lib/firebase-admin/accounts";
 import { isSuperAdmin } from "@/lib/auth/check-super-admin";
 import { HTTP_STATUS } from "@/constants/http-status";
