@@ -3,6 +3,7 @@ import { withApiAuth } from "@/guards/with-api-auth";
 import { getAdminAuth } from "@/lib/firebase-admin/app";
 import { isSuperAdmin } from "@/lib/auth/check-super-admin";
 import { HTTP_STATUS } from "@/constants/http-status";
+import { BASE_ACCESS_PERMISSIONS } from "@/constants/permissions";
 import type { UpdateAccountRequest } from "@/types/account";
 import { z } from "zod";
 
@@ -49,12 +50,20 @@ export const PATCH = withApiAuth(async (req, user, context) => {
       const currentUser = await auth.getUser(uid);
       const currentClaims = currentUser.customClaims || {};
 
+      let permissionsUpdate: { permissions: string[] } | Record<string, never> =
+        {};
+      if (validated.permissions !== undefined) {
+        permissionsUpdate = {
+          permissions: [
+            ...new Set([...BASE_ACCESS_PERMISSIONS, ...validated.permissions]),
+          ],
+        };
+      }
+
       await auth.setCustomUserClaims(uid, {
         ...currentClaims,
         ...(validated.role !== undefined && { role: validated.role }),
-        ...(validated.permissions !== undefined && {
-          permissions: validated.permissions,
-        }),
+        ...permissionsUpdate,
       });
     }
 

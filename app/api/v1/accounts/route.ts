@@ -4,6 +4,7 @@ import { getAdminAuth } from "@/lib/firebase-admin/app";
 import { getAccountsPaginated } from "@/lib/firebase-admin/accounts";
 import { isSuperAdmin } from "@/lib/auth/check-super-admin";
 import { HTTP_STATUS } from "@/constants/http-status";
+import { BASE_ACCESS_PERMISSIONS } from "@/constants/permissions";
 import type { CreateAccountRequest } from "@/types/account";
 import { z } from "zod";
 
@@ -68,9 +69,14 @@ export const POST = withApiAuth(async (req, user) => {
       emailVerified: false,
     });
 
+    const toolPermissions = validated.permissions ?? [];
+    const allPermissions = [
+      ...new Set([...BASE_ACCESS_PERMISSIONS, ...toolPermissions]),
+    ];
+
     await auth.setCustomUserClaims(userRecord.uid, {
       role: validated.role,
-      permissions: validated.permissions || [],
+      permissions: allPermissions,
     });
 
     return NextResponse.json(
@@ -79,7 +85,7 @@ export const POST = withApiAuth(async (req, user) => {
         email: userRecord.email,
         displayName: userRecord.displayName,
         role: validated.role,
-        permissions: validated.permissions || [],
+        permissions: allPermissions,
       },
       { status: HTTP_STATUS.CREATED },
     );

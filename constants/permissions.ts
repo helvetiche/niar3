@@ -25,3 +25,12 @@ export const PERMISSIONS = {
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
+
+/**
+ * Base permissions required for any authenticated user to access the app.
+ * Must be included when creating/updating accounts via Account Manager.
+ */
+export const BASE_ACCESS_PERMISSIONS: Permission[] = [
+  PERMISSIONS.WORKSPACE_READ,
+  PERMISSIONS.DASHBOARD_READ,
+];
