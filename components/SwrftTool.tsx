@@ -22,7 +22,6 @@ import { generateSwrft } from "@/lib/api/swrft";
 import {
   createAccomplishmentTask,
   deleteAccomplishmentTask,
-  type AccomplishmentTask,
 } from "@/lib/api/accomplishment-tasks";
 import { useAccomplishmentTasks } from "@/hooks/useAccomplishmentTasks";
 import { TemplateManager } from "@/components/TemplateManager";
@@ -52,9 +51,9 @@ export function SwrftTool() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [selectedMonths, setSelectedMonths] = useState<number[]>(
-    [...ALL_MONTHS],
-  );
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([
+    ...ALL_MONTHS,
+  ]);
   const [includeFirstHalf, setIncludeFirstHalf] = useState(false);
   const [includeSecondHalf, setIncludeSecondHalf] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,7 +77,7 @@ export function SwrftTool() {
   } = useAccomplishmentTasks();
 
   const selectedTask = selectedTaskId
-    ? tasks.find((t) => t.id === selectedTaskId) ?? null
+    ? (tasks.find((t) => t.id === selectedTaskId) ?? null)
     : null;
   const designation = selectedTask?.designation ?? "SWRFT";
 
@@ -102,10 +101,7 @@ export function SwrftTool() {
     }
   };
 
-  const handleDeleteTask = async (
-    e: React.MouseEvent,
-    taskId: string,
-  ) => {
+  const handleDeleteTask = async (e: React.MouseEvent, taskId: string) => {
     e.stopPropagation();
     setDeletingTaskId(taskId);
     try {
@@ -153,12 +149,12 @@ export function SwrftTool() {
     }
 
     setIsSubmitting(true);
-    const loadingToastId = toast.loading("Generating accomplishment reports...");
+    const loadingToastId = toast.loading(
+      "Generating accomplishment reports...",
+    );
 
     try {
-      const customTasks = selectedTask
-        ? [selectedTask.label]
-        : undefined;
+      const customTasks = selectedTask ? [selectedTask.label] : undefined;
 
       const result = await generateSwrft({
         templateId: selectedTemplateId,
@@ -181,7 +177,9 @@ export function SwrftTool() {
       );
     } catch (error) {
       toast.dismiss(loadingToastId);
-      toast.error(getErrorMessage(error, "Failed to generate accomplishment report."));
+      toast.error(
+        getErrorMessage(error, "Failed to generate accomplishment report."),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -229,9 +227,14 @@ export function SwrftTool() {
         <p className="mt-2 text-sm text-white/85 text-justify">
           Generate quincena accomplishment reports for NIA O&amp;M activities.
           Select your template, enter your name, choose months and periods, and
-          optionally select a task. The selected task sets the report designation
-          (SWRFT or WRFOB); if none selected, default SWRFT is used. Output filename:
-          <strong className="text-white"> LastName, FirstName - [Designation]</strong>.
+          optionally select a task. The selected task sets the report
+          designation (SWRFT or WRFOB); if none selected, default SWRFT is used.
+          Output filename:
+          <strong className="text-white">
+            {" "}
+            LastName, FirstName - [Designation]
+          </strong>
+          .
         </p>
       </div>
 
@@ -241,13 +244,15 @@ export function SwrftTool() {
           Template
         </p>
         <p className="mb-3 text-xs leading-5 text-white/80">
-          Choose a saved accomplishment report template. Upload and manage templates in Template Manager (gear icon in sidebar). The template defines the layout; this tool fills in your data.
+          Choose a saved accomplishment report template. Upload and manage
+          templates in Template Manager (gear icon in sidebar). The template
+          defines the layout; this tool fills in your data.
         </p>
         <TemplateManager
-        scope="swrft"
-        selectedTemplateId={selectedTemplateId}
-        onSelectedTemplateIdChange={setSelectedTemplateId}
-      />
+          scope="swrft"
+          selectedTemplateId={selectedTemplateId}
+          onSelectedTemplateIdChange={setSelectedTemplateId}
+        />
       </section>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -305,8 +310,9 @@ export function SwrftTool() {
           </button>
         </div>
         <p className="mb-3 text-xs leading-5 text-white/80">
-          Add tasks via the button above. Select one task to use; its designation
-          (SWRFT or WRFOB) is applied to the report. If none selected, default SWRFT is used.
+          Add tasks via the button above. Select one task to use; its
+          designation (SWRFT or WRFOB) is applied to the report. If none
+          selected, default SWRFT is used.
           {selectedTask && (
             <span className="mt-1 block font-medium text-white">
               Report designation: {designation}
@@ -360,71 +366,76 @@ export function SwrftTool() {
             <span className="col-span-full text-xs text-white/70">
               No saved tasks. Click Add task to create one.
             </span>
-          ) : (() => {
-            const query = taskSearchQuery.trim().toLowerCase();
-            const filtered = tasks.filter((task) => {
-              if (taskDesignationFilter !== "all" && task.designation !== taskDesignationFilter) {
-                return false;
-              }
-              if (query && !task.label.toLowerCase().includes(query)) {
-                return false;
-              }
-              return true;
-            });
-            return filtered.length === 0 ? (
-              <span className="col-span-full text-xs text-white/70">
-                No tasks match your search or filter.
-              </span>
-            ) : (
-              filtered.map((task) => {
-                const isSelected = selectedTaskId === task.id;
-                return (
-                  <div
-                    key={task.id}
-                    role="group"
-                    className={`relative flex flex-col gap-2 rounded-xl border px-3 py-3 transition ${
-                      isSelected
-                        ? "border-2 border-white bg-white/30"
-                        : "border border-white/40 bg-white/10 hover:bg-white/20"
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleTaskToggle(task.id)}
-                      aria-label={`${isSelected ? "Deselect" : "Select"} task: ${task.label}`}
-                      aria-pressed={isSelected}
-                      className="flex min-w-0 flex-1 flex-col items-start gap-2 pr-6 text-left"
+          ) : (
+            (() => {
+              const query = taskSearchQuery.trim().toLowerCase();
+              const filtered = tasks.filter((task) => {
+                if (
+                  taskDesignationFilter !== "all" &&
+                  task.designation !== taskDesignationFilter
+                ) {
+                  return false;
+                }
+                if (query && !task.label.toLowerCase().includes(query)) {
+                  return false;
+                }
+                return true;
+              });
+              return filtered.length === 0 ? (
+                <span className="col-span-full text-xs text-white/70">
+                  No tasks match your search or filter.
+                </span>
+              ) : (
+                filtered.map((task) => {
+                  const isSelected = selectedTaskId === task.id;
+                  return (
+                    <div
+                      key={task.id}
+                      role="group"
+                      className={`relative flex flex-col gap-2 rounded-xl border px-3 py-3 transition ${
+                        isSelected
+                          ? "border-2 border-white bg-white/30"
+                          : "border border-white/40 bg-white/10 hover:bg-white/20"
+                      }`}
                     >
-                      <span className="line-clamp-2 text-sm font-medium text-white">
-                        {task.label}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => handleDeleteTask(e, task.id)}
-                      disabled={deletingTaskId === task.id}
-                      aria-label={
-                        deletingTaskId === task.id
-                          ? "Removing task"
-                          : `Remove task: ${task.label}`
-                      }
-                      className="absolute right-2 top-2 rounded p-1 transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {deletingTaskId === task.id ? (
-                        <CircleNotchIcon
-                          size={14}
-                          className="text-white animate-spin"
-                          aria-hidden
-                        />
-                      ) : (
-                        <TrashIcon size={14} className="text-white" />
-                      )}
-                    </button>
-                  </div>
-                );
-              })
-            );
-          })()}
+                      <button
+                        type="button"
+                        onClick={() => handleTaskToggle(task.id)}
+                        aria-label={`${isSelected ? "Deselect" : "Select"} task: ${task.label}`}
+                        aria-pressed={isSelected}
+                        className="flex min-w-0 flex-1 flex-col items-start gap-2 pr-6 text-left"
+                      >
+                        <span className="line-clamp-2 text-sm font-medium text-white">
+                          {task.label}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteTask(e, task.id)}
+                        disabled={deletingTaskId === task.id}
+                        aria-label={
+                          deletingTaskId === task.id
+                            ? "Removing task"
+                            : `Remove task: ${task.label}`
+                        }
+                        className="absolute right-2 top-2 rounded p-1 transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {deletingTaskId === task.id ? (
+                          <CircleNotchIcon
+                            size={14}
+                            className="text-white animate-spin"
+                            aria-hidden
+                          />
+                        ) : (
+                          <TrashIcon size={14} className="text-white" />
+                        )}
+                      </button>
+                    </div>
+                  );
+                })
+              );
+            })()
+          )}
         </div>
       </div>
 
@@ -453,8 +464,8 @@ export function SwrftTool() {
               </button>
             </div>
             <p className="mb-4 text-xs leading-5 text-white/80">
-              Add a new task for your accomplishment report. Choose a designation
-              (SWRFT or WRFOB) so it appears in the correct reports.
+              Add a new task for your accomplishment report. Choose a
+              designation (SWRFT or WRFOB) so it appears in the correct reports.
             </p>
             <div className="flex flex-col gap-3">
               <label className="block" htmlFor="add-task-label">
@@ -556,7 +567,9 @@ export function SwrftTool() {
           </button>
         </div>
         <span className="mt-2 block text-xs leading-5 text-white/80">
-          Select which months to include in the report. Click each pill to toggle. Use Select all or Deselect all for speed. You must select at least one month before generating.
+          Select which months to include in the report. Click each pill to
+          toggle. Use Select all or Deselect all for speed. You must select at
+          least one month before generating.
         </span>
       </div>
 
@@ -574,7 +587,7 @@ export function SwrftTool() {
               includeFirstHalf
                 ? "border-2 border-white bg-white/30 text-white"
                 : "border border-white/40 bg-white/10 text-white/90 hover:bg-white/20"
-                }`}
+            }`}
           >
             <CalendarDotsIcon size={18} weight="duotone" />
             <span>First half (1-15)</span>
@@ -588,14 +601,16 @@ export function SwrftTool() {
               includeSecondHalf
                 ? "border-2 border-white bg-white/30 text-white"
                 : "border border-white/40 bg-white/10 text-white/90 hover:bg-white/20"
-                }`}
+            }`}
           >
             <CalendarCheckIcon size={18} weight="duotone" />
             <span>Second half (16-30/31)</span>
           </button>
         </div>
         <span className="mt-2 block text-xs leading-5 text-white/80">
-          First half covers days 1–15; second half covers 16–30 or 16–31 depending on the month. Select at least one period. Both can be selected to generate reports for the full month.
+          First half covers days 1–15; second half covers 16–30 or 16–31
+          depending on the month. Select at least one period. Both can be
+          selected to generate reports for the full month.
         </span>
       </div>
 
