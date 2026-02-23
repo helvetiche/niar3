@@ -7,10 +7,10 @@ import {
   HouseIcon,
   GearIcon,
   FileTextIcon,
+  FileXlsIcon,
   StackIcon,
   ArrowsMergeIcon,
   MagnifyingGlassIcon,
-  CalendarBlankIcon,
   CaretLeftIcon,
   CaretRightIcon,
   ListBulletsIcon,
@@ -75,18 +75,18 @@ const TOOLS = [
     icon: StackIcon,
   },
   {
-    id: "swrft" as const,
-    name: "SWRFT GENERATOR",
-    description:
-      "Generate bi-monthly accomplishment reports with automatic weekend detection.",
-    icon: CalendarBlankIcon,
-  },
-  {
     id: "merge-files" as const,
     name: "MERGE FILES",
     description:
       "Merge PDF files with page ordering and combine Excel files into one workbook.",
     icon: ArrowsMergeIcon,
+  },
+  {
+    id: "swrft" as const,
+    name: "SWRFT",
+    description:
+      "Generate quincena accomplishment reports for the full year.",
+    icon: FileXlsIcon,
   },
   {
     id: "ifr-scanner" as const,

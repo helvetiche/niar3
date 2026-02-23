@@ -1,170 +1,230 @@
 import XlsxPopulate from "xlsx-populate";
 
-type SwrftPeriod = "first-half" | "second-half";
+const MONTH_NAMES = [
+  "JANUARY",
+  "FEBRUARY",
+  "MARCH",
+  "APRIL",
+  "MAY",
+  "JUNE",
+  "JULY",
+  "AUGUST",
+  "SEPTEMBER",
+  "OCTOBER",
+  "NOVEMBER",
+  "DECEMBER",
+] as const;
 
-type SwrftGenerationOptions = {
-  fullName: string;
-  reportType: string;
+const WEEKDAY_TASK =
+  "SUPERVISED WRFOB, WATER DISTRIBUTION, AREA MONITORING, FIELD INSPECTION ATTEND IA MEETING and OTHER O&M ACTIVITIES";
+
+const WRFO_B_TASK_LINE_1 = "FIELD INSPECTION , ASSIST SWRFT IN AREA MONITORING,";
+const WRFO_B_TASK_LINE_2 = "REMOVING OF DEBRIS AND OTHER O&M ACTIVITIES";
+
+export type SwrftPeriod = {
   year: number;
   month: number;
-  period: SwrftPeriod;
-  templateBuffer: Buffer;
+  /** 1 = first half (1-15), 2 = second half (16-end) */
+  half: 1 | 2;
 };
 
-const STANDARD_TASK =
-  "SUPERVISED WRFOB, WATER DISTRIBUTION, AREA MONITORING, FIELD INSPECTION ATTEND IA MEETING and OTHER O&M ACTIVITIES";
+export type SwrftGeneratorInput = {
+  templateBuffer: Buffer;
+  fullName: string;
+  designation: string;
+  period: SwrftPeriod;
+};
 
 const getDaysInMonth = (year: number, month: number): number => {
   return new Date(year, month, 0).getDate();
 };
 
-const getDayOfWeek = (year: number, month: number, day: number): number => {
-  return new Date(year, month - 1, day).getDay();
+const getStartDay = (period: SwrftPeriod): number =>
+  period.half === 1 ? 1 : 16;
+
+const getEndDay = (period: SwrftPeriod): number => {
+  const lastDay = getDaysInMonth(period.year, period.month);
+  return period.half === 1 ? 15 : Math.min(lastDay, 31);
 };
 
-const isWeekend = (year: number, month: number, day: number): boolean => {
-  const dayOfWeek = getDayOfWeek(year, month, day);
-  return dayOfWeek === 0 || dayOfWeek === 6;
+const formatPeriodLabel = (period: SwrftPeriod): string => {
+  const monthName = MONTH_NAMES[period.month - 1];
+  const start = getStartDay(period);
+  const end = getEndDay(period);
+  return `PERIOD COVERED ${monthName} ${start}-${end}, ${period.year}`;
 };
 
-const getDayName = (year: number, month: number, day: number): string => {
-  const dayOfWeek = getDayOfWeek(year, month, day);
-  const days = [
-    "SUNDAY",
-    "MONDAY",
-    "TUESDAY",
-    "WEDNESDAY",
-    "THURSDAY",
-    "FRIDAY",
-    "SATURDAY",
-  ];
-  return days[dayOfWeek] ?? "SUNDAY";
-};
+const getDayOfWeek = (year: number, month: number, day: number): number =>
+  new Date(year, month - 1, day).getDay();
 
-const formatPeriodCovered = (
+type TaskForDayResult =
+  | { type: "single"; value: string }
+  | { type: "double"; line1: string; line2: string };
+
+const getTaskForDay = (
   year: number,
   month: number,
+  day: number,
+  designation: string,
+): TaskForDayResult => {
+  const dow = getDayOfWeek(year, month, day);
+  const weekendLabel = dow === 0 ? "Sunday" : dow === 6 ? "Saturday" : null;
+
+  if (designation === "WRFOB") {
+    if (weekendLabel) {
+      return { type: "double", line1: weekendLabel, line2: weekendLabel };
+    }
+    return {
+      type: "double",
+      line1: WRFO_B_TASK_LINE_1,
+      line2: WRFO_B_TASK_LINE_2,
+    };
+  }
+
+  if (weekendLabel) {
+    return { type: "single", value: weekendLabel };
+  }
+  return { type: "single", value: WEEKDAY_TASK };
+};
+
+interface SheetLike {
+  cell: (ref: string) => { value: (v: string | number) => unknown; style?: (name: string, value: string) => unknown };
+}
+
+const populateSheetForPeriod = (
+  sheet: SheetLike,
+  fullName: string,
+  designation: string,
   period: SwrftPeriod,
-): string => {
-  const monthNames = [
-    "JANUARY",
-    "FEBRUARY",
-    "MARCH",
-    "APRIL",
-    "MAY",
-    "JUNE",
-    "JULY",
-    "AUGUST",
-    "SEPTEMBER",
-    "OCTOBER",
-    "NOVEMBER",
-    "DECEMBER",
-  ];
-  const monthName = monthNames[month - 1] ?? "JANUARY";
-  const dateRange = period === "first-half" ? "1-15" : `16-${getDaysInMonth(year, month)}`;
-  return `PERIOD COVERED ${monthName} ${dateRange}, ${year}`;
-};
-
-const sanitizeFilename = (name: string): string => {
-  return name.replace(/[/\\:*?"<>|]/g, "-").trim();
-};
-
-export const generateSwrftBuffer = async (
-  options: SwrftGenerationOptions,
-): Promise<{ buffer: Buffer; filename: string }> => {
-  const { fullName, reportType, year, month, period, templateBuffer } = options;
-
-  if (!templateBuffer || templateBuffer.length === 0) {
-    throw new Error("Template buffer is empty or invalid");
+): void => {
+  sheet.cell("A6").value(formatPeriodLabel(period));
+  const a6Cell = sheet.cell("A6");
+  if (a6Cell.style) {
+    a6Cell.style("horizontalAlignment", "center");
   }
 
-  const workbook = await XlsxPopulate.fromDataAsync(templateBuffer);
-  const sheet = workbook.sheet(0);
+  sheet.cell("B7").value(fullName);
+  sheet.cell("B8").value(designation);
 
-  if (!sheet) {
-    throw new Error("Template must have at least one sheet");
-  }
+  const startDay = getStartDay(period);
+  const endDay = getEndDay(period);
+  const dayCount = endDay - startDay + 1;
 
-  sheet.cell("A7").value(formatPeriodCovered(year, month, period));
-  sheet.cell("B9").value(fullName);
-  sheet.cell("B10").value(reportType);
+  for (let i = 0; i < dayCount; i += 1) {
+    const dayNum = startDay + i;
+    const rowBase = 11 + i * 2;
+    const dayRef = `A${rowBase}`;
+    const taskRef = `B${rowBase}`;
 
-  const startDay = period === "first-half" ? 1 : 16;
-  const endDay = period === "first-half" ? 15 : getDaysInMonth(year, month);
+    sheet.cell(dayRef).value(dayNum);
 
-  let rowIndex = 0;
-  for (let day = startDay; day <= endDay; day += 1) {
-    const numberCell = `A${13 + rowIndex * 2}`;
-    const taskCell = `B${13 + rowIndex * 2}`;
-
-    sheet.cell(numberCell).value(day - startDay + 1);
-
-    if (isWeekend(year, month, day)) {
-      sheet.cell(taskCell).value(getDayName(year, month, day));
+    const task = getTaskForDay(
+      period.year,
+      period.month,
+      dayNum,
+      designation,
+    );
+    if (task.type === "double") {
+      sheet.cell(taskRef).value(`${task.line1}\n${task.line2}`);
     } else {
-      sheet.cell(taskCell).value(STANDARD_TASK);
+      sheet.cell(taskRef).value(task.value);
+    }
+  }
+};
+
+export const generateSingleSwrftBuffer = async (
+  input: SwrftGeneratorInput,
+): Promise<Buffer> => {
+  const workbook = await XlsxPopulate.fromDataAsync(input.templateBuffer);
+  let sheet: ReturnType<typeof workbook.sheet>;
+  try {
+    sheet = workbook.sheet("TEMPLATE");
+  } catch {
+    sheet = workbook.sheet(0);
+  }
+
+  const { fullName, designation, period } = input;
+  populateSheetForPeriod(sheet, fullName, designation, period);
+
+  const output = await workbook.outputAsync();
+  return Buffer.isBuffer(output) ? output : Buffer.from(output as ArrayBuffer);
+};
+
+export const getAllSwrftPeriods = (year: number): SwrftPeriod[] => {
+  const periods: SwrftPeriod[] = [];
+  for (let month = 1; month <= 12; month += 1) {
+    periods.push({ year, month, half: 1 });
+    periods.push({ year, month, half: 2 });
+  }
+  return periods;
+};
+
+export type SwrftPeriodFilter = {
+  months: number[];
+  includeFirstHalf: boolean;
+  includeSecondHalf: boolean;
+};
+
+export const getFilteredSwrftPeriods = (
+  year: number,
+  filter: SwrftPeriodFilter,
+): SwrftPeriod[] => {
+  const all = getAllSwrftPeriods(year);
+  const monthSet = new Set(filter.months);
+  return all.filter((p) => {
+    if (!monthSet.has(p.month)) return false;
+    if (p.half === 1 && !filter.includeFirstHalf) return false;
+    if (p.half === 2 && !filter.includeSecondHalf) return false;
+    return true;
+  });
+};
+
+export const getSheetNameForPeriod = (period: SwrftPeriod): string => {
+  const monthName = MONTH_NAMES[period.month - 1].slice(0, 3);
+  const start = getStartDay(period);
+  const end = getEndDay(period);
+  return `${monthName} ${start}-${end}`;
+};
+
+/**
+ * Generates a merged SWRFT workbook with selected periods as sheets.
+ * Uses xlsx-populate exclusively to preserve template styling (logos, headers,
+ * footers, formatting) - ExcelJS merge was stripping these.
+ */
+export const generateMergedSwrftWorkbook = async (
+  templateBuffer: Buffer,
+  fullName: string,
+  designation: string,
+  year: number,
+  filter?: SwrftPeriodFilter,
+): Promise<Buffer> => {
+  const workbook = await XlsxPopulate.fromDataAsync(templateBuffer);
+  let templateSheet: ReturnType<typeof workbook.sheet>;
+  try {
+    templateSheet = workbook.sheet("TEMPLATE");
+  } catch {
+    templateSheet = workbook.sheet(0);
+  }
+
+  const periods = filter
+    ? getFilteredSwrftPeriods(year, filter)
+    : getAllSwrftPeriods(year);
+
+  for (let i = 0; i < periods.length; i += 1) {
+    const period = periods[i];
+    const sheetName = getSheetNameForPeriod(period);
+
+    let sheet: ReturnType<typeof workbook.sheet>;
+    if (i === 0) {
+      templateSheet.name(sheetName);
+      sheet = templateSheet;
+    } else {
+      sheet = workbook.cloneSheet(templateSheet, sheetName);
     }
 
-    rowIndex += 1;
+    populateSheetForPeriod(sheet, fullName, designation, period);
   }
 
   const output = await workbook.outputAsync();
-  const buffer = Buffer.isBuffer(output)
-    ? output
-    : Buffer.from(output as ArrayBuffer);
-
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  const monthName = monthNames[month - 1] ?? "January";
-  const periodLabel = period === "first-half" ? "1-15" : "16-31";
-  const filename = sanitizeFilename(
-    `${fullName} - SWRFT - ${monthName} ${periodLabel}, ${year}.xlsx`,
-  );
-
-  return { buffer, filename };
-};
-
-export const generateYearSwrftBuffers = async (
-  fullName: string,
-  reportType: string,
-  year: number,
-  templateBuffer: Buffer,
-): Promise<Array<{ buffer: Buffer; filename: string }>> => {
-  const results: Array<{ buffer: Buffer; filename: string }> = [];
-
-  for (let month = 1; month <= 12; month += 1) {
-    const firstHalf = await generateSwrftBuffer({
-      fullName,
-      reportType,
-      year,
-      month,
-      period: "first-half",
-      templateBuffer,
-    });
-    results.push(firstHalf);
-
-    const secondHalf = await generateSwrftBuffer({
-      fullName,
-      reportType,
-      year,
-      month,
-      period: "second-half",
-      templateBuffer,
-    });
-    results.push(secondHalf);
-  }
-
-  return results;
+  return Buffer.isBuffer(output) ? output : Buffer.from(output as ArrayBuffer);
 };

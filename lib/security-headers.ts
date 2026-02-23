@@ -64,10 +64,12 @@ export function secureFileResponse(
     options.filename,
     "download",
   );
+  const encodedFilename = encodeURIComponent(safeFilename);
+  const contentDisposition = `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`;
   const response = new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": options.contentType,
-      "Content-Disposition": `attachment; filename="${safeFilename}"`,
+      "Content-Disposition": contentDisposition,
       ...options.extraHeaders,
     },
   });

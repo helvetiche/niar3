@@ -15,8 +15,8 @@ export const WORKSPACE_TABS = [
   "lipa-summary",
   "consolidate-ifr",
   "merge-files",
-  "ifr-scanner",
   "swrft",
+  "ifr-scanner",
   "accounts",
 ] as const;
 export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];

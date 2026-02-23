@@ -1,28 +1,50 @@
 import { NextResponse } from "next/server";
+import {
+  applySecurityHeaders,
+  secureFileResponse,
+} from "@/lib/security-headers";
 import { withAuth } from "@/lib/auth";
-import { applySecurityHeaders } from "@/lib/security-headers";
+import { getProfile } from "@/lib/firebase-admin/firestore";
+import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
+import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
+import { generateMergedSwrftWorkbook } from "@/lib/swrftGenerator";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
-import { getTemplateBuffer } from "@/lib/firebase-admin/firestore";
-import { generateYearSwrftBuffers } from "@/lib/swrftGenerator";
-import { mergeExcelBuffers } from "@/lib/merge-files";
+import { withHeavyOperationRateLimit } from "@/lib/rate-limit/with-api-rate-limit";
 import { logger } from "@/lib/logger";
 
+const sanitizeForFilename = (value: string): string =>
+  value.replace(/[\\/:*?"<>|]/g, "-").trim();
+
 export async function POST(request: Request) {
+  const rateLimitResponse = await withHeavyOperationRateLimit(request);
+  if (rateLimitResponse) {
+    await logAuditTrailEntry({
+      action: "generate-swrft.post",
+      status: "rejected",
+      route: "/api/v1/generate-swrft",
+      method: "POST",
+      request,
+      httpStatus: 429,
+      details: { reason: "rate-limited" },
+    });
+    return rateLimitResponse;
+  }
+
   const auth = await withAuth(request, { action: "generate-swrft.post" });
   if (auth instanceof NextResponse) return auth;
   const { user } = auth;
 
   try {
-    const body = (await request.json()) as {
-      fullName?: string;
-      reportType?: string;
-      year?: number;
-      templateId?: string;
-    };
+    const formData = await request.formData();
+    const templateId = formData.get("templateId");
+    const firstNameOverride = formData.get("firstName");
+    const lastNameOverride = formData.get("lastName");
+    const designation = formData.get("designation");
+    const monthsRaw = formData.get("months");
+    const includeFirstHalfRaw = formData.get("includeFirstHalf");
+    const includeSecondHalfRaw = formData.get("includeSecondHalf");
 
-    const { fullName, reportType, year, templateId } = body;
-
-    if (!fullName?.trim()) {
+    if (typeof templateId !== "string" || !templateId.trim()) {
       await logAuditTrailEntry({
         uid: user.uid,
         action: "generate-swrft.post",
@@ -31,63 +53,18 @@ export async function POST(request: Request) {
         method: "POST",
         request,
         httpStatus: 400,
-        details: { reason: "missing-fullName" },
+        details: { reason: "missing-template-id" },
       });
       return applySecurityHeaders(
-        NextResponse.json({ error: "Full name is required" }, { status: 400 }),
+        NextResponse.json(
+          { error: "Template is required. Select a SWRFT template." },
+          { status: 400 },
+        ),
       );
     }
 
-    if (!reportType?.trim()) {
-      await logAuditTrailEntry({
-        uid: user.uid,
-        action: "generate-swrft.post",
-        status: "rejected",
-        route: "/api/v1/generate-swrft",
-        method: "POST",
-        request,
-        httpStatus: 400,
-        details: { reason: "missing-reportType" },
-      });
-      return applySecurityHeaders(
-        NextResponse.json({ error: "Report type is required" }, { status: 400 }),
-      );
-    }
-
-    if (!year || year < 2000 || year > 2100) {
-      await logAuditTrailEntry({
-        uid: user.uid,
-        action: "generate-swrft.post",
-        status: "rejected",
-        route: "/api/v1/generate-swrft",
-        method: "POST",
-        request,
-        httpStatus: 400,
-        details: { reason: "invalid-year", year },
-      });
-      return applySecurityHeaders(
-        NextResponse.json({ error: "Valid year is required" }, { status: 400 }),
-      );
-    }
-
-    if (!templateId?.trim()) {
-      await logAuditTrailEntry({
-        uid: user.uid,
-        action: "generate-swrft.post",
-        status: "rejected",
-        route: "/api/v1/generate-swrft",
-        method: "POST",
-        request,
-        httpStatus: 400,
-        details: { reason: "missing-templateId" },
-      });
-      return applySecurityHeaders(
-        NextResponse.json({ error: "Template ID is required" }, { status: 400 }),
-      );
-    }
-
-    const templateBuffer = await getTemplateBuffer(templateId);
-    if (!templateBuffer) {
+    const templateRecord = await getTemplateRecord(templateId.trim());
+    if (!templateRecord || templateRecord.scope !== "swrft") {
       await logAuditTrailEntry({
         uid: user.uid,
         action: "generate-swrft.post",
@@ -96,30 +73,107 @@ export async function POST(request: Request) {
         method: "POST",
         request,
         httpStatus: 404,
-        details: { reason: "template-not-found", templateId },
+        details: { reason: "template-not-found" },
       });
       return applySecurityHeaders(
-        NextResponse.json({ error: "Template not found" }, { status: 404 }),
+        NextResponse.json(
+          { error: "Template not found or invalid scope." },
+          { status: 404 },
+        ),
       );
     }
 
-    const swrftBuffers = await generateYearSwrftBuffers(
-      fullName.trim(),
-      reportType.trim(),
-      year,
-      templateBuffer,
+    let firstName =
+      typeof firstNameOverride === "string" && firstNameOverride.trim()
+        ? firstNameOverride.trim()
+        : "";
+    let lastName =
+      typeof lastNameOverride === "string" && lastNameOverride.trim()
+        ? lastNameOverride.trim()
+        : "";
+    if (!firstName || !lastName) {
+      const profile = await getProfile(user.uid);
+      if (!firstName) firstName = profile.first?.trim() ?? "";
+      if (!lastName) lastName = profile.last?.trim() ?? "";
+    }
+    if (!firstName || !lastName) {
+      return applySecurityHeaders(
+        NextResponse.json(
+          {
+            error:
+              "First name and last name are required. Fill your profile or enter them manually.",
+          },
+          { status: 400 },
+        ),
+      );
+    }
+
+    const fullName = `${lastName}, ${firstName}`;
+
+    let months: number[] = [];
+    if (typeof monthsRaw === "string" && monthsRaw.trim()) {
+      try {
+        const parsed = JSON.parse(monthsRaw) as unknown;
+        if (Array.isArray(parsed)) {
+          months = parsed
+            .filter((m): m is number => typeof m === "number" && m >= 1 && m <= 12)
+            .sort((a, b) => a - b);
+        }
+      } catch {
+        /* invalid JSON, use default */
+      }
+    }
+    if (months.length === 0) {
+      months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    }
+
+    const includeFirstHalf =
+      typeof includeFirstHalfRaw === "string"
+        ? includeFirstHalfRaw.toLowerCase() !== "false"
+        : true;
+    const includeSecondHalf =
+      typeof includeSecondHalfRaw === "string"
+        ? includeSecondHalfRaw.toLowerCase() !== "false"
+        : true;
+
+    if (!includeFirstHalf && !includeSecondHalf) {
+      return applySecurityHeaders(
+        NextResponse.json(
+          {
+            error:
+              "Select at least one period: first half (1-15) or second half (16-30/31).",
+          },
+          { status: 400 },
+        ),
+      );
+    }
+
+    const designationValue =
+      typeof designation === "string" && designation.trim()
+        ? designation.trim()
+        : "SWRFT";
+
+    const templateBuffer = await downloadBufferFromStorage(
+      templateRecord.storagePath,
     );
 
-    const mergedBuffer = await mergeExcelBuffers({
-      inputFiles: swrftBuffers.map((item) => ({
-        fileName: item.filename,
-        buffer: item.buffer,
-      })),
-      fileName: `${fullName.trim()} - SWRFT - ${year}`,
-      excelPageNames: swrftBuffers.map((item) =>
-        item.filename.replace(".xlsx", ""),
-      ),
-    });
+    const year = new Date().getFullYear();
+    const buffer = await generateMergedSwrftWorkbook(
+      templateBuffer,
+      fullName,
+      designationValue,
+      year,
+      {
+        months,
+        includeFirstHalf,
+        includeSecondHalf,
+      },
+    );
+
+    const outputBaseName = `${sanitizeForFilename(lastName)}, ${sanitizeForFilename(firstName)} - ${designationValue}`;
+    const outputName = outputBaseName.toLowerCase().endsWith(".xlsx")
+      ? outputBaseName
+      : `${outputBaseName}.xlsx`;
 
     await logAuditTrailEntry({
       uid: user.uid,
@@ -130,28 +184,24 @@ export async function POST(request: Request) {
       request,
       httpStatus: 200,
       details: {
-        fullName,
-        reportType,
-        year,
-        filesGenerated: swrftBuffers.length,
+        periodCount: months.length * (includeFirstHalf ? 1 : 0) + months.length * (includeSecondHalf ? 1 : 0),
+        outputName,
       },
     });
 
-    const filename = `${fullName.trim()} - SWRFT - ${year}.xlsx`;
-
-    return new NextResponse(mergedBuffer.buffer, {
-      status: 200,
-      headers: {
-        "Content-Type":
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="${encodeURIComponent(filename)}"`,
-        ...applySecurityHeaders(new NextResponse()).headers,
+    return secureFileResponse(buffer, {
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      filename: outputName,
+      extraHeaders: {
+        "X-SWRFT-Period-Count": String(
+          months.length * (includeFirstHalf ? 1 : 0) +
+            months.length * (includeSecondHalf ? 1 : 0),
+        ),
       },
     });
   } catch (error) {
     logger.error("[api/generate-swrft POST]", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Something went wrong";
     await logAuditTrailEntry({
       uid: user.uid,
       action: "generate-swrft.post",
@@ -160,10 +210,19 @@ export async function POST(request: Request) {
       method: "POST",
       request,
       httpStatus: 500,
-      errorMessage,
+      errorMessage:
+        error instanceof Error ? error.message : "Failed to generate SWRFT",
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: errorMessage }, { status: 500 }),
+      NextResponse.json(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : "Failed to generate SWRFT reports.",
+        },
+        { status: 500 },
+      ),
     );
   }
 }

@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import {
   ArrowsMergeIcon,
-  CalendarBlankIcon,
   CheckCircleIcon,
   DatabaseIcon,
   GearIcon,
@@ -102,18 +101,6 @@ const HUB_TOOLS: HubTool[] = [
     ],
   },
   {
-    id: "swrft",
-    name: "SWRFT GENERATOR",
-    description:
-      "Generate bi-monthly accomplishment reports for an entire year with automatic weekend detection, task population, and merged output file.",
-    icon: CalendarBlankIcon,
-    tags: [
-      { id: "automated", label: "Automated", icon: LightningIcon },
-      { id: "bi-monthly", label: "Bi-Monthly", icon: CalendarBlankIcon },
-      { id: "merged", label: "Auto Merge", icon: ArrowsMergeIcon },
-    ],
-  },
-  {
     id: "merge-files",
     name: "MERGE FILES",
     description:
@@ -123,6 +110,18 @@ const HUB_TOOLS: HubTool[] = [
       { id: "ordered-pages", label: "Ordered Pages", icon: ScissorsIcon },
       { id: "pdf-merge", label: "PDF Merge", icon: FilePdfIcon },
       { id: "excel-merge", label: "Excel Merge", icon: MicrosoftExcelLogoIcon },
+    ],
+  },
+  {
+    id: "swrft",
+    name: "SWRFT",
+    description:
+      "Generate quincena accomplishment reports for the year. Creates 24 period sheets, detects weekends, and merges into one workbook.",
+    icon: FileTextIcon,
+    tags: [
+      { id: "accomplishment", label: "Accomplishment", icon: CheckCircleIcon },
+      { id: "quincena", label: "Quincena Report", icon: FileTextIcon },
+      { id: "auto-merge", label: "Auto Merge", icon: ArrowsMergeIcon },
     ],
   },
 ];
