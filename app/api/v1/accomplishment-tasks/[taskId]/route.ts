@@ -34,7 +34,7 @@ export async function DELETE(
   }
 
   try {
-    await deleteAccomplishmentTask(user.uid, taskId.trim());
+    await deleteAccomplishmentTask(taskId.trim());
     await logAuditTrailEntry({
       uid: user.uid,
       action: "accomplishment-tasks.delete",

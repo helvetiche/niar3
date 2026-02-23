@@ -234,17 +234,12 @@ export type AccomplishmentTask = {
   createdAt: number;
 };
 
-function accomplishmentTasksCollection(uid: string) {
-  return getDb()
-    .collection("users")
-    .doc(uid)
-    .collection("accomplishment_tasks");
+function accomplishmentTasksCollection() {
+  return getDb().collection("accomplishment_tasks");
 }
 
-export async function listAccomplishmentTasks(
-  uid: string,
-): Promise<AccomplishmentTask[]> {
-  const snap = await accomplishmentTasksCollection(uid)
+export async function listAccomplishmentTasks(): Promise<AccomplishmentTask[]> {
+  const snap = await accomplishmentTasksCollection()
     .orderBy("createdAt", "asc")
     .get();
   const validDesignations = ["SWRFT", "WRFOB"] as const;
@@ -267,7 +262,6 @@ export async function listAccomplishmentTasks(
 }
 
 export async function createAccomplishmentTask(
-  uid: string,
   label: string,
   designation: AccomplishmentTaskDesignation = "SWRFT",
 ): Promise<AccomplishmentTask> {
@@ -277,7 +271,7 @@ export async function createAccomplishmentTask(
   }
   const des =
     designation === "SWRFT" || designation === "WRFOB" ? designation : "SWRFT";
-  const ref = accomplishmentTasksCollection(uid).doc();
+  const ref = accomplishmentTasksCollection().doc();
   const now = Date.now();
   const task: AccomplishmentTask = {
     id: ref.id,
@@ -289,9 +283,6 @@ export async function createAccomplishmentTask(
   return task;
 }
 
-export async function deleteAccomplishmentTask(
-  uid: string,
-  taskId: string,
-): Promise<void> {
-  await accomplishmentTasksCollection(uid).doc(taskId).delete();
+export async function deleteAccomplishmentTask(taskId: string): Promise<void> {
+  await accomplishmentTasksCollection().doc(taskId).delete();
 }

@@ -9,7 +9,8 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "set-super-admin": "tsx scripts/set-super-admin.ts",
-    "check-user-role": "tsx scripts/check-user-role.ts"
+    "check-user-role": "tsx scripts/check-user-role.ts",
+    "seed-accomplishment-tasks": "tsx scripts/seed-accomplishment-tasks.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

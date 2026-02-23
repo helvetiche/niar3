@@ -10,7 +10,7 @@ import { logger } from "@/lib/logger";
 
 const MAX_LABEL_LENGTH = 200;
 
-/** GET /api/v1/accomplishment-tasks - List all accomplishment tasks for current user */
+/** GET /api/v1/accomplishment-tasks - List all accomplishment tasks (global, shared by all users) */
 export async function GET(request: Request) {
   const auth = await withAuth(request, {
     action: "accomplishment-tasks.get",
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const { user } = auth;
 
   try {
-    const tasks = await listAccomplishmentTasks(user.uid);
+    const tasks = await listAccomplishmentTasks();
     await logAuditTrailEntry({
       uid: user.uid,
       action: "accomplishment-tasks.get",
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       : "SWRFT";
 
   try {
-    const task = await createAccomplishmentTask(user.uid, label, designation);
+    const task = await createAccomplishmentTask(label, designation);
     await logAuditTrailEntry({
       uid: user.uid,
       action: "accomplishment-tasks.post",

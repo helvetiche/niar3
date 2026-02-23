@@ -206,10 +206,10 @@ export const getFilteredSwrftPeriods = (
 };
 
 export const getSheetNameForPeriod = (period: SwrftPeriod): string => {
-  const monthName = MONTH_NAMES[period.month - 1].slice(0, 3);
+  const monthName = MONTH_NAMES[period.month - 1];
   const start = getStartDay(period);
   const end = getEndDay(period);
-  return `${monthName} ${start}-${end}`;
+  return `${monthName} ${start}-${end}, ${period.year}`;
 };
 
 /**
