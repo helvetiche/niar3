@@ -84,7 +84,7 @@ const getTaskForDay = (
 
   if (designation === "WRFOB") {
     if (weekendLabel) {
-      return { type: "double", line1: weekendLabel, line2: weekendLabel };
+      return { type: "single", value: weekendLabel };
     }
     if (weekdayTask) {
       return {
@@ -138,8 +138,10 @@ const populateSheetForPeriod = (
   for (let i = 0; i < dayCount; i += 1) {
     const dayNum = startDay + i;
     const rowBase = 11 + i * 2;
+    const row2 = rowBase + 1;
     const dayRef = `A${rowBase}`;
-    const taskRef = `B${rowBase}`;
+    const taskRef1 = `B${rowBase}`;
+    const taskRef2 = `B${row2}`;
 
     sheet.cell(dayRef).value(dayNum);
 
@@ -151,9 +153,14 @@ const populateSheetForPeriod = (
       customTasks,
     );
     if (task.type === "double") {
-      sheet.cell(taskRef).value(`${task.line1}\n${task.line2}`);
+      sheet.cell(taskRef1).value(`${task.line1}\n${task.line2}`);
     } else {
-      sheet.cell(taskRef).value(task.value);
+      sheet.cell(taskRef1).value(task.value);
+      // WRFOB template has formulas in even rows (e.g. B12=B11) that duplicate
+      // weekend text. Overwrite the formula cell to show weekend once, not twice.
+      if (designation === "WRFOB") {
+        sheet.cell(taskRef2).value("");
+      }
     }
   }
 };

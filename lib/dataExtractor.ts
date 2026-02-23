@@ -298,10 +298,7 @@ export const extractSOADetails = (
     computed.principal ||
     fromAccCrop.principal;
   penalty =
-    penalty ||
-    fromIfrRows.penalty ||
-    computed.penalty ||
-    fromAccCrop.penalty;
+    penalty || fromIfrRows.penalty || computed.penalty || fromAccCrop.penalty;
 
   const oldAccount = getCellValue(sheet.data, 100, 6, true);
   let total = getCellValue(sheet.data, 101, 6, true);
