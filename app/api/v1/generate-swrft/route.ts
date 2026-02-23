@@ -43,6 +43,7 @@ export async function POST(request: Request) {
     const monthsRaw = formData.get("months");
     const includeFirstHalfRaw = formData.get("includeFirstHalf");
     const includeSecondHalfRaw = formData.get("includeSecondHalf");
+    const customTasksRaw = formData.get("customTasks");
 
     if (typeof templateId !== "string" || !templateId.trim()) {
       await logAuditTrailEntry({
@@ -153,6 +154,22 @@ export async function POST(request: Request) {
         ? designation.trim()
         : "SWRFT";
 
+    let customTasks: string[] | undefined;
+    if (typeof customTasksRaw === "string" && customTasksRaw.trim()) {
+      try {
+        const parsed = JSON.parse(customTasksRaw) as unknown;
+        if (Array.isArray(parsed)) {
+          customTasks = parsed
+            .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+            .map((t) => (t as string).trim())
+            .slice(0, 20);
+          if (customTasks.length === 0) customTasks = undefined;
+        }
+      } catch {
+        /* invalid JSON, ignore */
+      }
+    }
+
     const templateBuffer = await downloadBufferFromStorage(
       templateRecord.storagePath,
     );
@@ -168,6 +185,7 @@ export async function POST(request: Request) {
         includeFirstHalf,
         includeSecondHalf,
       },
+      customTasks,
     );
 
     const outputBaseName = `${sanitizeForFilename(lastName)}, ${sanitizeForFilename(firstName)} - ${designationValue}`;

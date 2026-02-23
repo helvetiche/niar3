@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
   CalendarBlankIcon,
@@ -8,10 +8,19 @@ import {
   CalendarDotsIcon,
   DownloadSimpleIcon,
   FileXlsIcon,
+  ListChecksIcon,
+  PlusIcon,
+  TrashIcon,
   UserIcon,
 } from "@phosphor-icons/react";
 import { generateSwrft } from "@/lib/api/swrft";
 import { fetchProfile } from "@/lib/api/profile";
+import {
+  fetchAccomplishmentTasks,
+  createAccomplishmentTask,
+  deleteAccomplishmentTask,
+  type AccomplishmentTask,
+} from "@/lib/api/accomplishment-tasks";
 import { TemplateManager } from "@/components/TemplateManager";
 import { downloadBlob, getErrorMessage } from "@/lib/utils";
 
@@ -48,6 +57,13 @@ export function SwrftTool() {
   const [includeSecondHalf, setIncludeSecondHalf] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [tasks, setTasks] = useState<AccomplishmentTask[]>([]);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [newTaskLabel, setNewTaskLabel] = useState("");
+  const [isTasksLoading, setIsTasksLoading] = useState(true);
+  const [isAddingTask, setIsAddingTask] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +87,71 @@ export function SwrftTool() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsTasksLoading(true);
+    fetchAccomplishmentTasks()
+      .then((list) => {
+        if (!cancelled) setTasks(list);
+      })
+      .catch(() => {
+        if (!cancelled) setTasks([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsTasksLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleTaskToggle = (taskId: string) => {
+    setSelectedTaskIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
+  const handleAddTask = async () => {
+    const trimmed = newTaskLabel.trim();
+    if (!trimmed) return;
+    setIsAddingTask(true);
+    try {
+      const created = await createAccomplishmentTask(trimmed);
+      setTasks((prev) => [...prev, created].sort((a, b) => a.createdAt - b.createdAt));
+      setNewTaskLabel("");
+      toast.success("Task added");
+    } catch {
+      toast.error("Failed to add task");
+    } finally {
+      setIsAddingTask(false);
+    }
+  };
+
+  const handleDeleteTask = async (
+    e: React.MouseEvent,
+    taskId: string,
+  ) => {
+    e.stopPropagation();
+    try {
+      await deleteAccomplishmentTask(taskId);
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+      setSelectedTaskIds((prev) => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+      toast.success("Task removed");
+    } catch {
+      toast.error("Failed to remove task");
+    }
+  };
 
   const handleMonthToggle = (month: number) => {
     setSelectedMonths((prev) => {
@@ -108,6 +189,13 @@ export function SwrftTool() {
     const loadingToastId = toast.loading("Generating accomplishment reports...");
 
     try {
+      const customTasks =
+        selectedTaskIds.size > 0
+          ? tasks
+              .filter((t) => selectedTaskIds.has(t.id))
+              .map((t) => t.label)
+          : undefined;
+
       const result = await generateSwrft({
         templateId: selectedTemplateId,
         firstName: first,
@@ -116,6 +204,7 @@ export function SwrftTool() {
         months: selectedMonths,
         includeFirstHalf,
         includeSecondHalf,
+        customTasks,
       });
 
       downloadBlob(result.blob, result.fileName);
@@ -159,18 +248,44 @@ export function SwrftTool() {
           </span>
           Accomplishment Report
         </h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <CalendarBlankIcon size={12} className="text-white" />
+            Quincena Report
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <DownloadSimpleIcon size={12} className="text-white" />
+            Excel Output
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <UserIcon size={12} className="text-white" />
+            Auto-populated
+          </span>
+        </div>
         <p className="mt-2 text-sm text-white/85 text-justify">
-          Generate quincena accomplishment reports. Select months and periods,
-          then the system populates weekday tasks and weekend labels into one
-          workbook. Output filename: LastName, FirstName - [Designation].
+          Generate quincena accomplishment reports for NIA O&amp;M activities.
+          Select your template, enter your name, choose which months and periods
+          to include, then pick your designation. The system automatically
+          fills weekday tasks, marks Saturdays and Sundays, and merges all
+          selected periods into one downloadable workbook. Output filename format:
+          <strong className="text-white"> LastName, FirstName - [Designation]</strong>.
         </p>
       </div>
 
-      <TemplateManager
+      <section className="rounded-xl border border-white/35 bg-white/10 p-4">
+        <p className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+          <FileXlsIcon size={16} className="text-white" />
+          Template
+        </p>
+        <p className="mb-3 text-xs leading-5 text-white/80">
+          Choose a saved accomplishment report template. Upload and manage templates in Template Manager (gear icon in sidebar). The template defines the layout; this tool fills in your data.
+        </p>
+        <TemplateManager
         scope="swrft"
         selectedTemplateId={selectedTemplateId}
         onSelectedTemplateIdChange={setSelectedTemplateId}
       />
+      </section>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <label className="block" htmlFor="swrft-first-name">
@@ -212,11 +327,84 @@ export function SwrftTool() {
       </div>
       <div className="mt-2">
         <span className="text-xs leading-5 text-white/80">
-          Filled from your profile if available. Edit as needed.
+          Filled from your profile if available. Edit as needed. These appear in the report header and output filename.
         </span>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
+        <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+          <ListChecksIcon size={16} className="text-white" />
+          Task selections
+        </span>
+        <p className="mb-3 text-xs leading-5 text-white/80">
+          Add and save tasks for quick selection. Click a task to select or deselect it for the report. Selected tasks appear as weekday entries (comma-separated). If none selected, the default task for your designation is used.
+        </p>
+        <div className="mb-3 flex gap-2">
+          <input
+            type="text"
+            value={newTaskLabel}
+            onChange={(e) => setNewTaskLabel(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void handleAddTask();
+            }}
+            placeholder="e.g. Supervise IA meeting"
+            aria-label="New task label"
+            className="flex-1 rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+          />
+          <button
+            type="button"
+            onClick={() => void handleAddTask()}
+            disabled={!newTaskLabel.trim() || isAddingTask}
+            aria-label="Add task"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <PlusIcon size={18} />
+            Add
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {isTasksLoading ? (
+            <span className="text-xs text-white/70">Loading tasks...</span>
+          ) : tasks.length === 0 ? (
+            <span className="text-xs text-white/70">No saved tasks. Add one above.</span>
+          ) : (
+            tasks.map((task) => {
+              const isSelected = selectedTaskIds.has(task.id);
+              return (
+                <div
+                  key={task.id}
+                  role="group"
+                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition ${
+                    isSelected
+                      ? "border-2 border-white bg-white/30 text-white"
+                      : "border border-white/40 bg-white/10 text-white/90 hover:bg-white/20"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleTaskToggle(task.id)}
+                    aria-label={`${isSelected ? "Deselect" : "Select"} task: ${task.label}`}
+                    aria-pressed={isSelected}
+                    className="flex-1 text-left"
+                  >
+                    {task.label}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteTask(e, task.id)}
+                    aria-label={`Remove task: ${task.label}`}
+                    className="rounded p-0.5 transition hover:bg-white/30"
+                  >
+                    <TrashIcon size={14} className="text-white" />
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
         <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
           Months to include
         </span>
@@ -261,11 +449,11 @@ export function SwrftTool() {
           </button>
         </div>
         <span className="mt-2 block text-xs leading-5 text-white/80">
-          Default: all months. Minimum: 1 month.
+          Select which months to include in the report. Click each pill to toggle. Use Select all or Deselect all for speed. You must select at least one month before generating.
         </span>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
         <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
           Period (half of month)
         </span>
@@ -300,11 +488,11 @@ export function SwrftTool() {
           </button>
         </div>
         <span className="mt-2 block text-xs leading-5 text-white/80">
-          Default: both. Minimum: one period.
+          First half covers days 1–15; second half covers 16–30 or 16–31 depending on the month. Select at least one period. Both can be selected to generate reports for the full month.
         </span>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
         <div className="block">
           <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
             Designation
@@ -328,7 +516,7 @@ export function SwrftTool() {
             ))}
           </div>
           <span className="mt-2 block text-xs leading-5 text-white/80">
-            Select Designation.
+            SWRFT uses the standard task list. WRFOB uses a two-line task: field inspection with area monitoring, and debris removal with O&amp;M activities. The chosen designation appears in the report and output filename.
           </span>
         </div>
       </div>

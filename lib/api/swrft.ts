@@ -8,6 +8,7 @@ export type GenerateSwrftPayload = {
   months?: number[];
   includeFirstHalf?: boolean;
   includeSecondHalf?: boolean;
+  customTasks?: string[];
 };
 
 export type GenerateSwrftResult = {
@@ -37,6 +38,9 @@ export const generateSwrft = async (
   }
   if (payload.includeSecondHalf !== undefined) {
     formData.append("includeSecondHalf", String(payload.includeSecondHalf));
+  }
+  if (payload.customTasks && payload.customTasks.length > 0) {
+    formData.append("customTasks", JSON.stringify(payload.customTasks));
   }
 
   const response = await fetch("/api/v1/generate-swrft", {

@@ -66,13 +66,30 @@ const getTaskForDay = (
   month: number,
   day: number,
   designation: string,
+  customTasks?: string[],
 ): TaskForDayResult => {
   const dow = getDayOfWeek(year, month, day);
   const weekendLabel = dow === 0 ? "Sunday" : dow === 6 ? "Saturday" : null;
 
+  const weekdayTask =
+    customTasks &&
+    customTasks.length > 0 &&
+    customTasks.some((t) => typeof t === "string" && t.trim())
+      ? customTasks
+          .filter((t) => typeof t === "string" && t.trim())
+          .map((t) => (t as string).trim())
+          .join(", ")
+      : null;
+
   if (designation === "WRFOB") {
     if (weekendLabel) {
       return { type: "double", line1: weekendLabel, line2: weekendLabel };
+    }
+    if (weekdayTask) {
+      return {
+        type: "single",
+        value: weekdayTask.toUpperCase(),
+      };
     }
     return {
       type: "double",
@@ -83,6 +100,9 @@ const getTaskForDay = (
 
   if (weekendLabel) {
     return { type: "single", value: weekendLabel };
+  }
+  if (weekdayTask) {
+    return { type: "single", value: weekdayTask.toUpperCase() };
   }
   return { type: "single", value: WEEKDAY_TASK };
 };
@@ -96,6 +116,7 @@ const populateSheetForPeriod = (
   fullName: string,
   designation: string,
   period: SwrftPeriod,
+  customTasks?: string[],
 ): void => {
   sheet.cell("A6").value(formatPeriodLabel(period));
   const a6Cell = sheet.cell("A6");
@@ -123,6 +144,7 @@ const populateSheetForPeriod = (
       period.month,
       dayNum,
       designation,
+      customTasks,
     );
     if (task.type === "double") {
       sheet.cell(taskRef).value(`${task.line1}\n${task.line2}`);
@@ -190,6 +212,7 @@ export const getSheetNameForPeriod = (period: SwrftPeriod): string => {
  * Generates a merged SWRFT workbook with selected periods as sheets.
  * Uses xlsx-populate exclusively to preserve template styling (logos, headers,
  * footers, formatting) - ExcelJS merge was stripping these.
+ * @param customTasks - Optional list of task labels to use for weekdays instead of default
  */
 export const generateMergedSwrftWorkbook = async (
   templateBuffer: Buffer,
@@ -197,6 +220,7 @@ export const generateMergedSwrftWorkbook = async (
   designation: string,
   year: number,
   filter?: SwrftPeriodFilter,
+  customTasks?: string[],
 ): Promise<Buffer> => {
   const workbook = await XlsxPopulate.fromDataAsync(templateBuffer);
   let templateSheet: ReturnType<typeof workbook.sheet>;
@@ -222,7 +246,7 @@ export const generateMergedSwrftWorkbook = async (
       sheet = workbook.cloneSheet(templateSheet, sheetName);
     }
 
-    populateSheetForPeriod(sheet, fullName, designation, period);
+    populateSheetForPeriod(sheet, fullName, designation, period, customTasks);
   }
 
   const output = await workbook.outputAsync();
