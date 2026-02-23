@@ -1,27 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 import {
   CalendarBlankIcon,
   CalendarCheckIcon,
   CalendarDotsIcon,
+  CircleNotchIcon,
   DownloadSimpleIcon,
   FileXlsIcon,
   ListChecksIcon,
+  MagnifyingGlassIcon,
+  PencilSimpleIcon,
   PlusIcon,
+  TagIcon,
   TrashIcon,
   UserIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 import { generateSwrft } from "@/lib/api/swrft";
-import { fetchProfile } from "@/lib/api/profile";
 import {
-  fetchAccomplishmentTasks,
   createAccomplishmentTask,
   deleteAccomplishmentTask,
   type AccomplishmentTask,
 } from "@/lib/api/accomplishment-tasks";
+import { useAccomplishmentTasks } from "@/hooks/useAccomplishmentTasks";
 import { TemplateManager } from "@/components/TemplateManager";
+import { MasonryModal } from "@/components/MasonryModal";
 import { downloadBlob, getErrorMessage } from "@/lib/utils";
 
 const DESIGNATION_OPTIONS = ["SWRFT", "WRFOB"] as const;
@@ -47,75 +52,38 @@ export function SwrftTool() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [designation, setDesignation] = useState<"SWRFT" | "WRFOB">(
-    "SWRFT",
-  );
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
     [...ALL_MONTHS],
   );
   const [includeFirstHalf, setIncludeFirstHalf] = useState(false);
   const [includeSecondHalf, setIncludeSecondHalf] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
-  const [tasks, setTasks] = useState<AccomplishmentTask[]>([]);
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(
-    new Set(),
-  );
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [newTaskLabel, setNewTaskLabel] = useState("");
-  const [isTasksLoading, setIsTasksLoading] = useState(true);
+  const [newTaskDesignation, setNewTaskDesignation] = useState<
+    "SWRFT" | "WRFOB"
+  >("SWRFT");
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [taskSearchQuery, setTaskSearchQuery] = useState("");
+  const [taskDesignationFilter, setTaskDesignationFilter] = useState<
+    "all" | "SWRFT" | "WRFOB"
+  >("all");
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    setIsProfileLoading(true);
-    fetchProfile()
-      .then((profile) => {
-        if (cancelled) return;
-        setFirstName(profile.first?.trim() ?? "");
-        setLastName(profile.last?.trim() ?? "");
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setFirstName("");
-          setLastName("");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsProfileLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const {
+    data: tasks = [],
+    isLoading: isTasksLoading,
+    mutate: mutateTasks,
+  } = useAccomplishmentTasks();
 
-  useEffect(() => {
-    let cancelled = false;
-    setIsTasksLoading(true);
-    fetchAccomplishmentTasks()
-      .then((list) => {
-        if (!cancelled) setTasks(list);
-      })
-      .catch(() => {
-        if (!cancelled) setTasks([]);
-      })
-      .finally(() => {
-        if (!cancelled) setIsTasksLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const selectedTask = selectedTaskId
+    ? tasks.find((t) => t.id === selectedTaskId) ?? null
+    : null;
+  const designation = selectedTask?.designation ?? "SWRFT";
 
   const handleTaskToggle = (taskId: string) => {
-    setSelectedTaskIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(taskId)) {
-        next.delete(taskId);
-      } else {
-        next.add(taskId);
-      }
-      return next;
-    });
+    setSelectedTaskId((prev) => (prev === taskId ? null : taskId));
   };
 
   const handleAddTask = async () => {
@@ -123,9 +91,9 @@ export function SwrftTool() {
     if (!trimmed) return;
     setIsAddingTask(true);
     try {
-      const created = await createAccomplishmentTask(trimmed);
-      setTasks((prev) => [...prev, created].sort((a, b) => a.createdAt - b.createdAt));
+      await createAccomplishmentTask(trimmed, newTaskDesignation);
       setNewTaskLabel("");
+      await mutateTasks();
       toast.success("Task added");
     } catch {
       toast.error("Failed to add task");
@@ -139,17 +107,16 @@ export function SwrftTool() {
     taskId: string,
   ) => {
     e.stopPropagation();
+    setDeletingTaskId(taskId);
     try {
       await deleteAccomplishmentTask(taskId);
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
-      setSelectedTaskIds((prev) => {
-        const next = new Set(prev);
-        next.delete(taskId);
-        return next;
-      });
+      setSelectedTaskId((prev) => (prev === taskId ? null : prev));
+      await mutateTasks();
       toast.success("Task removed");
     } catch {
       toast.error("Failed to remove task");
+    } finally {
+      setDeletingTaskId(null);
     }
   };
 
@@ -189,12 +156,9 @@ export function SwrftTool() {
     const loadingToastId = toast.loading("Generating accomplishment reports...");
 
     try {
-      const customTasks =
-        selectedTaskIds.size > 0
-          ? tasks
-              .filter((t) => selectedTaskIds.has(t.id))
-              .map((t) => t.label)
-          : undefined;
+      const customTasks = selectedTask
+        ? [selectedTask.label]
+        : undefined;
 
       const result = await generateSwrft({
         templateId: selectedTemplateId,
@@ -264,10 +228,9 @@ export function SwrftTool() {
         </div>
         <p className="mt-2 text-sm text-white/85 text-justify">
           Generate quincena accomplishment reports for NIA O&amp;M activities.
-          Select your template, enter your name, choose which months and periods
-          to include, then pick your designation. The system automatically
-          fills weekday tasks, marks Saturdays and Sundays, and merges all
-          selected periods into one downloadable workbook. Output filename format:
+          Select your template, enter your name, choose months and periods, and
+          optionally select a task. The selected task sets the report designation
+          (SWRFT or WRFOB); if none selected, default SWRFT is used. Output filename:
           <strong className="text-white"> LastName, FirstName - [Designation]</strong>.
         </p>
       </div>
@@ -299,10 +262,7 @@ export function SwrftTool() {
             aria-label="First name for accomplishment report"
             value={firstName}
             onChange={(event) => setFirstName(event.target.value)}
-            placeholder={
-              isProfileLoading ? "Loading from profile..." : "Enter first name"
-            }
-            disabled={isProfileLoading}
+            placeholder="Enter first name"
             className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30 disabled:opacity-60"
           />
         </label>
@@ -317,92 +277,239 @@ export function SwrftTool() {
             aria-label="Last name for accomplishment report"
             value={lastName}
             onChange={(event) => setLastName(event.target.value)}
-            placeholder={
-              isProfileLoading ? "Loading from profile..." : "Enter last name"
-            }
-            disabled={isProfileLoading}
+            placeholder="Enter last name"
             className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30 disabled:opacity-60"
           />
         </label>
       </div>
       <div className="mt-2">
         <span className="text-xs leading-5 text-white/80">
-          Filled from your profile if available. Edit as needed. These appear in the report header and output filename.
+          These appear in the report header and output filename.
         </span>
       </div>
 
       <div className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
-        <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
-          <ListChecksIcon size={16} className="text-white" />
-          Task selections
-        </span>
-        <p className="mb-3 text-xs leading-5 text-white/80">
-          Add and save tasks for quick selection. Click a task to select or deselect it for the report. Selected tasks appear as weekday entries (comma-separated). If none selected, the default task for your designation is used.
-        </p>
-        <div className="mb-3 flex gap-2">
-          <input
-            type="text"
-            value={newTaskLabel}
-            onChange={(e) => setNewTaskLabel(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void handleAddTask();
-            }}
-            placeholder="e.g. Supervise IA meeting"
-            aria-label="New task label"
-            className="flex-1 rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-          />
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span className="flex items-center gap-2 text-sm font-medium text-white/90">
+            <ListChecksIcon size={16} className="text-white" />
+            Task selections
+          </span>
           <button
             type="button"
-            onClick={() => void handleAddTask()}
-            disabled={!newTaskLabel.trim() || isAddingTask}
-            aria-label="Add task"
-            className="inline-flex items-center gap-2 rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={() => setIsTaskModalOpen(true)}
+            aria-label="Open add task modal"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/20"
           >
             <PlusIcon size={18} />
-            Add
+            Add task
           </button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {isTasksLoading ? (
-            <span className="text-xs text-white/70">Loading tasks...</span>
-          ) : tasks.length === 0 ? (
-            <span className="text-xs text-white/70">No saved tasks. Add one above.</span>
-          ) : (
-            tasks.map((task) => {
-              const isSelected = selectedTaskIds.has(task.id);
-              return (
-                <div
-                  key={task.id}
-                  role="group"
-                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition ${
-                    isSelected
-                      ? "border-2 border-white bg-white/30 text-white"
-                      : "border border-white/40 bg-white/10 text-white/90 hover:bg-white/20"
+        <p className="mb-3 text-xs leading-5 text-white/80">
+          Add tasks via the button above. Select one task to use; its designation
+          (SWRFT or WRFOB) is applied to the report. If none selected, default SWRFT is used.
+          {selectedTask && (
+            <span className="mt-1 block font-medium text-white">
+              Report designation: {designation}
+            </span>
+          )}
+        </p>
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <MagnifyingGlassIcon
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60"
+              aria-hidden
+            />
+            <input
+              type="search"
+              value={taskSearchQuery}
+              onChange={(e) => setTaskSearchQuery(e.target.value)}
+              placeholder="Search tasks..."
+              aria-label="Search tasks by label"
+              className="w-full rounded-lg border border-white/40 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-white/70">Filter:</span>
+            <div className="flex gap-2">
+              {(["all", "SWRFT", "WRFOB"] as const).map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setTaskDesignationFilter(opt)}
+                  aria-label={`Filter by ${opt === "all" ? "all designations" : opt}`}
+                  aria-pressed={taskDesignationFilter === opt}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                    taskDesignationFilter === opt
+                      ? "border border-white bg-white/30 text-white"
+                      : "border border-white/40 bg-white/10 text-white/80 hover:bg-white/20"
                   }`}
                 >
-                  <button
-                    type="button"
-                    onClick={() => handleTaskToggle(task.id)}
-                    aria-label={`${isSelected ? "Deselect" : "Select"} task: ${task.label}`}
-                    aria-pressed={isSelected}
-                    className="flex-1 text-left"
+                  {opt === "all" ? "All" : opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+          {isTasksLoading ? (
+            <span className="col-span-full text-xs text-white/70">
+              Loading tasks...
+            </span>
+          ) : tasks.length === 0 ? (
+            <span className="col-span-full text-xs text-white/70">
+              No saved tasks. Click Add task to create one.
+            </span>
+          ) : (() => {
+            const query = taskSearchQuery.trim().toLowerCase();
+            const filtered = tasks.filter((task) => {
+              if (taskDesignationFilter !== "all" && task.designation !== taskDesignationFilter) {
+                return false;
+              }
+              if (query && !task.label.toLowerCase().includes(query)) {
+                return false;
+              }
+              return true;
+            });
+            return filtered.length === 0 ? (
+              <span className="col-span-full text-xs text-white/70">
+                No tasks match your search or filter.
+              </span>
+            ) : (
+              filtered.map((task) => {
+                const isSelected = selectedTaskId === task.id;
+                return (
+                  <div
+                    key={task.id}
+                    role="group"
+                    className={`relative flex flex-col gap-2 rounded-xl border px-3 py-3 transition ${
+                      isSelected
+                        ? "border-2 border-white bg-white/30"
+                        : "border border-white/40 bg-white/10 hover:bg-white/20"
+                    }`}
                   >
-                    {task.label}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => handleDeleteTask(e, task.id)}
-                    aria-label={`Remove task: ${task.label}`}
-                    className="rounded p-0.5 transition hover:bg-white/30"
-                  >
-                    <TrashIcon size={14} className="text-white" />
-                  </button>
-                </div>
-              );
-            })
-          )}
+                    <button
+                      type="button"
+                      onClick={() => handleTaskToggle(task.id)}
+                      aria-label={`${isSelected ? "Deselect" : "Select"} task: ${task.label}`}
+                      aria-pressed={isSelected}
+                      className="flex min-w-0 flex-1 flex-col items-start gap-2 pr-6 text-left"
+                    >
+                      <span className="line-clamp-2 text-sm font-medium text-white">
+                        {task.label}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteTask(e, task.id)}
+                      disabled={deletingTaskId === task.id}
+                      aria-label={
+                        deletingTaskId === task.id
+                          ? "Removing task"
+                          : `Remove task: ${task.label}`
+                      }
+                      className="absolute right-2 top-2 rounded p-1 transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {deletingTaskId === task.id ? (
+                        <CircleNotchIcon
+                          size={14}
+                          className="text-white animate-spin"
+                          aria-hidden
+                        />
+                      ) : (
+                        <TrashIcon size={14} className="text-white" />
+                      )}
+                    </button>
+                  </div>
+                );
+              })
+            );
+          })()}
         </div>
       </div>
+
+      <MasonryModal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        panelClassName="max-w-md"
+        animateFrom="bottom"
+      >
+        {(close) => (
+          <div className="rounded-2xl border border-white/40 bg-emerald-900 p-4 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-lg font-medium text-white">
+                <span className="inline-flex rounded-lg border border-white/40 bg-white/10 p-2">
+                  <PlusIcon size={20} className="text-white" />
+                </span>
+                Add task
+              </h3>
+              <button
+                type="button"
+                onClick={close}
+                aria-label="Close add task modal"
+                className="rounded p-1.5 text-white/80 transition hover:bg-white/20 hover:text-white"
+              >
+                <XIcon size={20} weight="bold" />
+              </button>
+            </div>
+            <p className="mb-4 text-xs leading-5 text-white/80">
+              Add a new task for your accomplishment report. Choose a designation
+              (SWRFT or WRFOB) so it appears in the correct reports.
+            </p>
+            <div className="flex flex-col gap-3">
+              <label className="block" htmlFor="add-task-label">
+                <span className="mb-1 flex items-center gap-2 text-xs font-medium text-white/90">
+                  <PencilSimpleIcon size={14} className="text-white" />
+                  Task label
+                </span>
+                <textarea
+                  id="add-task-label"
+                  value={newTaskLabel}
+                  onChange={(e) => setNewTaskLabel(e.target.value)}
+                  rows={4}
+                  placeholder="e.g. Supervise IA meeting"
+                  aria-label="New task label"
+                  className="w-full resize-y rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                />
+              </label>
+              <div>
+                <span className="mb-2 flex items-center gap-2 text-xs font-medium text-white/90">
+                  <TagIcon size={14} className="text-white" />
+                  Designation
+                </span>
+                <div className="flex gap-2">
+                  {DESIGNATION_OPTIONS.map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setNewTaskDesignation(opt)}
+                      aria-label={`Set task designation to ${opt}`}
+                      aria-pressed={newTaskDesignation === opt}
+                      className={`rounded-full px-3 py-2 text-sm font-medium transition ${
+                        newTaskDesignation === opt
+                          ? "border border-white bg-white/30 text-white"
+                          : "border border-white/40 bg-white/10 text-white/80 hover:bg-white/20"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleAddTask()}
+                disabled={!newTaskLabel.trim() || isAddingTask}
+                aria-label="Add task"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80"
+              >
+                <PlusIcon size={18} />
+                {isAddingTask ? "Adding..." : "Add task"}
+              </button>
+            </div>
+          </div>
+        )}
+      </MasonryModal>
 
       <div className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
         <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
@@ -490,35 +597,6 @@ export function SwrftTool() {
         <span className="mt-2 block text-xs leading-5 text-white/80">
           First half covers days 1–15; second half covers 16–30 or 16–31 depending on the month. Select at least one period. Both can be selected to generate reports for the full month.
         </span>
-      </div>
-
-      <div className="mt-4 rounded-xl border border-white/35 bg-white/10 p-4">
-        <div className="block">
-          <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
-            Designation
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {DESIGNATION_OPTIONS.map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                aria-label={`Select ${opt} designation`}
-                aria-pressed={designation === opt}
-                onClick={() => setDesignation(opt)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  designation === opt
-                    ? "border-2 border-white bg-white/30 text-white"
-                    : "border border-white/40 bg-white/10 text-white/90 hover:bg-white/20"
-                }`}
-              >
-                {opt}
-              </button>
-            ))}
-          </div>
-          <span className="mt-2 block text-xs leading-5 text-white/80">
-            SWRFT uses the standard task list. WRFOB uses a two-line task: field inspection with area monitoring, and debris removal with O&amp;M activities. The chosen designation appears in the report and output filename.
-          </span>
-        </div>
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">

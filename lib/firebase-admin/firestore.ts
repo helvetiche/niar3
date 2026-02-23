@@ -227,9 +227,12 @@ export async function deleteTemplateRecord(templateId: string): Promise<void> {
   await templateCollection().doc(templateId).delete();
 }
 
+export type AccomplishmentTaskDesignation = "SWRFT" | "WRFOB";
+
 export type AccomplishmentTask = {
   id: string;
   label: string;
+  designation: AccomplishmentTaskDesignation;
   createdAt: number;
 };
 
@@ -243,11 +246,18 @@ export async function listAccomplishmentTasks(
   const snap = await accomplishmentTasksCollection(uid)
     .orderBy("createdAt", "asc")
     .get();
+  const validDesignations = ["SWRFT", "WRFOB"] as const;
   return snap.docs.map((doc) => {
     const d = doc.data();
+    const des =
+      typeof d.designation === "string" &&
+      validDesignations.includes(d.designation as (typeof validDesignations)[number])
+        ? (d.designation as AccomplishmentTaskDesignation)
+        : "SWRFT";
     return {
       id: doc.id,
       label: typeof d.label === "string" ? d.label.trim() : "",
+      designation: des,
       createdAt: typeof d.createdAt === "number" ? d.createdAt : 0,
     };
   });
@@ -256,16 +266,20 @@ export async function listAccomplishmentTasks(
 export async function createAccomplishmentTask(
   uid: string,
   label: string,
+  designation: AccomplishmentTaskDesignation = "SWRFT",
 ): Promise<AccomplishmentTask> {
   const trimmed = label.trim();
   if (!trimmed) {
     throw new Error("Task label is required");
   }
+  const des =
+    designation === "SWRFT" || designation === "WRFOB" ? designation : "SWRFT";
   const ref = accomplishmentTasksCollection(uid).doc();
   const now = Date.now();
   const task: AccomplishmentTask = {
     id: ref.id,
     label: trimmed,
+    designation: des,
     createdAt: now,
   };
   await ref.set(task);

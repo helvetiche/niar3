@@ -4,7 +4,6 @@ import {
   secureFileResponse,
 } from "@/lib/security-headers";
 import { withAuth } from "@/lib/auth";
-import { getProfile } from "@/lib/firebase-admin/firestore";
 import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
 import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
 import { generateMergedSwrftWorkbook } from "@/lib/swrftGenerator";
@@ -84,25 +83,20 @@ export async function POST(request: Request) {
       );
     }
 
-    let firstName =
+    const firstName =
       typeof firstNameOverride === "string" && firstNameOverride.trim()
         ? firstNameOverride.trim()
         : "";
-    let lastName =
+    const lastName =
       typeof lastNameOverride === "string" && lastNameOverride.trim()
         ? lastNameOverride.trim()
         : "";
-    if (!firstName || !lastName) {
-      const profile = await getProfile(user.uid);
-      if (!firstName) firstName = profile.first?.trim() ?? "";
-      if (!lastName) lastName = profile.last?.trim() ?? "";
-    }
     if (!firstName || !lastName) {
       return applySecurityHeaders(
         NextResponse.json(
           {
             error:
-              "First name and last name are required. Fill your profile or enter them manually.",
+              "First name and last name are required. Enter them in the form.",
           },
           { status: 400 },
         ),

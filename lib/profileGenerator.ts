@@ -26,6 +26,20 @@ const formatQueueNumber = (value: number): string =>
 const isValidName = (value: string): boolean =>
   Boolean(value && value.trim() !== "" && value.trim().toUpperCase() !== "N");
 
+const mergeUniqueNames = (values: string[]): string => {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const v of values) {
+    const trimmed = String(v ?? "").trim();
+    if (!trimmed || trimmed.toUpperCase() === "N") continue;
+    const key = trimmed.toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(trimmed);
+  }
+  return unique.join(" / ");
+};
+
 const sanitizeFilePart = (value: string): string =>
   value.replace(/[/\\]/g, "-").trim();
 
@@ -86,11 +100,21 @@ export const generateProfileBuffer = async (
     : await XlsxPopulate.fromFileAsync(getTemplatePath());
 
   const lotCode = lotGroup.lotCode;
-  const landOwnerLast = lotGroup.landOwnerLast;
-  const landOwnerFirst = lotGroup.landOwnerFirst;
-  const farmerFirst = lotGroup.rows[0]?.farmerFirst ?? "";
-  const farmerLast = lotGroup.rows[0]?.farmerLast ?? "";
-  const oldAccount = lotGroup.rows[0]?.oldAccount ?? "";
+  const rows = lotGroup.rows;
+
+  const landOwnerFirst = mergeUniqueNames(
+    rows.map((r) => r.landOwnerFirst).filter(Boolean),
+  );
+  const landOwnerLast = mergeUniqueNames(
+    rows.map((r) => r.landOwnerLast).filter(Boolean),
+  );
+  const farmerFirst = mergeUniqueNames(
+    rows.map((r) => r.farmerFirst).filter(Boolean),
+  );
+  const farmerLast = mergeUniqueNames(
+    rows.map((r) => r.farmerLast).filter(Boolean),
+  );
+  const oldAccount = rows[0]?.oldAccount ?? "";
   const division = options?.division ?? "";
   const nameOfIA = options?.nameOfIA ?? "";
 

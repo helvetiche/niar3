@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   if (auth instanceof NextResponse) return auth;
   const { user } = auth;
 
-  let body: { label?: string };
+  let body: { label?: string; designation?: string };
   try {
     body = await request.json();
   } catch {
@@ -102,8 +102,13 @@ export async function POST(request: Request) {
     );
   }
 
+  const designation =
+    body.designation === "SWRFT" || body.designation === "WRFOB"
+      ? body.designation
+      : "SWRFT";
+
   try {
-    const task = await createAccomplishmentTask(user.uid, label);
+    const task = await createAccomplishmentTask(user.uid, label, designation);
     await logAuditTrailEntry({
       uid: user.uid,
       action: "accomplishment-tasks.post",

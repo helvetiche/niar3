@@ -1,8 +1,11 @@
 "use client";
 
+export type AccomplishmentTaskDesignation = "SWRFT" | "WRFOB";
+
 export type AccomplishmentTask = {
   id: string;
   label: string;
+  designation: AccomplishmentTaskDesignation;
   createdAt: number;
 };
 
@@ -24,12 +27,13 @@ export const fetchAccomplishmentTasks = async (): Promise<
 
 export const createAccomplishmentTask = async (
   label: string,
+  designation: AccomplishmentTaskDesignation = "SWRFT",
 ): Promise<AccomplishmentTask> => {
   const res = await fetch("/api/v1/accomplishment-tasks", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ label }),
+    body: JSON.stringify({ label, designation }),
   });
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };

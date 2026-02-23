@@ -24,6 +24,14 @@ const getCellString = (row: unknown[], colIndex: number): string => {
   return String(value).trim();
 };
 
+const normalizeLotCode = (raw: string): string => {
+  const s = String(raw ?? "").trim();
+  if (!s) return "";
+  const num = Number(s.replace(/,/g, ""));
+  if (!Number.isNaN(num) && Number.isInteger(num)) return String(num);
+  return s;
+};
+
 const emptyIfN = (value: string): string =>
   value.trim().toUpperCase() === "N" ? "" : value.trim();
 
@@ -45,8 +53,10 @@ export const processMastersList = (data: unknown[][]): LotGroup[] => {
     const row = data[i];
     if (!Array.isArray(row)) continue;
 
-    const lotCode = getCellString(row, COL_LOT);
-    if (!lotCode) continue;
+    const rawLotCode = getCellString(row, COL_LOT);
+    if (!rawLotCode) continue;
+
+    const lotCode = normalizeLotCode(rawLotCode);
 
     const rowData: MastersListRow = {
       cropSeason: emptyIfN(getCellString(row, COL_CROP_SEASON)),
