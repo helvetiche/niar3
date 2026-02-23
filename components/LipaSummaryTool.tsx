@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import toast from "react-hot-toast";
 import {
   DownloadSimpleIcon,
   FilePdfIcon,
@@ -46,7 +47,6 @@ export function LipaSummaryTool() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progressPercent, setProgressPercent] = useState(0);
   const [progressLabel, setProgressLabel] = useState("");
-  const [message, setMessage] = useState("");
 
   const handleIncomingFiles = (incoming: FileList | null) => {
     const incomingFiles = Array.from(incoming ?? []).filter((file) =>
@@ -54,7 +54,7 @@ export function LipaSummaryTool() {
     );
 
     if (incomingFiles.length === 0) {
-      setMessage("Please upload PDF files only.");
+      toast.error("Please upload PDF files only.");
       return;
     }
 
@@ -81,7 +81,6 @@ export function LipaSummaryTool() {
 
       return [...previous, ...added];
     });
-    setMessage("");
   };
 
   const handleDivisionChange = (id: string, divisionName: string) => {
@@ -113,7 +112,6 @@ export function LipaSummaryTool() {
     setOutputFileName(defaultOutputFileName);
     setProgressPercent(0);
     setProgressLabel("");
-    setMessage("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -127,13 +125,13 @@ export function LipaSummaryTool() {
 
   const handleGenerate = async () => {
     if (items.length === 0) {
-      setMessage("Please upload at least one PDF file.");
+      toast.error("Please upload at least one PDF file.");
       return;
     }
 
     const hasBlankDivision = items.some((item) => !item.divisionName.trim());
     if (hasBlankDivision) {
-      setMessage("Every file must have a division name before generation.");
+      toast.error("Every file must have a division name before generation.");
       return;
     }
 
@@ -142,14 +140,13 @@ export function LipaSummaryTool() {
       return !Number.isInteger(pageNumber) || pageNumber < 0;
     });
     if (hasInvalidPage) {
-      setMessage("Every file must have a valid page number (0 or higher).");
+      toast.error("Every file must have a valid page number (0 or higher).");
       return;
     }
 
     setIsGenerating(true);
     setProgressPercent(0);
     setProgressLabel("Preparing files...");
-    setMessage("Scanning PDFs with AI and building LIPA report...");
     let succeeded = false;
 
     try {
@@ -195,12 +192,12 @@ export function LipaSummaryTool() {
       setProgressPercent(100);
       setProgressLabel("Completed");
 
-      setMessage(
-        `Success. Scanned ${String(result.scannedFiles)} PDF file(s) and extracted ${String(result.extractedAssociations)} association record(s).`,
+      toast.success(
+        `Scanned ${String(result.scannedFiles)} PDF file(s) and extracted ${String(result.extractedAssociations)} association record(s).`,
       );
       succeeded = true;
     } catch (error) {
-      setMessage(
+      toast.error(
         getErrorMessage(error, "Failed to generate LIPA summary report."),
       );
     } finally {
@@ -456,15 +453,6 @@ export function LipaSummaryTool() {
         Generation returns your final report immediately as an Excel file. No
         uploaded documents are stored by this LIPA Summary flow.
       </p>
-
-      {message && (
-        <p
-          className="mt-4 whitespace-pre-line rounded-lg border border-white/35 bg-white/10 px-4 py-3 text-sm text-white"
-          aria-live="polite"
-        >
-          {message}
-        </p>
-      )}
     </section>
   );
 }

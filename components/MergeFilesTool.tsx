@@ -17,7 +17,6 @@ export function MergeFilesTool() {
     pdfPages,
     excelPageNames,
     fileName,
-    message,
     isSubmitting,
     isPreparingPages,
     defaultFileName,
@@ -128,15 +127,6 @@ export function MergeFilesTool() {
           Clear
         </button>
       </div>
-
-      {message && (
-        <p
-          className="mt-4 rounded-lg border border-white/35 bg-white/10 px-4 py-3 text-sm text-white"
-          aria-live="polite"
-        >
-          {message}
-        </p>
-      )}
     </section>
   );
 }

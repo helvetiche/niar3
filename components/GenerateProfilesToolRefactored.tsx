@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import {
   DownloadSimpleIcon,
   MagnifyingGlassIcon,
@@ -46,8 +47,6 @@ export function GenerateProfilesToolRefactored() {
     consolidationTemplateId,
     setConsolidationTemplateId,
     isLoadingConsolidationTemplates,
-    message,
-    setMessage,
     loadConsolidationTemplates,
     updateFolderName,
     updateDivision,
@@ -76,20 +75,19 @@ export function GenerateProfilesToolRefactored() {
 
   const generateProfiles = async () => {
     if (sourceFiles.length === 0) {
-      setMessage("Please upload one or more source Excel files first.");
+      toast.error("Please upload one or more source Excel files first.");
       return;
     }
     if (!selectedTemplateId) {
-      setMessage("Please select a template from Template Manager.");
+      toast.error("Please select a template from Template Manager.");
       return;
     }
     if (createConsolidation && !consolidationTemplateId) {
-      setMessage("Please select a consolidation template.");
+      toast.error("Please select a consolidation template.");
       return;
     }
 
     setIsGenerating(true);
-    setMessage("Generating billing unit files...");
     startTimer();
 
     try {
@@ -111,10 +109,10 @@ export function GenerateProfilesToolRefactored() {
         : `${outputName}.zip`;
       downloadBlob(blob, filename);
 
-      setMessage("Success. Billing Unit ZIP has been downloaded.");
+      toast.success("Billing Unit ZIP has been downloaded.");
       await finishSuccess();
     } catch (error) {
-      setMessage(
+      toast.error(
         getErrorMessage(error, ERROR_MESSAGES.FAILED_GENERATE_BILLING_UNITS),
       );
       await finishError();
@@ -131,7 +129,6 @@ export function GenerateProfilesToolRefactored() {
     setMergedConsolidationFileName(DEFAULT_MERGED_CONSOLIDATION_FILE_NAME);
     setConsolidationTemplateId("");
     setBillingUnitFolderName(defaultBillingUnitFolderName);
-    setMessage("");
     if (sourceInputRef.current) sourceInputRef.current.value = "";
   };
 
@@ -288,15 +285,6 @@ export function GenerateProfilesToolRefactored() {
         <span className="font-medium">Clear</span> to reset all selected files,
         template choices, and optional consolidation settings.
       </p>
-
-      {message && (
-        <p
-          className="mt-4 rounded-lg border border-white/35 bg-white/10 px-4 py-3 text-sm text-white"
-          aria-live="polite"
-        >
-          {message}
-        </p>
-      )}
 
       <ProcessingOverlay
         isVisible={isOverlayVisible}

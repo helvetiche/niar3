@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import {
   GearIcon,
   TrashIcon,
@@ -36,7 +37,6 @@ export function TemplateManager({
   const [updateFile, setUpdateFile] = useState<File | null>(null);
   const [updateName, setUpdateName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const updateInputRef = useRef<HTMLInputElement | null>(null);
@@ -67,7 +67,7 @@ export function TemplateManager({
         onSelectedTemplateIdChange(defaultId);
       }
     } catch (error) {
-      setMessage(
+      toast.error(
         error instanceof Error ? error.message : "Failed to load templates.",
       );
     } finally {
@@ -103,20 +103,22 @@ export function TemplateManager({
 
   const handleUpload = async () => {
     if (!uploadFile) {
-      setMessage("Choose a template file first.");
+      toast.error("Choose a template file first.");
       return;
     }
     setIsLoading(true);
-    setMessage("Uploading template...");
+    const loadingToastId = toast.loading("Uploading template...");
     try {
       const saved = await uploadTemplate(scope, uploadFile);
       setTemplates((prev) => [saved, ...prev]);
       onSelectedTemplateIdChange(saved.id);
       setUploadFile(null);
       if (uploadInputRef.current) uploadInputRef.current.value = "";
-      setMessage("Template uploaded.");
+      toast.dismiss(loadingToastId);
+      toast.success("Template uploaded.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Upload failed.");
+      toast.dismiss(loadingToastId);
+      toast.error(error instanceof Error ? error.message : "Upload failed.");
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +126,7 @@ export function TemplateManager({
 
   const handleDelete = async () => {
     if (!selectedTemplateId) {
-      setMessage("Select a saved template to delete.");
+      toast.error("Select a saved template to delete.");
       return;
     }
     setIsLoading(true);
@@ -134,9 +136,9 @@ export function TemplateManager({
         prev.filter((item) => item.id !== selectedTemplateId),
       );
       onSelectedTemplateIdChange("");
-      setMessage("Template deleted.");
+      toast.success("Template deleted.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Delete failed.");
+      toast.error(error instanceof Error ? error.message : "Delete failed.");
     } finally {
       setIsLoading(false);
     }
@@ -144,13 +146,13 @@ export function TemplateManager({
 
   const handleUpdate = async () => {
     if (!selectedTemplateId) {
-      setMessage("Select a saved template to update.");
+      toast.error("Select a saved template to update.");
       return;
     }
 
     const trimmedName = updateName.trim();
     if (!trimmedName && !updateFile) {
-      setMessage("Provide a new name and/or replacement file.");
+      toast.error("Provide a new name and/or replacement file.");
       return;
     }
 
@@ -165,9 +167,9 @@ export function TemplateManager({
       );
       setUpdateFile(null);
       if (updateInputRef.current) updateInputRef.current.value = "";
-      setMessage("Template updated.");
+      toast.success("Template updated.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Update failed.");
+      toast.error(error instanceof Error ? error.message : "Update failed.");
     } finally {
       setIsLoading(false);
     }
@@ -356,8 +358,6 @@ export function TemplateManager({
               Update lets you rename the selected template and/or replace its
               file while keeping the same template ID for all users.
             </p>
-
-            {message && <p className="mt-3 text-xs text-white">{message}</p>}
           </section>
         )}
       </MasonryModal>

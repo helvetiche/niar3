@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import {
   DownloadSimpleIcon,
   FileXlsIcon,
@@ -58,7 +59,6 @@ export function GenerateProfilesTool() {
     Record<string, string>
   >({});
   const [isGenerating, setIsGenerating] = useState(false);
-  const [message, setMessage] = useState("");
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [isOverlayOpaque, setIsOverlayOpaque] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -74,7 +74,7 @@ export function GenerateProfilesTool() {
 
   useEffect(() => {
     if (templatesError) {
-      setMessage(
+      toast.error(
         getErrorMessage(templatesError, ERROR_MESSAGES.FAILED_LOAD_TEMPLATES),
       );
     }
@@ -154,20 +154,19 @@ export function GenerateProfilesTool() {
 
   const generateBillingUnits = async () => {
     if (sourceFiles.length === 0) {
-      setMessage("Please upload one or more source Excel files first.");
+      toast.error("Please upload one or more source Excel files first.");
       return;
     }
     if (!selectedTemplateId) {
-      setMessage("Please select a template from Template Manager.");
+      toast.error("Please select a template from Template Manager.");
       return;
     }
     if (createConsolidation && !consolidationTemplateId) {
-      setMessage("Please select a consolidation template.");
+      toast.error("Please select a consolidation template.");
       return;
     }
 
     setIsGenerating(true);
-    setMessage("Generating billing unit files...");
     setIsFinalizing(false);
     setElapsedSeconds(0);
     setIsOverlayVisible(true);
@@ -200,7 +199,7 @@ export function GenerateProfilesTool() {
         : `${outputName}.zip`;
       downloadBlob(blob, filename);
 
-      setMessage("Success. Billing Unit ZIP has been downloaded.");
+      toast.success("Billing Unit ZIP has been downloaded.");
       setIsFinalizing(true);
       if (elapsedIntervalRef.current !== null) {
         window.clearInterval(elapsedIntervalRef.current);
@@ -211,7 +210,7 @@ export function GenerateProfilesTool() {
       await wait(OVERLAY_FADE_MS);
       setIsOverlayVisible(false);
     } catch (error) {
-      setMessage(
+      toast.error(
         getErrorMessage(error, ERROR_MESSAGES.FAILED_GENERATE_BILLING_UNITS),
       );
       if (elapsedIntervalRef.current !== null) {
@@ -237,7 +236,6 @@ export function GenerateProfilesTool() {
     setSourceFolderNames({});
     setSourceConsolidationDivisions({});
     setSourceConsolidationIAs({});
-    setMessage("");
   };
 
   useEffect(() => {
@@ -419,17 +417,8 @@ export function GenerateProfilesTool() {
         Click <span className="font-medium">Scan and Generate</span> to process
         your uploaded source files and download the ZIP immediately. Use{" "}
         <span className="font-medium">Clear</span> to reset all selected files,
-        template choices, and optional consolidation settings.
+        template choices, and optional consolidation         settings.
       </p>
-
-      {message && (
-        <p
-          className="mt-4 rounded-lg border border-white/35 bg-white/10 px-4 py-3 text-sm text-white"
-          aria-live="polite"
-        >
-          {message}
-        </p>
-      )}
 
       <ProcessingOverlay
         isVisible={isOverlayVisible}

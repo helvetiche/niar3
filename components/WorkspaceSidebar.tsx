@@ -83,9 +83,9 @@ const TOOLS = [
   },
   {
     id: "swrft" as const,
-    name: "SWRFT",
+    name: "ACCOMPLISHMENT REPORT",
     description:
-      "Generate quincena accomplishment reports for the full year.",
+      "Generate quincena accomplishment reports.",
     icon: FileXlsIcon,
   },
   {

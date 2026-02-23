@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import toast from "react-hot-toast";
 import { PDFDocument } from "pdf-lib";
 import {
   mergeFiles,
@@ -27,7 +28,6 @@ export function useMergeFiles() {
     {},
   );
   const [fileName, setFileName] = useState(pdfDefaultName);
-  const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPreparingPages, setIsPreparingPages] = useState(false);
 
@@ -63,7 +63,6 @@ export function useMergeFiles() {
       if (incomingFiles.length === 0) return;
 
       setFiles(incomingFiles);
-      setMessage("");
 
       if (mode === "pdf") {
         setIsPreparingPages(true);
@@ -71,7 +70,7 @@ export function useMergeFiles() {
           const pages = await buildPdfPages(incomingFiles);
           setPdfPages(pages);
         } catch (error) {
-          setMessage(getErrorMessage(error, "Could not read PDF files"));
+          toast.error(getErrorMessage(error, "Could not read PDF files"));
         } finally {
           setIsPreparingPages(false);
         }
@@ -94,7 +93,6 @@ export function useMergeFiles() {
       setFiles([]);
       setPdfPages([]);
       setExcelPageNames({});
-      setMessage("");
       setIsPreparingPages(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     },
@@ -133,12 +131,12 @@ export function useMergeFiles() {
 
   const executeMerge = useCallback(async () => {
     if (files.length === 0) {
-      setMessage("Please select files to merge first.");
+      toast.error("Please select files to merge first.");
       return;
     }
 
     setIsSubmitting(true);
-    setMessage("Merging files...");
+    const loadingToastId = toast.loading("Merging files...");
 
     try {
       const result = await mergeFiles({
@@ -151,9 +149,11 @@ export function useMergeFiles() {
       });
 
       downloadBlob(result.blob, result.fileName);
-      setMessage(`Success! ${mode.toUpperCase()} file downloaded.`);
+      toast.dismiss(loadingToastId);
+      toast.success(`${mode.toUpperCase()} file downloaded.`);
     } catch (error) {
-      setMessage(getErrorMessage(error, "Merge failed"));
+      toast.dismiss(loadingToastId);
+      toast.error(getErrorMessage(error, "Merge failed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -163,7 +163,6 @@ export function useMergeFiles() {
     setFiles([]);
     setPdfPages([]);
     setExcelPageNames({});
-    setMessage("");
     setIsPreparingPages(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
@@ -176,7 +175,6 @@ export function useMergeFiles() {
     pdfPages,
     excelPageNames,
     fileName,
-    message,
     isSubmitting,
     isPreparingPages,
     defaultFileName,

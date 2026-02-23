@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import {
+  CalendarBlankIcon,
+  CalendarCheckIcon,
+  CalendarDotsIcon,
   DownloadSimpleIcon,
   FileXlsIcon,
   UserIcon,
@@ -40,10 +44,9 @@ export function SwrftTool() {
   const [selectedMonths, setSelectedMonths] = useState<number[]>(
     [...ALL_MONTHS],
   );
-  const [includeFirstHalf, setIncludeFirstHalf] = useState(true);
-  const [includeSecondHalf, setIncludeSecondHalf] = useState(true);
+  const [includeFirstHalf, setIncludeFirstHalf] = useState(false);
+  const [includeSecondHalf, setIncludeSecondHalf] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
   const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   useEffect(() => {
@@ -74,38 +77,35 @@ export function SwrftTool() {
       const next = prev.includes(month)
         ? prev.filter((m) => m !== month)
         : [...prev, month].sort((a, b) => a - b);
-      return next.length >= 1 ? next : prev;
+      return next;
     });
   };
 
   const handleSelectAllMonths = () => setSelectedMonths([...ALL_MONTHS]);
-  const handleDeselectAllMonths = () => setSelectedMonths([ALL_MONTHS[0]]);
+  const handleDeselectAllMonths = () => setSelectedMonths([]);
 
   const handleGenerate = async () => {
     if (!selectedTemplateId.trim()) {
-      setMessage("Please select a SWRFT template.");
+      toast.error("Please select an accomplishment template.");
       return;
     }
     const first = firstName.trim();
     const last = lastName.trim();
     if (!first || !last) {
-      setMessage("Please enter your first name and last name.");
+      toast.error("Please enter your first name and last name.");
       return;
     }
     if (selectedMonths.length < 1) {
-      setMessage("Select at least one month.");
+      toast.error("Select at least one month.");
       return;
     }
     if (!includeFirstHalf && !includeSecondHalf) {
-      setMessage("Select at least one period: first half or second half.");
+      toast.error("Select at least one period: first half or second half.");
       return;
     }
 
     setIsSubmitting(true);
-    const periodCount =
-      selectedMonths.length * (includeFirstHalf ? 1 : 0) +
-      selectedMonths.length * (includeSecondHalf ? 1 : 0);
-    setMessage(`Generating ${String(periodCount)} accomplishment reports...`);
+    const loadingToastId = toast.loading("Generating accomplishment reports...");
 
     try {
       const result = await generateSwrft({
@@ -122,11 +122,13 @@ export function SwrftTool() {
       const count =
         selectedMonths.length * (includeFirstHalf ? 1 : 0) +
         selectedMonths.length * (includeSecondHalf ? 1 : 0);
-      setMessage(
-        `Success. Downloaded merged SWRFT file with ${String(count)} period sheet(s).`,
+      toast.dismiss(loadingToastId);
+      toast.success(
+        `Downloaded merged accomplishment report with ${String(count)} period sheet(s).`,
       );
     } catch (error) {
-      setMessage(getErrorMessage(error, "Failed to generate SWRFT."));
+      toast.dismiss(loadingToastId);
+      toast.error(getErrorMessage(error, "Failed to generate accomplishment report."));
     } finally {
       setIsSubmitting(false);
     }
@@ -134,7 +136,7 @@ export function SwrftTool() {
 
   const missingRequirements: string[] = [];
   if (!selectedTemplateId) {
-    missingRequirements.push("Select a SWRFT template.");
+    missingRequirements.push("Select an accomplishment template.");
   }
   if (!firstName.trim() || !lastName.trim()) {
     missingRequirements.push("Enter your first name and last name.");
@@ -155,13 +157,12 @@ export function SwrftTool() {
           <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
             <FileXlsIcon size={18} className="text-white" />
           </span>
-          SWRFT Accomplishment Report
+          Accomplishment Report
         </h2>
         <p className="mt-2 text-sm text-white/85 text-justify">
-          Generate quincena accomplishment reports for the full year. The system
-          creates 24 reports (12 months, 2 periods each: 1-15 and 16-30/31),
-          populates weekday tasks and weekend labels, and merges them into one
-          workbook. Output filename: LastName, FirstName - SWRFT.
+          Generate quincena accomplishment reports. Select months and periods,
+          then the system populates weekday tasks and weekend labels into one
+          workbook. Output filename: LastName, FirstName - [Designation].
         </p>
       </div>
 
@@ -220,24 +221,26 @@ export function SwrftTool() {
           Months to include
         </span>
         <div className="flex flex-wrap gap-2">
-          {ALL_MONTHS.map((month) => (
-            <label
-              key={month}
-              className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm transition has-[:checked]:border-white has-[:checked]:bg-white/20"
-            >
-              <input
-                type="checkbox"
-                checked={selectedMonths.includes(month)}
-                onChange={() => handleMonthToggle(month)}
-                disabled={
-                  selectedMonths.length <= 1 && selectedMonths.includes(month)
-                }
+          {ALL_MONTHS.map((month) => {
+            const isSelected = selectedMonths.includes(month);
+            return (
+              <button
+                key={month}
+                type="button"
+                onClick={() => handleMonthToggle(month)}
                 aria-label={`Include ${MONTH_LABELS[month - 1]}`}
-                className="h-4 w-4 rounded border-white/50 bg-white/10 text-emerald-600 focus:ring-white/50"
-              />
-              <span className="text-white">{MONTH_LABELS[month - 1]}</span>
-            </label>
-          ))}
+                aria-pressed={isSelected}
+                className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition ${
+                  isSelected
+                    ? "border-2 border-white bg-white/30 text-white"
+                    : "border border-white/40 bg-white/10 text-white/90 hover:bg-white/20"
+                }`}
+              >
+                <CalendarBlankIcon size={16} weight="duotone" />
+                <span>{MONTH_LABELS[month - 1]}</span>
+              </button>
+            );
+          })}
         </div>
         <div className="mt-2 flex gap-2">
           <button
@@ -251,7 +254,7 @@ export function SwrftTool() {
           <button
             type="button"
             onClick={handleDeselectAllMonths}
-            aria-label="Deselect all months (keep January)"
+            aria-label="Deselect all months"
             className="rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20"
           >
             Deselect all
@@ -267,28 +270,34 @@ export function SwrftTool() {
           Period (half of month)
         </span>
         <div className="flex flex-wrap gap-4">
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/40 bg-white/10 px-4 py-2 text-sm transition has-[:checked]:border-white has-[:checked]:bg-white/20">
-            <input
-              type="checkbox"
-              checked={includeFirstHalf}
-              onChange={(e) => setIncludeFirstHalf(e.target.checked)}
-              disabled={!includeSecondHalf && includeFirstHalf}
-              aria-label="Include first half (1-15)"
-              className="h-4 w-4 rounded border-white/50 bg-white/10 text-emerald-600 focus:ring-white/50 disabled:opacity-50"
-            />
-            <span className="text-white">First half (1-15)</span>
-          </label>
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/40 bg-white/10 px-4 py-2 text-sm transition has-[:checked]:border-white has-[:checked]:bg-white/20">
-            <input
-              type="checkbox"
-              checked={includeSecondHalf}
-              onChange={(e) => setIncludeSecondHalf(e.target.checked)}
-              disabled={!includeFirstHalf && includeSecondHalf}
-              aria-label="Include second half (16-30/31)"
-              className="h-4 w-4 rounded border-white/50 bg-white/10 text-emerald-600 focus:ring-white/50 disabled:opacity-50"
-            />
-            <span className="text-white">Second half (16-30/31)</span>
-          </label>
+          <button
+            type="button"
+            onClick={() => setIncludeFirstHalf((prev) => !prev)}
+            aria-label="Include first half (1-15)"
+            aria-pressed={includeFirstHalf}
+            className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+              includeFirstHalf
+                ? "border-2 border-white bg-white/30 text-white"
+                : "border border-white/40 bg-white/10 text-white/90 hover:bg-white/20"
+                }`}
+          >
+            <CalendarDotsIcon size={18} weight="duotone" />
+            <span>First half (1-15)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIncludeSecondHalf((prev) => !prev)}
+            aria-label="Include second half (16-30/31)"
+            aria-pressed={includeSecondHalf}
+            className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+              includeSecondHalf
+                ? "border-2 border-white bg-white/30 text-white"
+                : "border border-white/40 bg-white/10 text-white/90 hover:bg-white/20"
+                }`}
+          >
+            <CalendarCheckIcon size={18} weight="duotone" />
+            <span>Second half (16-30/31)</span>
+          </button>
         </div>
         <span className="mt-2 block text-xs leading-5 text-white/80">
           Default: both. Minimum: one period.
@@ -327,7 +336,7 @@ export function SwrftTool() {
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <button
           type="button"
-          aria-label="Generate and download SWRFT report"
+          aria-label="Generate and download accomplishment report"
           onClick={() => void handleGenerate()}
           disabled={
             isSubmitting ||
@@ -353,15 +362,6 @@ export function SwrftTool() {
             {missingRequirements.map((item) => `- ${item}`).join("\n")}
           </p>
         </div>
-      )}
-
-      {message && (
-        <p
-          className="mt-4 whitespace-pre-line rounded-lg border border-white/35 bg-white/10 px-4 py-3 text-sm text-white"
-          aria-live="polite"
-        >
-          {message}
-        </p>
       )}
     </section>
   );

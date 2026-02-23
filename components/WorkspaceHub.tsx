@@ -114,9 +114,9 @@ const HUB_TOOLS: HubTool[] = [
   },
   {
     id: "swrft",
-    name: "SWRFT",
+    name: "ACCOMPLISHMENT REPORT",
     description:
-      "Generate quincena accomplishment reports for the year. Creates 24 period sheets, detects weekends, and merges into one workbook.",
+      "Generate quincena accomplishment reports. Select months and periods, populate tasks, and merge into one workbook.",
     icon: FileTextIcon,
     tags: [
       { id: "accomplishment", label: "Accomplishment", icon: CheckCircleIcon },

@@ -42,9 +42,9 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
       "Merge PDF files with page ordering and combine Excel files into one workbook.",
   },
   swrft: {
-    name: "SWRFT",
+    name: "ACCOMPLISHMENT REPORT",
     description:
-      "Generate quincena accomplishment reports for the full year.",
+      "Generate quincena accomplishment reports.",
   },
   "ifr-scanner": {
     name: "IFR SCANNER",

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
 import { listTemplates, type StoredTemplate } from "@/lib/api/templates";
 import {
   getFileKey,
@@ -28,7 +29,6 @@ export function useIfrScanner() {
   const [consolidationTemplateId, setConsolidationTemplateId] = useState("");
   const [isLoadingConsolidationTemplates, setIsLoadingConsolidationTemplates] =
     useState(false);
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (sourceFiles.length === 0) {
@@ -89,7 +89,7 @@ export function useIfrScanner() {
         return items[0]?.id ?? "";
       });
     } catch (error) {
-      setMessage(getErrorMessage(error, ERROR_MESSAGES.FAILED_LOAD_TEMPLATES));
+      toast.error(getErrorMessage(error, ERROR_MESSAGES.FAILED_LOAD_TEMPLATES));
     } finally {
       setIsLoadingConsolidationTemplates(false);
     }
@@ -138,8 +138,6 @@ export function useIfrScanner() {
     consolidationTemplateId,
     setConsolidationTemplateId,
     isLoadingConsolidationTemplates,
-    message,
-    setMessage,
     loadConsolidationTemplates,
     updateFolderName,
     updateDivision,

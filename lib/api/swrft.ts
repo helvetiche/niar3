@@ -49,12 +49,12 @@ export const generateSwrft = async (
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
     };
-    throw new Error(data.error ?? "Failed to generate SWRFT reports");
+    throw new Error(data.error ?? "Failed to generate accomplishment report");
   }
 
   const blob = await response.blob();
   const contentDisposition = response.headers.get("Content-Disposition");
-  let fileName = "SWRFT Accomplishment Report.xlsx";
+  let fileName = "Accomplishment Report.xlsx";
   if (contentDisposition) {
     const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
     if (utf8Match?.[1]) {

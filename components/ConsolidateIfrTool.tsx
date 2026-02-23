@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import toast from "react-hot-toast";
 import {
   ArrowsMergeIcon,
   DownloadSimpleIcon,
@@ -22,7 +23,6 @@ export function ConsolidateIfrTool() {
   const [division, setDivision] = useState(defaultDivision);
   const [ia, setIA] = useState(defaultIA);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
 
   const ifrInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -32,16 +32,16 @@ export function ConsolidateIfrTool() {
 
   const handleConsolidate = async () => {
     if (files.length === 0) {
-      setMessage("Please upload one or more IFR Excel files.");
+      toast.error("Please upload one or more IFR Excel files.");
       return;
     }
     if (!selectedTemplateId) {
-      setMessage("Please select a saved consolidation template.");
+      toast.error("Please select a saved consolidation template.");
       return;
     }
 
     setIsSubmitting(true);
-    setMessage("Consolidating files...");
+    const loadingToastId = toast.loading("Consolidating files...");
 
     try {
       const result = await consolidateIfrFile({
@@ -60,15 +60,17 @@ export function ConsolidateIfrTool() {
 
       const skippedMessage =
         result.skippedCount > 0
-          ? `\nSkipped ${String(result.skippedCount)} item(s):\n${result.skippedDetails
-              .map((detail) => `- ${detail.fileName}: ${detail.reason}`)
-              .join("\n")}`
+          ? ` Skipped ${String(result.skippedCount)} item(s): ${result.skippedDetails
+              .map((detail) => `${detail.fileName}: ${detail.reason}`)
+              .join("; ")}`
           : "";
-      setMessage(
-        `Success. Consolidated ${String(result.consolidatedCount)} file(s).${skippedMessage}`,
+      toast.dismiss(loadingToastId);
+      toast.success(
+        `Consolidated ${String(result.consolidatedCount)} file(s).${skippedMessage}`,
       );
     } catch (error) {
-      setMessage(getErrorMessage(error, "Failed to consolidate IFR."));
+      toast.dismiss(loadingToastId);
+      toast.error(getErrorMessage(error, "Failed to consolidate IFR."));
     } finally {
       setIsSubmitting(false);
     }
@@ -80,7 +82,6 @@ export function ConsolidateIfrTool() {
     setFileName(defaultOutputFileName);
     setDivision(defaultDivision);
     setIA(defaultIA);
-    setMessage("");
     if (ifrInputRef.current) ifrInputRef.current.value = "";
   };
 
@@ -291,15 +292,6 @@ export function ConsolidateIfrTool() {
             {missingRequirements.map((item) => `- ${item}`).join("\n")}
           </p>
         </div>
-      )}
-
-      {message && (
-        <p
-          className="mt-4 whitespace-pre-line rounded-lg border border-white/35 bg-white/10 px-4 py-3 text-sm text-white"
-          aria-live="polite"
-        >
-          {message}
-        </p>
       )}
     </section>
   );

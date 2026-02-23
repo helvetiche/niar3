@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       });
       return applySecurityHeaders(
         NextResponse.json(
-          { error: "Template is required. Select a SWRFT template." },
+          { error: "Template is required. Select an accomplishment template." },
           { status: 400 },
         ),
       );
@@ -210,8 +210,8 @@ export async function POST(request: Request) {
       method: "POST",
       request,
       httpStatus: 500,
-      errorMessage:
-        error instanceof Error ? error.message : "Failed to generate SWRFT",
+        errorMessage:
+            error instanceof Error ? error.message : "Failed to generate accomplishment report",
     });
     return applySecurityHeaders(
       NextResponse.json(
@@ -219,7 +219,7 @@ export async function POST(request: Request) {
           error:
             error instanceof Error
               ? error.message
-              : "Failed to generate SWRFT reports.",
+              : "Failed to generate accomplishment report.",
         },
         { status: 500 },
       ),
