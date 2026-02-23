@@ -41,12 +41,12 @@ export function TemplatesTool() {
         </div>
         <p className="mt-2 text-sm text-white/85 text-justify">
           Use this page as the centralized template workspace for IFR Scanner,
-          Consolidate Billing Unit, and Accomplishment Report. You can review saved templates,
-          select active ones, upload replacements, rename outdated files, and keep
-          a clean list that stays consistent for every authenticated user. This
-          prevents duplicate uploads per account, improves alignment across
-          teams, and keeps all template-driven outputs standardized from one
-          controlled place.
+          Consolidate Billing Unit, and Accomplishment Report. You can review
+          saved templates, select active ones, upload replacements, rename
+          outdated files, and keep a clean list that stays consistent for every
+          authenticated user. This prevents duplicate uploads per account,
+          improves alignment across teams, and keeps all template-driven outputs
+          standardized from one controlled place.
         </p>
       </div>
 

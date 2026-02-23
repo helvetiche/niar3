@@ -13,9 +13,7 @@ import { validateUploads } from "@/lib/upload-limits";
 import { logger } from "@/lib/logger";
 
 const isScope = (value: unknown): value is TemplateScope =>
-  value === "ifr-scanner" ||
-  value === "consolidate-ifr" ||
-  value === "swrft";
+  value === "ifr-scanner" || value === "consolidate-ifr" || value === "swrft";
 
 const sanitizeFilename = (name: string): string =>
   name.replace(/[^a-zA-Z0-9._-]/g, "_");

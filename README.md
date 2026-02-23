@@ -9,27 +9,35 @@ NIATools is a web-based application that centralizes common document processing 
 ## Key Features
 
 ### Workspace Hub
+
 Central dashboard providing quick access to all available tools and features. Navigate seamlessly between different functionalities without losing context.
 
 ### IFR Scanner
+
 Automated document scanning and data extraction tool. Upload IFR documents and let the system process and extract relevant information automatically. Supports batch processing for multiple files.
 
 ### Consolidate Billing Unit
+
 Merge and consolidate multiple billing unit documents into a single, organized file. Customize folder structures and apply templates for consistent output formatting.
 
 ### Merge Files
+
 Combine multiple documents into unified files:
+
 - Merge PDF files with custom page ordering
 - Combine Excel workbooks while preserving sheet structures
 - Rename and organize sheets in merged Excel files
 
 ### LIPA Summary
+
 Generate comprehensive summary reports from LIPA documents. Scan multiple files and produce consolidated reports with relevant data points.
 
 ### Template Manager
+
 Create and manage reusable templates for document processing operations. Templates can be shared across different tools to maintain consistency in output formatting.
 
 ### Account Management
+
 Administrative interface for managing user accounts and permissions. Control access levels and monitor user activities within the system.
 
 ## User Roles

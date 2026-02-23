@@ -95,10 +95,7 @@ export async function POST(request: Request) {
       details: { reason: "missing-label" },
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Task label is required" },
-        { status: 400 },
-      ),
+      NextResponse.json({ error: "Task label is required" }, { status: 400 }),
     );
   }
 

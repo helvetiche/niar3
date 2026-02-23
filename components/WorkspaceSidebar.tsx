@@ -84,8 +84,7 @@ const TOOLS = [
   {
     id: "swrft" as const,
     name: "ACCOMPLISHMENT REPORT",
-    description:
-      "Generate quincena accomplishment reports.",
+    description: "Generate quincena accomplishment reports.",
     icon: FileXlsIcon,
   },
   {

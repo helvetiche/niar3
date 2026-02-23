@@ -97,9 +97,7 @@ export type StoredTemplate = {
 };
 
 const isTemplateScope = (value: unknown): value is TemplateScope =>
-  value === "ifr-scanner" ||
-  value === "consolidate-ifr" ||
-  value === "swrft";
+  value === "ifr-scanner" || value === "consolidate-ifr" || value === "swrft";
 
 function templateCollection() {
   return getDb().collection("templates");
@@ -237,7 +235,10 @@ export type AccomplishmentTask = {
 };
 
 function accomplishmentTasksCollection(uid: string) {
-  return getDb().collection("users").doc(uid).collection("accomplishment_tasks");
+  return getDb()
+    .collection("users")
+    .doc(uid)
+    .collection("accomplishment_tasks");
 }
 
 export async function listAccomplishmentTasks(
@@ -251,7 +252,9 @@ export async function listAccomplishmentTasks(
     const d = doc.data();
     const des =
       typeof d.designation === "string" &&
-      validDesignations.includes(d.designation as (typeof validDesignations)[number])
+      validDesignations.includes(
+        d.designation as (typeof validDesignations)[number],
+      )
         ? (d.designation as AccomplishmentTaskDesignation)
         : "SWRFT";
     return {

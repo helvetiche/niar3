@@ -111,7 +111,9 @@ export async function POST(request: Request) {
         const parsed = JSON.parse(monthsRaw) as unknown;
         if (Array.isArray(parsed)) {
           months = parsed
-            .filter((m): m is number => typeof m === "number" && m >= 1 && m <= 12)
+            .filter(
+              (m): m is number => typeof m === "number" && m >= 1 && m <= 12,
+            )
             .sort((a, b) => a - b);
         }
       } catch {
@@ -154,7 +156,9 @@ export async function POST(request: Request) {
         const parsed = JSON.parse(customTasksRaw) as unknown;
         if (Array.isArray(parsed)) {
           customTasks = parsed
-            .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+            .filter(
+              (t): t is string => typeof t === "string" && t.trim().length > 0,
+            )
             .map((t) => (t as string).trim())
             .slice(0, 20);
           if (customTasks.length === 0) customTasks = undefined;
@@ -196,7 +200,9 @@ export async function POST(request: Request) {
       request,
       httpStatus: 200,
       details: {
-        periodCount: months.length * (includeFirstHalf ? 1 : 0) + months.length * (includeSecondHalf ? 1 : 0),
+        periodCount:
+          months.length * (includeFirstHalf ? 1 : 0) +
+          months.length * (includeSecondHalf ? 1 : 0),
         outputName,
       },
     });
@@ -222,8 +228,10 @@ export async function POST(request: Request) {
       method: "POST",
       request,
       httpStatus: 500,
-        errorMessage:
-            error instanceof Error ? error.message : "Failed to generate accomplishment report",
+      errorMessage:
+        error instanceof Error
+          ? error.message
+          : "Failed to generate accomplishment report",
     });
     return applySecurityHeaders(
       NextResponse.json(

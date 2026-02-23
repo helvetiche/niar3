@@ -417,7 +417,7 @@ export function GenerateProfilesTool() {
         Click <span className="font-medium">Scan and Generate</span> to process
         your uploaded source files and download the ZIP immediately. Use{" "}
         <span className="font-medium">Clear</span> to reset all selected files,
-        template choices, and optional consolidation         settings.
+        template choices, and optional consolidation settings.
       </p>
 
       <ProcessingOverlay

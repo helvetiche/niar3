@@ -18,7 +18,8 @@ const MONTH_NAMES = [
 const WEEKDAY_TASK =
   "SUPERVISED WRFOB, WATER DISTRIBUTION, AREA MONITORING, FIELD INSPECTION ATTEND IA MEETING and OTHER O&M ACTIVITIES";
 
-const WRFO_B_TASK_LINE_1 = "FIELD INSPECTION , ASSIST SWRFT IN AREA MONITORING,";
+const WRFO_B_TASK_LINE_1 =
+  "FIELD INSPECTION , ASSIST SWRFT IN AREA MONITORING,";
 const WRFO_B_TASK_LINE_2 = "REMOVING OF DEBRIS AND OTHER O&M ACTIVITIES";
 
 export type SwrftPeriod = {
@@ -108,7 +109,10 @@ const getTaskForDay = (
 };
 
 interface SheetLike {
-  cell: (ref: string) => { value: (v: string | number) => unknown; style?: (name: string, value: string) => unknown };
+  cell: (ref: string) => {
+    value: (v: string | number) => unknown;
+    style?: (name: string, value: string) => unknown;
+  };
 }
 
 const populateSheetForPeriod = (

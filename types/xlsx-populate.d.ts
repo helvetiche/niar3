@@ -1,7 +1,11 @@
 declare module "xlsx-populate" {
   interface Workbook {
     sheet(nameOrIndex: string | number): Sheet;
-    cloneSheet(from: Sheet, name: string, indexOrBeforeSheet?: number | string | Sheet): Sheet;
+    cloneSheet(
+      from: Sheet,
+      name: string,
+      indexOrBeforeSheet?: number | string | Sheet,
+    ): Sheet;
     outputAsync(mimeType?: string): Promise<Buffer | ArrayBuffer>;
     toFileAsync(path: string, options?: { password?: string }): Promise<void>;
   }

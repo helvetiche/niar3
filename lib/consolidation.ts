@@ -112,9 +112,7 @@ export async function buildConsolidatedWorkbook(
   }
 
   const lastTemplateRow =
-    rowByFileId.size > 0
-      ? Math.max(...rowByFileId.values())
-      : 0;
+    rowByFileId.size > 0 ? Math.max(...rowByFileId.values()) : 0;
 
   const divisionValue = args.division.replace(/[^0-9]/g, "") || "0";
   const iaValue = args.ia.trim() || "IA";
@@ -133,14 +131,8 @@ export async function buildConsolidatedWorkbook(
   };
 
   const sortedFiles = [...args.inputFiles].sort((a, b) => {
-    const idA = parseInt(
-      /^(\d+)\s/.exec(a.fileName)?.[1] ?? "0",
-      10,
-    );
-    const idB = parseInt(
-      /^(\d+)\s/.exec(b.fileName)?.[1] ?? "0",
-      10,
-    );
+    const idA = parseInt(/^(\d+)\s/.exec(a.fileName)?.[1] ?? "0", 10);
+    const idB = parseInt(/^(\d+)\s/.exec(b.fileName)?.[1] ?? "0", 10);
     return idA - idB;
   });
 
@@ -173,7 +165,9 @@ export async function buildConsolidatedWorkbook(
       continue;
     }
 
-    targetSheet.cell(`A${String(targetRow)}`).value(Number.parseInt(extracted.fileId, 10) || 0);
+    targetSheet
+      .cell(`A${String(targetRow)}`)
+      .value(Number.parseInt(extracted.fileId, 10) || 0);
     const rowLabel = String(targetRow);
 
     const perFileIA = extracted.accountDetails[0]?.nameOfIA?.trim() || iaValue;

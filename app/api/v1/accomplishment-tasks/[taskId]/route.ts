@@ -29,10 +29,7 @@ export async function DELETE(
       details: { reason: "missing-task-id", taskId },
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Task ID is required" },
-        { status: 400 },
-      ),
+      NextResponse.json({ error: "Task ID is required" }, { status: 400 }),
     );
   }
 

@@ -37,9 +37,7 @@ export const createAccomplishmentTask = async (
   });
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(
-      data.error ?? "Failed to create accomplishment task",
-    );
+    throw new Error(data.error ?? "Failed to create accomplishment task");
   }
   return res.json();
 };
@@ -47,14 +45,15 @@ export const createAccomplishmentTask = async (
 export const deleteAccomplishmentTask = async (
   taskId: string,
 ): Promise<void> => {
-  const res = await fetch(`/api/v1/accomplishment-tasks/${encodeURIComponent(taskId)}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
+  const res = await fetch(
+    `/api/v1/accomplishment-tasks/${encodeURIComponent(taskId)}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    },
+  );
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(
-      data.error ?? "Failed to delete accomplishment task",
-    );
+    throw new Error(data.error ?? "Failed to delete accomplishment task");
   }
-}
+};

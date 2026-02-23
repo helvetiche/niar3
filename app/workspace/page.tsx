@@ -43,8 +43,7 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   },
   swrft: {
     name: "ACCOMPLISHMENT REPORT",
-    description:
-      "Generate quincena accomplishment reports.",
+    description: "Generate quincena accomplishment reports.",
   },
   "ifr-scanner": {
     name: "IFR SCANNER",
