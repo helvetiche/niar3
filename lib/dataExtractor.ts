@@ -172,6 +172,44 @@ const computePrincipalPenaltyFromAccAndSoa = (
   };
 };
 
+/**
+ * Compute principal and penalty from ACC sheet crop data using the same
+ * logic as profileGenerator (rate 1700 or 2550 for -D seasons, 25% penalty).
+ * Used when D100/F100 are not written (template formulas preserved).
+ */
+const computePrincipalPenaltyFromAccCropData = (
+  accData: unknown[][],
+): { principal: string; penalty: string } => {
+  let principalTotal = 0;
+  let penaltyTotal = 0;
+  const startRow = 29;
+  const maxRows = 30;
+
+  for (let i = 0; i < maxRows; i += 1) {
+    const row = accData[startRow + i];
+    if (!Array.isArray(row)) break;
+
+    const area =
+      typeof row[3] === "number"
+        ? row[3]
+        : Number(String(row[3] ?? "").replace(/,/g, ""));
+    if (Number.isNaN(area) || area <= 0) continue;
+
+    const cropSeason = String(row[1] ?? "").toUpperCase();
+    const rate = cropSeason.endsWith("-D") ? 2550 : 1700;
+    const principal = area * rate;
+    const penalty = principal * 0.25;
+
+    principalTotal += principal;
+    penaltyTotal += penalty;
+  }
+
+  return {
+    principal: principalTotal > 0 ? formatNumber(String(principalTotal)) : "",
+    penalty: penaltyTotal > 0 ? formatNumber(String(penaltyTotal)) : "",
+  };
+};
+
 export const extractAccountDetails = (sheet: ParsedSheet): AccountDetail[] => {
   const details: AccountDetail[] = [];
   const headerRow = findRowByText(sheet.data, "ACCOUNT DETAILS");
@@ -250,9 +288,20 @@ export const extractSOADetails = (
   const computed = accSheet
     ? computePrincipalPenaltyFromAccAndSoa(accSheet.data, sheet.data)
     : { principal: "", penalty: "" };
+  const fromAccCrop = accSheet
+    ? computePrincipalPenaltyFromAccCropData(accSheet.data)
+    : { principal: "", penalty: "" };
 
-  principal = principal || fromIfrRows.principal || computed.principal;
-  penalty = penalty || fromIfrRows.penalty || computed.penalty;
+  principal =
+    principal ||
+    fromIfrRows.principal ||
+    computed.principal ||
+    fromAccCrop.principal;
+  penalty =
+    penalty ||
+    fromIfrRows.penalty ||
+    computed.penalty ||
+    fromAccCrop.penalty;
 
   const oldAccount = getCellValue(sheet.data, 100, 6, true);
   let total = getCellValue(sheet.data, 101, 6, true);
@@ -261,6 +310,13 @@ export const extractSOADetails = (
     if (g102 !== undefined && String(g102).trim() !== "") {
       total = formatNumber(String(g102).replace(/,/g, ""));
     }
+  }
+
+  if (!total && principal && penalty && oldAccount !== undefined) {
+    const principalNum = Number(String(principal).replace(/,/g, "")) || 0;
+    const penaltyNum = Number(String(penalty).replace(/,/g, "")) || 0;
+    const oldNum = Number(String(oldAccount).replace(/,/g, "")) || 0;
+    total = formatNumber(String(principalNum + penaltyNum + oldNum));
   }
 
   if (!area && !principal && !penalty && !oldAccount && !total) return details;
