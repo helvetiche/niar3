@@ -105,9 +105,6 @@ export const generateProfileBuffer = async (
   setCell(workbook, ACC_SHEET, "C11", farmerFirst);
   setCell(workbook, ACC_SHEET, "C13", farmerLast);
 
-  let principalTotal = 0;
-  let penaltyTotal = 0;
-
   for (let i = 0; i < lotGroup.rows.length; i += 1) {
     const row = lotGroup.rows[i];
     const rowNumber = 30 + i;
@@ -115,25 +112,9 @@ export const generateProfileBuffer = async (
     setCell(workbook, ACC_SHEET, `B${String(rowNumber)}`, row.cropSeason);
     setCell(workbook, ACC_SHEET, `C${String(rowNumber)}`, row.cropYear);
     setCell(workbook, ACC_SHEET, `D${String(rowNumber)}`, row.plantedArea);
-
-    const area = Number(String(row.plantedArea ?? "").replace(/,/g, "")) || 0;
-    const cropSeason = String(row.cropSeason ?? "").toUpperCase();
-    const rate = cropSeason.endsWith("-D") ? 2550 : 1700;
-    const principal = area * rate;
-    const penalty = principal * 0.25;
-
-    principalTotal += principal;
-    penaltyTotal += penalty;
   }
 
-  const oldAccountNumber =
-    Number(String(oldAccount ?? "").replace(/,/g, "")) || 0;
-  const total = principalTotal + penaltyTotal + oldAccountNumber;
-
-  setCell(workbook, SOA_SHEET, "D100", principalTotal);
-  setCell(workbook, SOA_SHEET, "F100", penaltyTotal);
   setCell(workbook, SOA_SHEET, "G101", oldAccount);
-  setCell(workbook, SOA_SHEET, "G102", total);
 
   const output = await workbook.outputAsync();
   const buffer = Buffer.isBuffer(output)
