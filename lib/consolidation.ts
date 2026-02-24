@@ -92,6 +92,65 @@ const setTextCell = (
   }
 };
 
+const writeRowData = (
+  sheet: {
+    cell: (ref: string) => {
+      value: (val?: string | number) => unknown;
+      style: (name: string, value: string) => unknown;
+    };
+  },
+  rowLabel: string,
+  extracted: {
+    accountDetails: Array<{
+      lotNo: string;
+      lotOwner: { lastName: string; firstName: string };
+      farmer: { lastName: string; firstName: string };
+      nameOfIA?: string;
+      division?: string;
+    }>;
+    soaDetails: Array<{
+      area: string;
+      principal: string;
+      penalty: string;
+      oldAccount: string;
+      total: string;
+    }>;
+  },
+  iaValue: string,
+  divisionValue: string,
+): void => {
+  const perFileIA = extracted.accountDetails[0]?.nameOfIA?.trim() || iaValue;
+  const perFileDivision =
+    extracted.accountDetails[0]?.division?.trim() || divisionValue;
+
+  if (extracted.accountDetails.length > 0) {
+    const detail = extracted.accountDetails[0];
+    setTextCell(sheet, `B${rowLabel}`, detail.lotNo, {
+      alignLeft: true,
+      explicitText: true,
+    });
+    setTextCell(sheet, `C${rowLabel}`, detail.lotOwner.lastName);
+    setTextCell(sheet, `D${rowLabel}`, detail.lotOwner.firstName);
+    setTextCell(sheet, `E${rowLabel}`, "");
+    setTextCell(sheet, `F${rowLabel}`, detail.farmer.lastName);
+    setTextCell(sheet, `G${rowLabel}`, detail.farmer.firstName);
+  }
+
+  if (extracted.soaDetails.length > 0) {
+    const detail = extracted.soaDetails[0];
+    setNumericCellWithFormat(sheet, `I${rowLabel}`, detail.area);
+    setNumericCellWithFormat(sheet, `J${rowLabel}`, detail.principal);
+    setNumericCellWithFormat(sheet, `K${rowLabel}`, detail.penalty);
+    setNumericCellWithFormat(sheet, `L${rowLabel}`, detail.oldAccount);
+    setNumericCellWithFormat(sheet, `M${rowLabel}`, detail.total);
+  }
+
+  setTextCell(sheet, `N${rowLabel}`, perFileIA);
+  sheet
+    .cell(`O${rowLabel}`)
+    .value(Number.parseInt(perFileDivision.replace(/[^0-9]/g, ""), 10) || 0);
+};
+
 export async function buildConsolidatedWorkbook(
   args: BuildConsolidationArgs,
 ): Promise<BuildConsolidationResult> {
@@ -105,10 +164,35 @@ export async function buildConsolidatedWorkbook(
   }
 
   const rowByFileId = new Map<string, number>();
-  for (let row = 1; row <= 10000; row += 1) {
-    const aValue = targetSheet.cell(`A${String(row)}`).value();
-    const id = normalizeId(aValue);
-    if (id) rowByFileId.set(id, row);
+  
+  try {
+    const sheetWithRange = targetSheet as { usedRange?: () => { value: () => unknown[][] } };
+    const usedRange = sheetWithRange.usedRange?.();
+    if (usedRange) {
+      const values = usedRange.value();
+      const maxRow = Math.min(Array.isArray(values) ? values.length : 0, 10000);
+      
+      for (let row = 0; row < maxRow; row += 1) {
+        const rowData = Array.isArray(values[row]) ? values[row] : [];
+        const aValue = rowData[0];
+        const id = normalizeId(aValue);
+        if (id) {
+          rowByFileId.set(id, row + 1);
+        } else if (row > 10 && !id) {
+          break;
+        }
+      }
+    }
+  } catch {
+    for (let row = 1; row <= 1000; row += 1) {
+      const aValue = targetSheet.cell(`A${String(row)}`).value();
+      const id = normalizeId(aValue);
+      if (id) {
+        rowByFileId.set(id, row);
+      } else if (row > 10 && !id) {
+        break;
+      }
+    }
   }
 
   const lastTemplateRow =
@@ -136,71 +220,53 @@ export async function buildConsolidatedWorkbook(
     return idA - idB;
   });
 
-  for (const file of sortedFiles) {
-    const parsedSheets = parseExcelFile(file.buffer);
-    if (parsedSheets.length === 0) {
-      skippedDetails.push({
-        fileName: file.fileName,
-        reason: "No readable worksheet data found in file.",
-      });
-      continue;
+  const BATCH_SIZE = 20;
+  for (let batchStart = 0; batchStart < sortedFiles.length; batchStart += BATCH_SIZE) {
+    const batch = sortedFiles.slice(batchStart, batchStart + BATCH_SIZE);
+    
+    const parsedBatch = await Promise.all(
+      batch.map(async (file) => ({
+        file,
+        sheets: parseExcelFile(file.buffer),
+      }))
+    );
+    
+    for (const { file, sheets } of parsedBatch) {
+      if (sheets.length === 0) {
+        skippedDetails.push({
+          fileName: file.fileName,
+          reason: "No readable worksheet data found in file.",
+        });
+        continue;
+      }
+
+      const extracted = extractData(sheets, file.fileName);
+      if (!extracted.fileId) {
+        skippedDetails.push({
+          fileName: file.fileName,
+          reason: "Cannot extract file ID from filename prefix.",
+        });
+        continue;
+      }
+
+      const targetRow = getTargetRow(extracted.fileId);
+      if (!targetRow) {
+        skippedDetails.push({
+          fileName: file.fileName,
+          fileId: extracted.fileId,
+          reason: `Cannot assign row for file ID ${extracted.fileId}.`,
+        });
+        continue;
+      }
+
+      targetSheet
+        .cell(`A${String(targetRow)}`)
+        .value(Number.parseInt(extracted.fileId, 10) || 0);
+      const rowLabel = String(targetRow);
+
+      writeRowData(targetSheet, rowLabel, extracted, iaValue, divisionValue);
+      consolidatedCount += 1;
     }
-
-    const extracted = extractData(parsedSheets, file.fileName);
-    if (!extracted.fileId) {
-      skippedDetails.push({
-        fileName: file.fileName,
-        reason: "Cannot extract file ID from filename prefix.",
-      });
-      continue;
-    }
-
-    const targetRow = getTargetRow(extracted.fileId);
-    if (!targetRow) {
-      skippedDetails.push({
-        fileName: file.fileName,
-        fileId: extracted.fileId,
-        reason: `Cannot assign row for file ID ${extracted.fileId}.`,
-      });
-      continue;
-    }
-
-    targetSheet
-      .cell(`A${String(targetRow)}`)
-      .value(Number.parseInt(extracted.fileId, 10) || 0);
-    const rowLabel = String(targetRow);
-
-    const perFileIA = extracted.accountDetails[0]?.nameOfIA?.trim() || iaValue;
-    const perFileDivision =
-      extracted.accountDetails[0]?.division?.trim() || divisionValue;
-
-    if (extracted.accountDetails.length > 0) {
-      const detail = extracted.accountDetails[0];
-      setTextCell(targetSheet, `B${rowLabel}`, detail.lotNo, {
-        alignLeft: true,
-        explicitText: true,
-      });
-      setTextCell(targetSheet, `C${rowLabel}`, detail.lotOwner.lastName);
-      setTextCell(targetSheet, `D${rowLabel}`, detail.lotOwner.firstName);
-      setTextCell(targetSheet, `E${rowLabel}`, "");
-      setTextCell(targetSheet, `F${rowLabel}`, detail.farmer.lastName);
-      setTextCell(targetSheet, `G${rowLabel}`, detail.farmer.firstName);
-    }
-
-    if (extracted.soaDetails.length > 0) {
-      const detail = extracted.soaDetails[0];
-      setNumericCellWithFormat(targetSheet, `I${rowLabel}`, detail.area);
-      setNumericCellWithFormat(targetSheet, `J${rowLabel}`, detail.principal);
-      setNumericCellWithFormat(targetSheet, `K${rowLabel}`, detail.penalty);
-      setNumericCellWithFormat(targetSheet, `L${rowLabel}`, detail.oldAccount);
-      setNumericCellWithFormat(targetSheet, `M${rowLabel}`, detail.total);
-    }
-
-    setTextCell(targetSheet, `N${rowLabel}`, perFileIA);
-    targetSheet
-      .cell(`O${rowLabel}`)
-      .value(Number.parseInt(perFileDivision.replace(/[^0-9]/g, ""), 10) || 0);
-    consolidatedCount += 1;
   }
 
   if (consolidatedCount === 0) {

@@ -81,8 +81,9 @@ const sumPlantedAreaFromAcc = (accData: unknown[][]): string => {
   const startRow = 29;
   const col = 3;
   const maxRows = 30;
+  const endRow = Math.min(startRow + maxRows, accData.length);
 
-  for (let row = startRow; row < startRow + maxRows; row += 1) {
+  for (let row = startRow; row < endRow; row += 1) {
     const rowData = accData[row];
     if (!Array.isArray(rowData)) break;
     const cell = rowData[col];
@@ -90,7 +91,11 @@ const sumPlantedAreaFromAcc = (accData: unknown[][]): string => {
       typeof cell === "number"
         ? cell
         : Number(String(cell ?? "").replace(/,/g, ""));
-    if (!Number.isNaN(number) && number > 0) total += number;
+    if (!Number.isNaN(number) && number > 0) {
+      total += number;
+    } else if (row > startRow + 5 && number === 0) {
+      break;
+    }
   }
 
   return total > 0 ? formatNumber(String(total)) : "";
@@ -184,8 +189,9 @@ const computePrincipalPenaltyFromAccCropData = (
   let penaltyTotal = 0;
   const startRow = 29;
   const maxRows = 30;
+  const endRow = Math.min(startRow + maxRows, accData.length);
 
-  for (let i = 0; i < maxRows; i += 1) {
+  for (let i = 0; i < maxRows && startRow + i < endRow; i += 1) {
     const row = accData[startRow + i];
     if (!Array.isArray(row)) break;
 
@@ -193,7 +199,10 @@ const computePrincipalPenaltyFromAccCropData = (
       typeof row[3] === "number"
         ? row[3]
         : Number(String(row[3] ?? "").replace(/,/g, ""));
-    if (Number.isNaN(area) || area <= 0) continue;
+    if (Number.isNaN(area) || area <= 0) {
+      if (i > 5) break;
+      continue;
+    }
 
     const cropSeason = String(row[1] ?? "").toUpperCase();
     const rate = cropSeason.endsWith("-D") ? 2550 : 1700;

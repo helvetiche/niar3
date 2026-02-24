@@ -7,11 +7,22 @@ export interface ParsedSheet {
 }
 
 export const parseExcelFile = (buffer: Buffer): ParsedSheet[] => {
-  const workbook = XLSX.read(buffer, { type: "buffer" });
+  const workbook = XLSX.read(buffer, { 
+    type: "buffer",
+    cellFormula: false,
+    cellHTML: false,
+    cellText: false,
+    sheetStubs: false,
+    dense: true
+  });
 
   return workbook.SheetNames.map((sheetName) => {
     const worksheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true });
+    const data = XLSX.utils.sheet_to_json(worksheet, { 
+      header: 1, 
+      raw: true,
+      defval: ""
+    });
 
     return {
       data: data as unknown[][],
