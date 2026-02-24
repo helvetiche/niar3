@@ -165,33 +165,13 @@ export async function buildConsolidatedWorkbook(
 
   const rowByFileId = new Map<string, number>();
   
-  try {
-    const sheetWithRange = targetSheet as { usedRange?: () => { value: () => unknown[][] } };
-    const usedRange = sheetWithRange.usedRange?.();
-    if (usedRange) {
-      const values = usedRange.value();
-      const maxRow = Math.min(Array.isArray(values) ? values.length : 0, 10000);
-      
-      for (let row = 0; row < maxRow; row += 1) {
-        const rowData = Array.isArray(values[row]) ? values[row] : [];
-        const aValue = rowData[0];
-        const id = normalizeId(aValue);
-        if (id) {
-          rowByFileId.set(id, row + 1);
-        } else if (row > 10 && !id) {
-          break;
-        }
-      }
-    }
-  } catch {
-    for (let row = 1; row <= 1000; row += 1) {
-      const aValue = targetSheet.cell(`A${String(row)}`).value();
-      const id = normalizeId(aValue);
-      if (id) {
-        rowByFileId.set(id, row);
-      } else if (row > 10 && !id) {
-        break;
-      }
+  for (let row = 1; row <= 1000; row += 1) {
+    const aValue = targetSheet.cell(`A${String(row)}`).value();
+    const id = normalizeId(aValue);
+    if (id) {
+      rowByFileId.set(id, row);
+    } else if (row > 10 && !id) {
+      break;
     }
   }
 
@@ -220,53 +200,42 @@ export async function buildConsolidatedWorkbook(
     return idA - idB;
   });
 
-  const BATCH_SIZE = 20;
-  for (let batchStart = 0; batchStart < sortedFiles.length; batchStart += BATCH_SIZE) {
-    const batch = sortedFiles.slice(batchStart, batchStart + BATCH_SIZE);
-    
-    const parsedBatch = await Promise.all(
-      batch.map(async (file) => ({
-        file,
-        sheets: parseExcelFile(file.buffer),
-      }))
-    );
-    
-    for (const { file, sheets } of parsedBatch) {
-      if (sheets.length === 0) {
-        skippedDetails.push({
-          fileName: file.fileName,
-          reason: "No readable worksheet data found in file.",
-        });
-        continue;
-      }
-
-      const extracted = extractData(sheets, file.fileName);
-      if (!extracted.fileId) {
-        skippedDetails.push({
-          fileName: file.fileName,
-          reason: "Cannot extract file ID from filename prefix.",
-        });
-        continue;
-      }
-
-      const targetRow = getTargetRow(extracted.fileId);
-      if (!targetRow) {
-        skippedDetails.push({
-          fileName: file.fileName,
-          fileId: extracted.fileId,
-          reason: `Cannot assign row for file ID ${extracted.fileId}.`,
-        });
-        continue;
-      }
-
-      targetSheet
-        .cell(`A${String(targetRow)}`)
-        .value(Number.parseInt(extracted.fileId, 10) || 0);
-      const rowLabel = String(targetRow);
-
-      writeRowData(targetSheet, rowLabel, extracted, iaValue, divisionValue);
-      consolidatedCount += 1;
+  for (const file of sortedFiles) {
+    const sheets = parseExcelFile(file.buffer);
+    if (sheets.length === 0) {
+      skippedDetails.push({
+        fileName: file.fileName,
+        reason: "No readable worksheet data found in file.",
+      });
+      continue;
     }
+
+    const extracted = extractData(sheets, file.fileName);
+    if (!extracted.fileId) {
+      skippedDetails.push({
+        fileName: file.fileName,
+        reason: "Cannot extract file ID from filename prefix.",
+      });
+      continue;
+    }
+
+    const targetRow = getTargetRow(extracted.fileId);
+    if (!targetRow) {
+      skippedDetails.push({
+        fileName: file.fileName,
+        fileId: extracted.fileId,
+        reason: `Cannot assign row for file ID ${extracted.fileId}.`,
+      });
+      continue;
+    }
+
+    targetSheet
+      .cell(`A${String(targetRow)}`)
+      .value(Number.parseInt(extracted.fileId, 10) || 0);
+    const rowLabel = String(targetRow);
+
+    writeRowData(targetSheet, rowLabel, extracted, iaValue, divisionValue);
+    consolidatedCount += 1;
   }
 
   if (consolidatedCount === 0) {
