@@ -8,7 +8,9 @@ import {
   PencilSimpleIcon,
   CheckIcon,
   XIcon,
+  PlusIcon,
 } from "@phosphor-icons/react";
+import { MasonryModal } from "@/components/MasonryModal";
 import {
   deleteTemplate,
   listTemplates,
@@ -38,6 +40,7 @@ export function TemplateManagerInline({
   const [editName, setEditName] = useState("");
   const [editFile, setEditFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const editInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -101,6 +104,7 @@ export function TemplateManagerInline({
       onSelectedTemplateIdChange(saved.id);
       setUploadFile(null);
       if (uploadInputRef.current) uploadInputRef.current.value = "";
+      setIsUploadModalOpen(false);
       toast.dismiss(loadingToastId);
       toast.success("Template uploaded.");
     } catch (error) {
@@ -170,45 +174,25 @@ export function TemplateManagerInline({
 
   return (
     <div className="space-y-4">
-      {/* Upload New Template */}
+      {/* Template List */}
       <div className="rounded-lg border border-white/30 bg-white/5 p-4">
-        <h4 className="mb-3 text-sm font-medium text-white">
-          Upload New Template
-        </h4>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <input
-            ref={uploadInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={(event) =>
-              setUploadFile(event.target.files?.[0] ?? null)
-            }
-            className="block w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-emerald-900 hover:file:bg-emerald-50"
-          />
+        <div className="mb-3 flex items-center justify-between">
+          <h4 className="text-sm font-medium text-white">
+            Saved Templates ({templates.length})
+          </h4>
           <button
             type="button"
-            onClick={() => void handleUpload()}
-            disabled={isLoading || !uploadFile}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/70"
+            onClick={() => setIsUploadModalOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/40 bg-white/5 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/10"
           >
-            <UploadSimpleIcon size={16} />
+            <PlusIcon size={16} />
             Upload
           </button>
         </div>
-        <p className="mt-2 text-xs text-white/70">
-          Upload .xlsx or .xls files. New templates are auto-selected.
-        </p>
-      </div>
-
-      {/* Template List */}
-      <div className="rounded-lg border border-white/30 bg-white/5 p-4">
-        <h4 className="mb-3 text-sm font-medium text-white">
-          Saved Templates ({templates.length})
-        </h4>
 
         {templates.length === 0 ? (
           <p className="text-sm text-white/70">
-            No templates saved yet. Upload one above.
+            No templates saved yet. Click Upload to add one.
           </p>
         ) : (
           <div className="space-y-2">
@@ -313,6 +297,57 @@ export function TemplateManagerInline({
           </div>
         )}
       </div>
+
+      {/* Upload Modal */}
+      <MasonryModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+        panelClassName="max-w-md"
+        animateFrom="bottom"
+      >
+        {(close) => (
+          <div className="rounded-2xl border border-white/40 bg-emerald-900 p-4 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-lg font-medium text-white">
+                <span className="inline-flex rounded-lg border border-white/40 bg-white/10 p-2">
+                  <UploadSimpleIcon size={20} className="text-white" />
+                </span>
+                Upload Template
+              </h3>
+              <button
+                type="button"
+                onClick={close}
+                className="rounded p-1.5 text-white/80 transition hover:bg-white/20 hover:text-white"
+              >
+                <XIcon size={20} weight="bold" />
+              </button>
+            </div>
+            <p className="mb-4 text-xs text-white/80">
+              Upload .xlsx or .xls files. New templates are auto-selected.
+            </p>
+            <div className="flex flex-col gap-3">
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={(event) =>
+                  setUploadFile(event.target.files?.[0] ?? null)
+                }
+                className="block w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-emerald-900 hover:file:bg-emerald-50"
+              />
+              <button
+                type="button"
+                onClick={() => void handleUpload()}
+                disabled={isLoading || !uploadFile}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/70"
+              >
+                <UploadSimpleIcon size={16} />
+                {isLoading ? "Uploading..." : "Upload"}
+              </button>
+            </div>
+          </div>
+        )}
+      </MasonryModal>
     </div>
   );
 }

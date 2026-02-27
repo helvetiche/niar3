@@ -5,8 +5,11 @@ import { WorkspaceLoadingScreen } from "@/components/WorkspaceLoadingScreen";
 import { GenerateProfilesTool } from "@/components/GenerateProfilesTool";
 import { GenerateProfilesToolStepped } from "@/components/GenerateProfilesToolStepped";
 import { ConsolidateIfrTool } from "@/components/ConsolidateIfrTool";
+import { ConsolidateIfrToolStepped } from "@/components/ConsolidateIfrToolStepped";
 import { MergeFilesTool } from "@/components/MergeFilesTool";
+import { MergeFilesToolStepped } from "@/components/MergeFilesToolStepped";
 import { SwrftTool } from "@/components/SwrftTool";
+import { SwrftToolStepped } from "@/components/SwrftToolStepped";
 import { LipaSummaryTool } from "@/components/LipaSummaryTool";
 import { WorkspaceHub } from "@/components/WorkspaceHub";
 import { TemplatesTool } from "@/components/TemplatesTool";
@@ -101,11 +104,11 @@ export default function WorkspacePage() {
           ) : selectedTab === "ifr-scanner" ? (
             <GenerateProfilesToolStepped />
           ) : selectedTab === "consolidate-ifr" ? (
-            <ConsolidateIfrTool />
+            <ConsolidateIfrToolStepped />
           ) : selectedTab === "merge-files" ? (
-            <MergeFilesTool />
+            <MergeFilesToolStepped />
           ) : selectedTab === "swrft" ? (
-            <SwrftTool />
+            <SwrftToolStepped />
           ) : selectedTab === "accounts" ? (
             <AccountManagement />
           ) : (

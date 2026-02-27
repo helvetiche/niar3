@@ -65,65 +65,67 @@ export function WorkspaceStepper({
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       {/* Step Indicators */}
-      <div className="flex items-center justify-between gap-1 sm:gap-2">
-        {steps.map((step, index) => {
-          const isActive = index === currentStep;
-          const isCompleted = index < currentStep;
-          const isClickable = index <= currentStep;
+      <div className="flex items-center justify-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {steps.map((step, index) => {
+            const isActive = index === currentStep;
+            const isCompleted = index < currentStep;
+            const isClickable = index <= currentStep;
 
-          return (
-            <div key={index} className="flex flex-1 items-center gap-1 sm:gap-2">
-              <button
-                type="button"
-                onClick={() => handleStepClick(index)}
-                disabled={!isClickable}
-                className={`group flex items-center gap-2 transition sm:gap-3 ${
-                  isClickable ? "cursor-pointer" : "cursor-not-allowed"
-                }`}
-              >
-                <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 font-semibold transition sm:h-10 sm:w-10 ${
-                    isCompleted
-                      ? "border-white bg-white text-emerald-900"
-                      : isActive
-                        ? "border-white bg-emerald-700 text-white"
-                        : "border-white/40 bg-white/10 text-white/60"
+            return (
+              <div key={index} className="flex items-center gap-1 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleStepClick(index)}
+                  disabled={!isClickable}
+                  className={`group flex items-center gap-2 transition sm:gap-3 ${
+                    isClickable ? "cursor-pointer" : "cursor-not-allowed"
                   }`}
                 >
-                  {isCompleted ? (
-                    <CheckIcon size={16} weight="bold" className="sm:hidden" />
-                  ) : (
-                    <span className="text-xs sm:text-sm">{index + 1}</span>
-                  )}
-                  {isCompleted && (
-                    <CheckIcon size={20} weight="bold" className="hidden sm:block" />
-                  )}
-                </div>
-                <div className="hidden flex-col items-start lg:flex">
-                  <span
-                    className={`text-sm font-medium ${
-                      isActive || isCompleted ? "text-white" : "text-white/60"
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 font-semibold transition sm:h-10 sm:w-10 ${
+                      isCompleted
+                        ? "border-white bg-white text-emerald-900"
+                        : isActive
+                          ? "border-white bg-emerald-700 text-white"
+                          : "border-white/40 bg-white/10 text-white/60"
                     }`}
                   >
-                    {step.title}
-                  </span>
-                  {step.description && (
-                    <span className="text-xs text-white/50">
-                      {step.description}
+                    {isCompleted ? (
+                      <CheckIcon size={16} weight="bold" className="sm:hidden" />
+                    ) : (
+                      <span className="text-xs sm:text-sm">{index + 1}</span>
+                    )}
+                    {isCompleted && (
+                      <CheckIcon size={20} weight="bold" className="hidden sm:block" />
+                    )}
+                  </div>
+                  <div className="hidden flex-col items-start lg:flex">
+                    <span
+                      className={`text-sm font-medium ${
+                        isActive || isCompleted ? "text-white" : "text-white/60"
+                      }`}
+                    >
+                      {step.title}
                     </span>
-                  )}
-                </div>
-              </button>
-              {index < steps.length - 1 && (
-                <div
-                  className={`h-0.5 flex-1 transition ${
-                    isCompleted ? "bg-white" : "bg-white/20"
-                  }`}
-                />
-              )}
-            </div>
-          );
-        })}
+                    {step.description && (
+                      <span className="text-xs text-white/50">
+                        {step.description}
+                      </span>
+                    )}
+                  </div>
+                </button>
+                {index < steps.length - 1 && (
+                  <div
+                    className={`h-0.5 w-8 transition sm:w-12 md:w-16 ${
+                      isCompleted ? "bg-white" : "bg-white/20"
+                    }`}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Step Content */}
