@@ -6,7 +6,6 @@ import {
   CalendarBlankIcon,
   CalendarCheckIcon,
   CalendarDotsIcon,
-  CheckCircleIcon,
   CircleNotchIcon,
   DownloadSimpleIcon,
   FileXlsIcon,

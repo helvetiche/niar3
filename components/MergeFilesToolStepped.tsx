@@ -2,7 +2,6 @@
 
 import {
   ArrowsMergeIcon,
-  DownloadSimpleIcon,
   UploadSimpleIcon,
   FilePdfIcon,
   MicrosoftExcelLogoIcon,

@@ -2,15 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { WorkspaceLoadingScreen } from "@/components/WorkspaceLoadingScreen";
-import { GenerateProfilesTool } from "@/components/GenerateProfilesTool";
 import { GenerateProfilesToolStepped } from "@/components/GenerateProfilesToolStepped";
-import { ConsolidateIfrTool } from "@/components/ConsolidateIfrTool";
 import { ConsolidateIfrToolStepped } from "@/components/ConsolidateIfrToolStepped";
-import { MergeFilesTool } from "@/components/MergeFilesTool";
 import { MergeFilesToolStepped } from "@/components/MergeFilesToolStepped";
-import { SwrftTool } from "@/components/SwrftTool";
 import { SwrftToolStepped } from "@/components/SwrftToolStepped";
-import { LipaSummaryTool } from "@/components/LipaSummaryTool";
+import { LipaSummaryToolStepped } from "@/components/LipaSummaryToolStepped";
 import { WorkspaceHub } from "@/components/WorkspaceHub";
 import { TemplatesTool } from "@/components/TemplatesTool";
 import { WorkspaceToolPlaceholder } from "@/components/WorkspaceToolPlaceholder";
@@ -96,7 +92,7 @@ export default function WorkspacePage() {
       <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-emerald-950">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-2 sm:p-3 md:p-4">
           {selectedTab === "lipa-summary" ? (
-            <LipaSummaryTool />
+            <LipaSummaryToolStepped />
           ) : selectedTab === "hub" ? (
             <WorkspaceHub />
           ) : selectedTab === "template-manager" ? (

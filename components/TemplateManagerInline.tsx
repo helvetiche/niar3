@@ -259,13 +259,8 @@ export function TemplateManagerInline({
                           {template.name}
                         </p>
                         <p className="mt-0.5 text-xs text-white/60">
-                          {template.uploadedAt
-                            ? new Date(
-                                typeof template.uploadedAt === "object" &&
-                                  "toDate" in template.uploadedAt
-                                  ? template.uploadedAt.toDate()
-                                  : template.uploadedAt,
-                              ).toLocaleDateString()
+                          {template.createdAt
+                            ? new Date(template.createdAt).toLocaleDateString()
                             : "—"}
                         </p>
                       </button>
