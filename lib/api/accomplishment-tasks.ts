@@ -1,6 +1,12 @@
 "use client";
 
-export type AccomplishmentTaskDesignation = "SWRFT" | "WRFOB";
+export type AccomplishmentTaskDesignation =
+  | "SWRFT"
+  | "WRFOB"
+  | "Senior Engineer A"
+  | "Senior Engineer B"
+  | "Engineer A"
+  | "Administrative Aide";
 
 export type AccomplishmentTask = {
   id: string;

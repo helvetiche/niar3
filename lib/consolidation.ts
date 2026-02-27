@@ -164,7 +164,7 @@ export async function buildConsolidatedWorkbook(
   }
 
   const rowByFileId = new Map<string, number>();
-  
+
   for (let row = 1; row <= 1000; row += 1) {
     const aValue = targetSheet.cell(`A${String(row)}`).value();
     const id = normalizeId(aValue);

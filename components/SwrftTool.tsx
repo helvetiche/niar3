@@ -22,13 +22,21 @@ import { generateSwrft } from "@/lib/api/swrft";
 import {
   createAccomplishmentTask,
   deleteAccomplishmentTask,
+  type AccomplishmentTaskDesignation,
 } from "@/lib/api/accomplishment-tasks";
 import { useAccomplishmentTasks } from "@/hooks/useAccomplishmentTasks";
 import { TemplateManager } from "@/components/TemplateManager";
 import { MasonryModal } from "@/components/MasonryModal";
 import { downloadBlob, getErrorMessage } from "@/lib/utils";
 
-const DESIGNATION_OPTIONS = ["SWRFT", "WRFOB"] as const;
+const DESIGNATION_OPTIONS = [
+  "SWRFT",
+  "WRFOB",
+  "Senior Engineer A",
+  "Senior Engineer B",
+  "Engineer A",
+  "Administrative Aide",
+] as const;
 
 const MONTH_LABELS = [
   "Jan",
@@ -59,14 +67,13 @@ export function SwrftTool() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [newTaskLabel, setNewTaskLabel] = useState("");
-  const [newTaskDesignation, setNewTaskDesignation] = useState<
-    "SWRFT" | "WRFOB"
-  >("SWRFT");
+  const [newTaskDesignation, setNewTaskDesignation] =
+    useState<AccomplishmentTaskDesignation>("SWRFT");
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [taskSearchQuery, setTaskSearchQuery] = useState("");
   const [taskDesignationFilter, setTaskDesignationFilter] = useState<
-    "all" | "SWRFT" | "WRFOB"
+    "all" | AccomplishmentTaskDesignation
   >("all");
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
@@ -336,25 +343,31 @@ export function SwrftTool() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-white/70">Filter:</span>
-            <div className="flex gap-2">
-              {(["all", "SWRFT", "WRFOB"] as const).map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setTaskDesignationFilter(opt)}
-                  aria-label={`Filter by ${opt === "all" ? "all designations" : opt}`}
-                  aria-pressed={taskDesignationFilter === opt}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                    taskDesignationFilter === opt
-                      ? "border border-white bg-white/30 text-white"
-                      : "border border-white/40 bg-white/10 text-white/80 hover:bg-white/20"
-                  }`}
-                >
-                  {opt === "all" ? "All" : opt}
-                </button>
+            <label
+              htmlFor="designation-filter"
+              className="text-xs text-white/70"
+            >
+              Filter:
+            </label>
+            <select
+              id="designation-filter"
+              value={taskDesignationFilter}
+              onChange={(e) =>
+                setTaskDesignationFilter(
+                  e.target.value as "all" | AccomplishmentTaskDesignation,
+                )
+              }
+              className="rounded-lg border border-white/40 bg-white/10 px-3 py-1.5 text-xs text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+            >
+              <option value="all" className="bg-gray-800">
+                All
+              </option>
+              {DESIGNATION_OPTIONS.map((opt) => (
+                <option key={opt} value={opt} className="bg-gray-800">
+                  {opt}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
@@ -465,7 +478,7 @@ export function SwrftTool() {
             </div>
             <p className="mb-4 text-xs leading-5 text-white/80">
               Add a new task for your accomplishment report. Choose a
-              designation (SWRFT or WRFOB) so it appears in the correct reports.
+              designation so it appears in the correct reports.
             </p>
             <div className="flex flex-col gap-3">
               <label className="block" htmlFor="add-task-label">
@@ -484,28 +497,29 @@ export function SwrftTool() {
                 />
               </label>
               <div>
-                <span className="mb-2 flex items-center gap-2 text-xs font-medium text-white/90">
+                <label
+                  htmlFor="task-designation"
+                  className="mb-2 flex items-center gap-2 text-xs font-medium text-white/90"
+                >
                   <TagIcon size={14} className="text-white" />
                   Designation
-                </span>
-                <div className="flex gap-2">
+                </label>
+                <select
+                  id="task-designation"
+                  value={newTaskDesignation}
+                  onChange={(e) =>
+                    setNewTaskDesignation(
+                      e.target.value as AccomplishmentTaskDesignation,
+                    )
+                  }
+                  className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                >
                   {DESIGNATION_OPTIONS.map((opt) => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => setNewTaskDesignation(opt)}
-                      aria-label={`Set task designation to ${opt}`}
-                      aria-pressed={newTaskDesignation === opt}
-                      className={`rounded-full px-3 py-2 text-sm font-medium transition ${
-                        newTaskDesignation === opt
-                          ? "border border-white bg-white/30 text-white"
-                          : "border border-white/40 bg-white/10 text-white/80 hover:bg-white/20"
-                      }`}
-                    >
+                    <option key={opt} value={opt} className="bg-gray-800">
                       {opt}
-                    </button>
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
               <button
                 type="button"
