@@ -619,8 +619,8 @@ export function GenerateProfilesToolStepped() {
   ];
 
   return (
-    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
-      <div className="mb-6">
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-3 shadow-xl shadow-emerald-950/30 sm:p-4 md:p-6">
+      <div className="mb-4 sm:mb-6">
         <h2 className="flex items-center gap-2 text-xl font-medium text-white">
           <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
             <MagnifyingGlassIcon size={18} className="text-white" />

@@ -63,26 +63,26 @@ export function WorkspaceStepper({
   const canGoNext = canProceed ? canProceed(currentStep) : true;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       {/* Step Indicators */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-1 sm:gap-2">
         {steps.map((step, index) => {
           const isActive = index === currentStep;
           const isCompleted = index < currentStep;
           const isClickable = index <= currentStep;
 
           return (
-            <div key={index} className="flex flex-1 items-center gap-2">
+            <div key={index} className="flex flex-1 items-center gap-1 sm:gap-2">
               <button
                 type="button"
                 onClick={() => handleStepClick(index)}
                 disabled={!isClickable}
-                className={`group flex items-center gap-3 transition ${
+                className={`group flex items-center gap-2 transition sm:gap-3 ${
                   isClickable ? "cursor-pointer" : "cursor-not-allowed"
                 }`}
               >
                 <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 font-semibold transition ${
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 font-semibold transition sm:h-10 sm:w-10 ${
                     isCompleted
                       ? "border-white bg-white text-emerald-900"
                       : isActive
@@ -91,9 +91,12 @@ export function WorkspaceStepper({
                   }`}
                 >
                   {isCompleted ? (
-                    <CheckIcon size={20} weight="bold" />
+                    <CheckIcon size={16} weight="bold" className="sm:hidden" />
                   ) : (
-                    <span className="text-sm">{index + 1}</span>
+                    <span className="text-xs sm:text-sm">{index + 1}</span>
+                  )}
+                  {isCompleted && (
+                    <CheckIcon size={20} weight="bold" className="hidden sm:block" />
                   )}
                 </div>
                 <div className="hidden flex-col items-start lg:flex">
@@ -124,30 +127,36 @@ export function WorkspaceStepper({
       </div>
 
       {/* Step Content */}
-      <div className="rounded-xl border border-white/35 bg-white/10 p-6">
+      <div className="rounded-xl border border-white/35 bg-white/10 p-3 sm:p-4 md:p-6">
         {steps[currentStep].content}
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-2 sm:gap-3">
         <button
           type="button"
           onClick={handleBack}
           disabled={currentStep === 0}
-          className="inline-flex items-center gap-2 rounded-lg border border-white/40 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-white/40 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm"
         >
-          <CaretLeftIcon size={16} weight="bold" />
-          {backButtonText}
+          <CaretLeftIcon size={14} weight="bold" className="sm:hidden" />
+          <CaretLeftIcon size={16} weight="bold" className="hidden sm:block" />
+          <span className="hidden sm:inline">{backButtonText}</span>
         </button>
 
         <button
           type="button"
           onClick={handleNext}
           disabled={!canGoNext}
-          className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm"
         >
           {isLastStep ? completeButtonText : nextButtonText}
-          {!isLastStep && <CaretRightIcon size={16} weight="bold" />}
+          {!isLastStep && (
+            <>
+              <CaretRightIcon size={14} weight="bold" className="sm:hidden" />
+              <CaretRightIcon size={16} weight="bold" className="hidden sm:block" />
+            </>
+          )}
         </button>
       </div>
     </div>

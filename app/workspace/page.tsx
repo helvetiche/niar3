@@ -91,7 +91,7 @@ export default function WorkspacePage() {
         />
       )}
       <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-emerald-950">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col p-3 sm:p-4">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col p-2 sm:p-3 md:p-4">
           {selectedTab === "lipa-summary" ? (
             <LipaSummaryTool />
           ) : selectedTab === "hub" ? (
