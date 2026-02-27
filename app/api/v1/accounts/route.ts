@@ -7,6 +7,7 @@ import { HTTP_STATUS } from "@/constants/http-status";
 import { BASE_ACCESS_PERMISSIONS } from "@/constants/permissions";
 import type { CreateAccountRequest } from "@/types/account";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const createAccountSchema = z.object({
   email: z.string().email(),
@@ -40,7 +41,7 @@ export const GET = withApiAuth(async (req, user) => {
       },
     });
   } catch (error) {
-    console.error("Error listing accounts:", error);
+    logger.error("Error listing accounts:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
@@ -97,7 +98,7 @@ export const POST = withApiAuth(async (req, user) => {
       );
     }
 
-    console.error("Error creating account:", error);
+    logger.error("Error creating account:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },

@@ -496,9 +496,7 @@ export function GenerateProfilesToolStepped() {
                 ) : (
                   <select
                     value={consolidationTemplateId}
-                    onChange={(e) =>
-                      setConsolidationTemplateId(e.target.value)
-                    }
+                    onChange={(e) => setConsolidationTemplateId(e.target.value)}
                     className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                   >
                     {consolidationTemplates.map((template) => (

@@ -145,9 +145,7 @@ export function MergeFilesToolStepped() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Configure Files
-            </h3>
+            <h3 className="text-lg font-medium text-white">Configure Files</h3>
             <p className="mt-1 text-sm text-white/80">
               {mode === "pdf"
                 ? "Reorder pages and set output name."

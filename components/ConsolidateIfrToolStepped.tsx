@@ -87,9 +87,7 @@ export function ConsolidateIfrToolStepped() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Upload IFR Files
-            </h3>
+            <h3 className="text-lg font-medium text-white">Upload IFR Files</h3>
             <p className="mt-1 text-sm text-white/80">
               Upload one or more IFR Excel files to consolidate.
             </p>
@@ -149,9 +147,7 @@ export function ConsolidateIfrToolStepped() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Select Template
-            </h3>
+            <h3 className="text-lg font-medium text-white">Select Template</h3>
             <p className="mt-1 text-sm text-white/80">
               Choose a saved consolidation template for the output.
             </p>
@@ -177,9 +173,7 @@ export function ConsolidateIfrToolStepped() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Configure Output
-            </h3>
+            <h3 className="text-lg font-medium text-white">Configure Output</h3>
             <p className="mt-1 text-sm text-white/80">
               Set the output file name, division, and IA values.
             </p>
@@ -271,8 +265,9 @@ export function ConsolidateIfrToolStepped() {
               <p>
                 <span className="text-white/70">Template:</span>{" "}
                 {selectedTemplateId
-                  ? consolidateTemplates.find((t) => t.id === selectedTemplateId)
-                      ?.name || selectedTemplateId
+                  ? consolidateTemplates.find(
+                      (t) => t.id === selectedTemplateId,
+                    )?.name || selectedTemplateId
                   : "Not selected"}
               </p>
               <p>

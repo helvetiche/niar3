@@ -4,6 +4,7 @@ import { applySecurityHeaders } from "@/lib/security-headers";
 import { setCalendarNotesForDate } from "@/lib/firebase-admin/firestore";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 import { logger } from "@/lib/logger";
+import { stripHtml } from "@/lib/sanitize";
 
 /** PUT /api/v1/calendar-notes/[dateKey] - Save notes for a date (YYYY-MM-DD) */
 export async function PUT(
@@ -37,7 +38,16 @@ export async function PUT(
   }
   let body: { items?: { text: string; color: string }[] };
   try {
-    body = await request.json();
+    const rawBody = await request.json();
+    // Sanitize text inputs
+    body = {
+      items: Array.isArray(rawBody.items)
+        ? rawBody.items.map((item: any) => ({
+            text: typeof item.text === "string" ? stripHtml(item.text) : "",
+            color: typeof item.color === "string" ? item.color : "",
+          }))
+        : undefined,
+    };
   } catch {
     await logAuditTrailEntry({
       uid: user.uid,

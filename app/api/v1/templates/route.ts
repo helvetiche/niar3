@@ -11,6 +11,7 @@ import { uploadBufferToStorage } from "@/lib/firebase-admin/storage";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 import { validateUploads } from "@/lib/upload-limits";
 import { logger } from "@/lib/logger";
+import { stripHtml } from "@/lib/sanitize";
 
 const isScope = (value: unknown): value is TemplateScope =>
   value === "ifr-scanner" || value === "consolidate-ifr" || value === "swrft";
@@ -160,7 +161,7 @@ export async function POST(request: Request) {
         id,
         name:
           typeof customName === "string" && customName.trim()
-            ? customName.trim()
+            ? stripHtml(customName.trim())
             : file.name,
         scope,
         storagePath,

@@ -24,6 +24,14 @@ export const SECURITY_RESPONSE_HEADERS: Record<string, string> = {
   ...(process.env.NODE_ENV === "production" && {
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
   }),
+  // Content Security Policy
+  "Content-Security-Policy":
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://niatools.vercel.app https://*.firebaseio.com https://*.googleapis.com https://*.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
+  // CORS - Allow same origin
+  "Access-Control-Allow-Origin": "https://niatools.vercel.app",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Credentials": "true",
   // Prevent cross-origin isolation issues
   "Cross-Origin-Opener-Policy": "same-origin",
   "Cross-Origin-Resource-Policy": "same-origin",

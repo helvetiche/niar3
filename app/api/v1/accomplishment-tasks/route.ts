@@ -7,6 +7,7 @@ import {
 } from "@/lib/firebase-admin/firestore";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 import { logger } from "@/lib/logger";
+import { stripHtml } from "@/lib/sanitize";
 
 const MAX_LABEL_LENGTH = 200;
 
@@ -62,7 +63,12 @@ export async function POST(request: Request) {
 
   let body: { label?: string; designation?: string };
   try {
-    body = await request.json();
+    const rawBody = await request.json();
+    // Sanitize text inputs
+    body = {
+      label: typeof rawBody.label === "string" ? stripHtml(rawBody.label) : undefined,
+      designation: typeof rawBody.designation === "string" ? stripHtml(rawBody.designation) : undefined,
+    };
   } catch {
     await logAuditTrailEntry({
       uid: user.uid,

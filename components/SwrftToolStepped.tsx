@@ -411,9 +411,7 @@ export function SwrftToolStepped() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Months & Periods
-            </h3>
+            <h3 className="text-lg font-medium text-white">Months & Periods</h3>
             <p className="mt-1 text-sm text-white/80">
               Select which months and periods to include in your report.
             </p>
@@ -437,9 +435,19 @@ export function SwrftToolStepped() {
                         : "border border-white/40 bg-white/5 text-white/90 hover:bg-white/10"
                     }`}
                   >
-                    <CalendarBlankIcon size={14} weight="duotone" className="sm:hidden" />
-                    <CalendarBlankIcon size={16} weight="duotone" className="hidden sm:block" />
-                    <span className="text-xs sm:text-sm">{MONTH_LABELS[month - 1]}</span>
+                    <CalendarBlankIcon
+                      size={14}
+                      weight="duotone"
+                      className="sm:hidden"
+                    />
+                    <CalendarBlankIcon
+                      size={16}
+                      weight="duotone"
+                      className="hidden sm:block"
+                    />
+                    <span className="text-xs sm:text-sm">
+                      {MONTH_LABELS[month - 1]}
+                    </span>
                   </button>
                 );
               })}
@@ -588,7 +596,9 @@ export function SwrftToolStepped() {
         onComplete={() => void handleGenerate()}
         canProceed={(step) => {
           if (step === 0)
-            return !!selectedTemplateId && !!firstName.trim() && !!lastName.trim();
+            return (
+              !!selectedTemplateId && !!firstName.trim() && !!lastName.trim()
+            );
           if (step === 2)
             return (
               selectedMonths.length > 0 &&

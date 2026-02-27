@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin/app";
 import { HTTP_STATUS } from "@/constants/http-status";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const requestSchema = z.object({
   uid: z.string(),
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ customToken });
   } catch (error) {
-    console.error("Error creating custom token:", error);
+    logger.error("Error creating custom token:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },

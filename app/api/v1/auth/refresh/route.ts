@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withApiAuth } from "@/guards/with-api-auth";
 import { getAdminAuth } from "@/lib/firebase-admin/app";
 import { HTTP_STATUS } from "@/constants/http-status";
+import { logger } from "@/lib/logger";
 
 export const GET = withApiAuth(async (req, user) => {
   try {
@@ -14,7 +15,7 @@ export const GET = withApiAuth(async (req, user) => {
       customClaims: userRecord.customClaims ?? {},
     });
   } catch (error) {
-    console.error("Error fetching user claims:", error);
+    logger.error("Error fetching user claims:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },

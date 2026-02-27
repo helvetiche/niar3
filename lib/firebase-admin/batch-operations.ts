@@ -70,7 +70,7 @@ export async function bulkUpdateUserClaims(
       await auth.setCustomUserClaims(update.uid, update.claims);
       successCount++;
     } catch (error) {
-      console.error(`Failed to update claims for ${update.uid}:`, error);
+      logger.error(`Failed to update claims for ${update.uid}:`, error);
     }
   }
 

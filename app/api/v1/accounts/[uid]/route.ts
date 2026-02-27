@@ -6,6 +6,7 @@ import { HTTP_STATUS } from "@/constants/http-status";
 import { BASE_ACCESS_PERMISSIONS } from "@/constants/permissions";
 import type { UpdateAccountRequest } from "@/types/account";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const updateAccountSchema = z.object({
   displayName: z.string().min(1).optional(),
@@ -85,7 +86,7 @@ export const PATCH = withApiAuth(async (req, user, context) => {
       );
     }
 
-    console.error("Error updating account:", error);
+    logger.error("Error updating account:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
@@ -110,7 +111,7 @@ export const DELETE = withApiAuth(async (req, user, context) => {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting account:", error);
+    logger.error("Error deleting account:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
