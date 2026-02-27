@@ -1,7 +1,11 @@
 "use client";
 
 import { ReactNode, useState } from "react";
-import { CheckIcon, CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
+import {
+  CheckIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+} from "@phosphor-icons/react";
 
 interface StepConfig {
   title: string;

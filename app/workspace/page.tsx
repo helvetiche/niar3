@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { WorkspaceLoadingScreen } from "@/components/WorkspaceLoadingScreen";
 import { GenerateProfilesTool } from "@/components/GenerateProfilesTool";
+import { GenerateProfilesToolStepped } from "@/components/GenerateProfilesToolStepped";
 import { ConsolidateIfrTool } from "@/components/ConsolidateIfrTool";
 import { MergeFilesTool } from "@/components/MergeFilesTool";
 import { SwrftTool } from "@/components/SwrftTool";
@@ -98,7 +99,7 @@ export default function WorkspacePage() {
           ) : selectedTab === "template-manager" ? (
             <TemplatesTool />
           ) : selectedTab === "ifr-scanner" ? (
-            <GenerateProfilesTool />
+            <GenerateProfilesToolStepped />
           ) : selectedTab === "consolidate-ifr" ? (
             <ConsolidateIfrTool />
           ) : selectedTab === "merge-files" ? (

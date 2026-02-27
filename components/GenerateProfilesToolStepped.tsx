@@ -12,7 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { generateBillingUnitsZip } from "@/lib/api/billing-units";
-import { TemplateManager } from "@/components/TemplateManager";
+import { TemplateManagerInline } from "@/components/TemplateManagerInline";
 import { useTemplates } from "@/hooks/useTemplates";
 import {
   getBaseName,
@@ -73,6 +73,8 @@ export function GenerateProfilesToolStepped() {
     isLoading: isLoadingConsolidationTemplates,
     error: templatesError,
   } = useTemplates(createConsolidation ? "consolidate-ifr" : ("" as never));
+
+  const { data: ifrTemplates = [] } = useTemplates("ifr-scanner");
 
   useEffect(() => {
     if (templatesError) {
@@ -261,6 +263,361 @@ export function GenerateProfilesToolStepped() {
     };
   }, []);
 
+  const steps = [
+    {
+      title: "Upload Files",
+      description: "Select source files",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Upload Source Files
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Upload one or more Excel files (.xlsx or .xls) containing IFR
+              data.
+            </p>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            multiple
+            onChange={(e) => handleFileSelection(e.target.files)}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleFileSelection(e.dataTransfer.files);
+            }}
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/5 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/10"
+          >
+            <UploadSimpleIcon size={34} className="text-white" />
+            <span className="font-medium">
+              Drag and drop Excel files here, or click to browse
+            </span>
+          </button>
+
+          {sourceFiles.length > 0 && (
+            <div className="rounded-xl border border-white/35 bg-white/5 p-4">
+              <p className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                <CheckCircleIcon size={16} className="text-white" />
+                {sourceFiles.length} file(s) selected
+              </p>
+              <ul className="space-y-1 text-sm text-white/80">
+                {sourceFiles.map((file, idx) => (
+                  <li key={idx} className="truncate">
+                    • {file.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Configure",
+      description: "Set file mappings",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Configure File Mappings
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Set folder names and metadata for each uploaded file.
+            </p>
+          </div>
+
+          <label className="block">
+            <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+              <FolderIcon size={16} className="text-white" />
+              Billing Unit Folder Name
+            </span>
+            <input
+              type="text"
+              value={billingUnitFolderName}
+              onChange={(e) =>
+                setBillingUnitFolderName(sanitizeFolderName(e.target.value))
+              }
+              placeholder={defaultBillingUnitFolderName}
+              className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+            />
+          </label>
+
+          <div className="space-y-3">
+            {sourceFiles.map((file) => {
+              const fileKey = getFileKey(file);
+              const folderName = sourceFolderNames[fileKey] || "";
+              const division = sourceConsolidationDivisions[fileKey] || "";
+              const ia = sourceConsolidationIAs[fileKey] || "";
+
+              return (
+                <div
+                  key={fileKey}
+                  className="rounded-lg border border-white/30 bg-white/5 p-3"
+                >
+                  <p className="mb-2 truncate text-sm font-medium text-white">
+                    {file.name}
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-white/70">
+                        Folder Name
+                      </span>
+                      <input
+                        type="text"
+                        value={folderName}
+                        onChange={(e) =>
+                          updateFolderName(fileKey, e.target.value)
+                        }
+                        className="w-full rounded border border-white/30 bg-white/5 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-white/70">
+                        Division
+                      </span>
+                      <input
+                        type="text"
+                        value={division}
+                        onChange={(e) =>
+                          updateDivision(fileKey, e.target.value)
+                        }
+                        className="w-full rounded border border-white/30 bg-white/5 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-white/70">
+                        IA
+                      </span>
+                      <input
+                        type="text"
+                        value={ia}
+                        onChange={(e) => updateIA(fileKey, e.target.value)}
+                        className="w-full rounded border border-white/30 bg-white/5 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
+                      />
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Template",
+      description: "Select template",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Template & Output Settings
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Select your IFR Scanner template and set the output ZIP name.
+            </p>
+          </div>
+
+          <div>
+            <p className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
+              <FileXlsIcon size={16} className="text-white" />
+              IFR Scanner Template
+            </p>
+            <TemplateManagerInline
+              scope="ifr-scanner"
+              selectedTemplateId={selectedTemplateId}
+              onSelectedTemplateIdChange={setSelectedTemplateId}
+            />
+          </div>
+
+          <label className="block">
+            <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+              <DownloadSimpleIcon size={16} className="text-white" />
+              ZIP File Name
+            </span>
+            <input
+              type="text"
+              value={zipName}
+              onChange={(e) => setZipName(e.target.value)}
+              placeholder={defaultZipName}
+              className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+            />
+          </label>
+        </div>
+      ),
+    },
+    {
+      title: "Consolidation",
+      description: "Optional settings",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Consolidation Options
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Optionally create consolidated billing unit files.
+            </p>
+          </div>
+
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={createConsolidation}
+              onChange={(e) => setCreateConsolidation(e.target.checked)}
+              className="h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-600 focus:ring-2 focus:ring-white/30"
+            />
+            <span className="text-sm font-medium text-white">
+              Create consolidation files
+            </span>
+          </label>
+
+          {createConsolidation && (
+            <div className="space-y-3 rounded-lg border border-white/30 bg-white/5 p-4">
+              <div>
+                <p className="mb-2 text-sm font-medium text-white">
+                  Consolidation Template
+                </p>
+                {isLoadingConsolidationTemplates ? (
+                  <p className="text-xs text-white/70">Loading templates...</p>
+                ) : consolidationTemplates.length === 0 ? (
+                  <p className="text-xs text-white/70">
+                    No consolidation templates available.
+                  </p>
+                ) : (
+                  <select
+                    value={consolidationTemplateId}
+                    onChange={(e) =>
+                      setConsolidationTemplateId(e.target.value)
+                    }
+                    className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                  >
+                    {consolidationTemplates.map((template) => (
+                      <option
+                        key={template.id}
+                        value={template.id}
+                        className="bg-gray-800"
+                      >
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {sourceFiles.length > 1 && (
+                <>
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={createMergedConsolidation}
+                      onChange={(e) =>
+                        setCreateMergedConsolidation(e.target.checked)
+                      }
+                      className="h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-600 focus:ring-2 focus:ring-white/30"
+                    />
+                    <span className="text-sm font-medium text-white">
+                      Create merged consolidation file
+                    </span>
+                  </label>
+                  <p className="text-xs text-white/70">
+                    Merge all {sourceFiles.length} consolidation files into one
+                    workbook.
+                  </p>
+
+                  {createMergedConsolidation && (
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-white/70">
+                        Merged File Name
+                      </span>
+                      <input
+                        type="text"
+                        value={mergedConsolidationFileName}
+                        onChange={(e) =>
+                          setMergedConsolidationFileName(e.target.value)
+                        }
+                        placeholder={DEFAULT_MERGED_CONSOLIDATION_FILE_NAME}
+                        className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                      />
+                    </label>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Review",
+      description: "Generate output",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Review & Generate
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Review your configuration and generate the billing units.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+            <h4 className="mb-3 text-sm font-medium text-white">Summary</h4>
+            <div className="space-y-2 text-sm text-white/90">
+              <p>
+                <span className="text-white/70">Source Files:</span>{" "}
+                {sourceFiles.length}
+              </p>
+              <p>
+                <span className="text-white/70">Template:</span>{" "}
+                {selectedTemplateId
+                  ? ifrTemplates.find((t) => t.id === selectedTemplateId)
+                      ?.name || selectedTemplateId
+                  : "Not selected"}
+              </p>
+              <p>
+                <span className="text-white/70">ZIP Name:</span>{" "}
+                {zipName || defaultZipName}
+              </p>
+              <p>
+                <span className="text-white/70">Consolidation:</span>{" "}
+                {createConsolidation ? "Enabled" : "Disabled"}
+              </p>
+              {createConsolidation && (
+                <>
+                  <p>
+                    <span className="text-white/70">
+                      Consolidation Template:
+                    </span>{" "}
+                    {consolidationTemplateId
+                      ? consolidationTemplates.find(
+                          (t) => t.id === consolidationTemplateId,
+                        )?.name || consolidationTemplateId
+                      : "Not selected"}
+                  </p>
+                  <p>
+                    <span className="text-white/70">Merged File:</span>{" "}
+                    {createMergedConsolidation ? "Yes" : "No"}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
       <div className="mb-6">
@@ -285,352 +642,18 @@ export function GenerateProfilesToolStepped() {
         </p>
       </div>
 
-      <Stepper
-        initialStep={1}
-        stepCircleContainerClassName="!bg-emerald-800/50 !border-emerald-700"
-        contentClassName="!px-0"
-        footerClassName="!px-0"
-        nextButtonProps={{
-          className:
-            "!bg-white !text-emerald-900 hover:!bg-emerald-50 font-medium",
+      <WorkspaceStepper
+        steps={steps}
+        onComplete={() => void generateBillingUnits()}
+        canProceed={(step) => {
+          if (step === 0) return sourceFiles.length > 0;
+          if (step === 2) return !!selectedTemplateId;
+          if (step === 3 && createConsolidation)
+            return !!consolidationTemplateId;
+          return true;
         }}
-        backButtonProps={{
-          className: "!text-white/80 hover:!text-white",
-        }}
-      >
-        <Step>
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-white">
-              Upload Source Files
-            </h3>
-            <p className="text-sm text-white/80">
-              Upload one or more Excel files (.xlsx or .xls) containing IFR
-              data.
-            </p>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              multiple
-              onChange={(e) => handleFileSelection(e.target.files)}
-              className="hidden"
-            />
-
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                handleFileSelection(e.dataTransfer.files);
-              }}
-              className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/10 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/15"
-            >
-              <UploadSimpleIcon size={34} className="text-white" />
-              <span className="font-medium">
-                Drag and drop Excel files here, or click to browse
-              </span>
-            </button>
-
-            {sourceFiles.length > 0 && (
-              <div className="rounded-xl border border-white/35 bg-white/10 p-4">
-                <p className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
-                  <CheckCircleIcon size={16} className="text-white" />
-                  {sourceFiles.length} file(s) selected
-                </p>
-                <ul className="space-y-1 text-sm text-white/80">
-                  {sourceFiles.map((file, idx) => (
-                    <li key={idx} className="truncate">
-                      • {file.name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </Step>
-
-        <Step>
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-white">
-              Configure File Mappings
-            </h3>
-            <p className="text-sm text-white/80">
-              Set folder names and metadata for each uploaded file.
-            </p>
-
-            <div className="rounded-xl border border-white/35 bg-white/10 p-4">
-              <label className="mb-3 block">
-                <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
-                  <FolderIcon size={16} className="text-white" />
-                  Billing Unit Folder Name
-                </span>
-                <input
-                  type="text"
-                  value={billingUnitFolderName}
-                  onChange={(e) =>
-                    setBillingUnitFolderName(sanitizeFolderName(e.target.value))
-                  }
-                  placeholder={defaultBillingUnitFolderName}
-                  className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                />
-              </label>
-
-              <div className="space-y-3">
-                {sourceFiles.map((file) => {
-                  const fileKey = getFileKey(file);
-                  const folderName = sourceFolderNames[fileKey] || "";
-                  const division = sourceConsolidationDivisions[fileKey] || "";
-                  const ia = sourceConsolidationIAs[fileKey] || "";
-
-                  return (
-                    <div
-                      key={fileKey}
-                      className="rounded-lg border border-white/30 bg-white/5 p-3"
-                    >
-                      <p className="mb-2 truncate text-sm font-medium text-white">
-                        {file.name}
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-3">
-                        <label className="block">
-                          <span className="mb-1 block text-xs text-white/70">
-                            Folder Name
-                          </span>
-                          <input
-                            type="text"
-                            value={folderName}
-                            onChange={(e) =>
-                              updateFolderName(fileKey, e.target.value)
-                            }
-                            className="w-full rounded border border-white/30 bg-white/10 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="mb-1 block text-xs text-white/70">
-                            Division
-                          </span>
-                          <input
-                            type="text"
-                            value={division}
-                            onChange={(e) =>
-                              updateDivision(fileKey, e.target.value)
-                            }
-                            className="w-full rounded border border-white/30 bg-white/10 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="mb-1 block text-xs text-white/70">
-                            IA
-                          </span>
-                          <input
-                            type="text"
-                            value={ia}
-                            onChange={(e) => updateIA(fileKey, e.target.value)}
-                            className="w-full rounded border border-white/30 bg-white/10 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </Step>
-
-        <Step>
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-white">
-              Template & Output Settings
-            </h3>
-            <p className="text-sm text-white/80">
-              Select your IFR Scanner template and set the output ZIP name.
-            </p>
-
-            <section className="rounded-xl border border-white/35 bg-white/10 p-4">
-              <p className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
-                <FileXlsIcon size={16} className="text-white" />
-                IFR Scanner Template
-              </p>
-              <TemplateManager
-                scope="ifr-scanner"
-                selectedTemplateId={selectedTemplateId}
-                onSelectedTemplateIdChange={setSelectedTemplateId}
-              />
-            </section>
-
-            <label className="block">
-              <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
-                <DownloadSimpleIcon size={16} className="text-white" />
-                ZIP File Name
-              </span>
-              <input
-                type="text"
-                value={zipName}
-                onChange={(e) => setZipName(e.target.value)}
-                placeholder={defaultZipName}
-                className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-              />
-            </label>
-          </div>
-        </Step>
-
-        <Step>
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-white">
-              Consolidation Options
-            </h3>
-            <p className="text-sm text-white/80">
-              Optionally create consolidated billing unit files.
-            </p>
-
-            <div className="rounded-xl border border-white/35 bg-white/10 p-4">
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={createConsolidation}
-                  onChange={(e) => setCreateConsolidation(e.target.checked)}
-                  className="h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-600 focus:ring-2 focus:ring-white/30"
-                />
-                <span className="text-sm font-medium text-white">
-                  Create consolidation files
-                </span>
-              </label>
-
-              {createConsolidation && (
-                <div className="mt-4 space-y-3">
-                  <div>
-                    <p className="mb-2 text-sm font-medium text-white">
-                      Consolidation Template
-                    </p>
-                    {isLoadingConsolidationTemplates ? (
-                      <p className="text-xs text-white/70">
-                        Loading templates...
-                      </p>
-                    ) : consolidationTemplates.length === 0 ? (
-                      <p className="text-xs text-white/70">
-                        No consolidation templates available.
-                      </p>
-                    ) : (
-                      <select
-                        value={consolidationTemplateId}
-                        onChange={(e) =>
-                          setConsolidationTemplateId(e.target.value)
-                        }
-                        className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                      >
-                        {consolidationTemplates.map((template) => (
-                          <option
-                            key={template.id}
-                            value={template.id}
-                            className="bg-gray-800"
-                          >
-                            {template.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={createMergedConsolidation}
-                      onChange={(e) =>
-                        setCreateMergedConsolidation(e.target.checked)
-                      }
-                      className="h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-600 focus:ring-2 focus:ring-white/30"
-                    />
-                    <span className="text-sm font-medium text-white">
-                      Create merged consolidation file
-                    </span>
-                  </label>
-
-                  {createMergedConsolidation && (
-                    <label className="block">
-                      <span className="mb-1 block text-xs text-white/70">
-                        Merged File Name
-                      </span>
-                      <input
-                        type="text"
-                        value={mergedConsolidationFileName}
-                        onChange={(e) =>
-                          setMergedConsolidationFileName(e.target.value)
-                        }
-                        placeholder={DEFAULT_MERGED_CONSOLIDATION_FILE_NAME}
-                        className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                      />
-                    </label>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </Step>
-
-        <Step>
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-white">
-              Review & Generate
-            </h3>
-            <p className="text-sm text-white/80">
-              Review your configuration and generate the billing units.
-            </p>
-
-            <div className="rounded-xl border border-white/35 bg-white/10 p-4">
-              <h4 className="mb-3 text-sm font-medium text-white">Summary</h4>
-              <div className="space-y-2 text-sm text-white/90">
-                <p>
-                  <span className="text-white/70">Source Files:</span>{" "}
-                  {sourceFiles.length}
-                </p>
-                <p>
-                  <span className="text-white/70">Template:</span>{" "}
-                  {selectedTemplateId || "Not selected"}
-                </p>
-                <p>
-                  <span className="text-white/70">ZIP Name:</span>{" "}
-                  {zipName || defaultZipName}
-                </p>
-                <p>
-                  <span className="text-white/70">Consolidation:</span>{" "}
-                  {createConsolidation ? "Enabled" : "Disabled"}
-                </p>
-                {createConsolidation && (
-                  <>
-                    <p>
-                      <span className="text-white/70">
-                        Consolidation Template:
-                      </span>{" "}
-                      {consolidationTemplateId || "Not selected"}
-                    </p>
-                    <p>
-                      <span className="text-white/70">Merged File:</span>{" "}
-                      {createMergedConsolidation ? "Yes" : "No"}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => void generateBillingUnits()}
-              disabled={
-                isGenerating ||
-                sourceFiles.length === 0 ||
-                !selectedTemplateId ||
-                (createConsolidation && !consolidationTemplateId)
-              }
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-3 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80"
-            >
-              <DownloadSimpleIcon size={18} />
-              {isGenerating ? "Generating..." : "Scan and Generate"}
-            </button>
-          </div>
-        </Step>
-      </Stepper>
+        completeButtonText={isGenerating ? "Generating..." : "Generate"}
+      />
 
       <ProcessingOverlay
         isVisible={isOverlayVisible}
