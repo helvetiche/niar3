@@ -67,7 +67,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
     return (
       <div
         ref={ref}
-        className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
+        className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm sm:mt-6 sm:p-4"
       >
         <div className="mb-4">
           <h3 className="flex items-center gap-2 text-sm font-medium text-white">
@@ -82,7 +82,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
               : "Add a new user to the system and assign tool permissions"}
           </p>
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <label className="block text-xs font-medium text-white/80">
               First Name <span className="text-rose-400">*</span>
@@ -122,7 +122,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
               placeholder="Doe"
             />
           </div>
-          <div>
+          <div className="sm:col-span-2 lg:col-span-1">
             <label className="block text-xs font-medium text-white/80">
               Email <span className="text-rose-400">*</span>
             </label>
@@ -177,14 +177,14 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
             />
           </div>
 
-          <div className="col-span-3">
+          <div className="sm:col-span-2 lg:col-span-3">
             <label className="block text-xs font-medium text-white/80">
               Role Preset <span className="text-rose-400">*</span>
             </label>
             <p className="mt-1 text-xs text-white/60">
               Choose a preset or customize tool access manually
             </p>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
               <button
                 type="button"
                 onClick={() => onRolePresetChange("basic")}
@@ -256,7 +256,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
               </button>
             </div>
           </div>
-          <div className="col-span-3">
+          <div className="sm:col-span-2 lg:col-span-3">
             <div className="flex items-center justify-between">
               <div>
                 <label className="block text-xs font-medium text-white/80">
@@ -303,13 +303,13 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
             </div>
           </div>
         </div>
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
           {editingAccountId && (
             <button
               type="button"
               onClick={onCancel}
               disabled={isCreating}
-              className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               Cancel
             </button>
@@ -318,7 +318,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
             type="button"
             onClick={onSubmit}
             disabled={isCreating}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-emerald-800 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/20 bg-emerald-800 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             <CheckCircleIcon size={18} weight="duotone" />
             {isCreating

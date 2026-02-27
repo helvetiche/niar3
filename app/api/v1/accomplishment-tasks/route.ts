@@ -66,8 +66,14 @@ export async function POST(request: Request) {
     const rawBody = await request.json();
     // Sanitize text inputs
     body = {
-      label: typeof rawBody.label === "string" ? stripHtml(rawBody.label) : undefined,
-      designation: typeof rawBody.designation === "string" ? stripHtml(rawBody.designation) : undefined,
+      label:
+        typeof rawBody.label === "string"
+          ? stripHtml(rawBody.label)
+          : undefined,
+      designation:
+        typeof rawBody.designation === "string"
+          ? stripHtml(rawBody.designation)
+          : undefined,
     };
   } catch {
     await logAuditTrailEntry({

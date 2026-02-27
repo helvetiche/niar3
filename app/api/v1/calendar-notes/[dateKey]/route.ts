@@ -42,7 +42,7 @@ export async function PUT(
     // Sanitize text inputs
     body = {
       items: Array.isArray(rawBody.items)
-        ? rawBody.items.map((item: any) => ({
+        ? rawBody.items.map((item: { text?: unknown; color?: unknown }) => ({
             text: typeof item.text === "string" ? stripHtml(item.text) : "",
             color: typeof item.color === "string" ? item.color : "",
           }))

@@ -168,31 +168,34 @@ export function AccountManagement() {
   };
 
   return (
-    <div className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
+    <div className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-3 shadow-xl shadow-emerald-950/30 sm:p-4 lg:p-6">
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex-1">
-            <h2 className="flex items-center gap-2 text-xl font-medium text-white">
+            <h2 className="flex items-center gap-2 text-lg font-medium text-white sm:text-xl">
               <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
                 <UsersThreeIcon size={18} className="text-white" />
               </span>
               Account Management
             </h2>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <div className="mt-2 flex flex-wrap gap-1.5 sm:mt-3 sm:gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white sm:px-3 sm:py-1">
                 <ShieldCheckIcon size={12} className="text-white" />
-                Role Management
+                <span className="hidden sm:inline">Role Management</span>
+                <span className="sm:hidden">Roles</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white sm:px-3 sm:py-1">
                 <UserPlusIcon size={12} className="text-white" />
-                Create Users
+                <span className="hidden sm:inline">Create Users</span>
+                <span className="sm:hidden">Users</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white sm:px-3 sm:py-1">
                 <LockKeyIcon size={12} className="text-white" />
-                Access Control
+                <span className="hidden sm:inline">Access Control</span>
+                <span className="sm:hidden">Access</span>
               </span>
             </div>
-            <p className="mt-2 text-sm text-justify text-white/85">
+            <p className="mt-2 hidden text-justify text-sm text-white/85 lg:block">
               Create, manage, and control user accounts across the system.
               Assign roles, manage permissions, and monitor account status.
               Super admins have full control over user access and can create
@@ -206,7 +209,7 @@ export function AccountManagement() {
             type="button"
             onClick={() => void loadAccounts(currentPage)}
             disabled={loading}
-            className="ml-4 inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/20 bg-emerald-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-white/20 bg-emerald-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-4 sm:w-auto"
             title="Refresh accounts list"
           >
             <ArrowClockwiseIcon
@@ -214,7 +217,7 @@ export function AccountManagement() {
               weight="duotone"
               className={loading ? "animate-spin" : ""}
             />
-            Refresh
+            <span className="sm:inline">Refresh</span>
           </button>
         </div>
       </div>
@@ -226,8 +229,8 @@ export function AccountManagement() {
         onDelete={setDeletingAccount}
       />
 
-      <div className="mt-4 flex items-center justify-between pt-4">
-        <p className="text-sm text-white/70">
+      <div className="mt-4 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-center text-sm text-white/70 sm:text-left">
           Page {currentPage} of {totalPages || 1}
         </p>
         <div className="flex gap-2">
@@ -237,7 +240,7 @@ export function AccountManagement() {
               void loadAccounts(currentPage - 1);
             }}
             disabled={currentPage === 1 || loading}
-            className="rounded-lg border border-white/20 bg-emerald-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-lg border border-white/20 bg-emerald-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
           >
             Previous
           </button>
@@ -247,7 +250,7 @@ export function AccountManagement() {
               void loadAccounts(currentPage + 1);
             }}
             disabled={currentPage >= totalPages || loading}
-            className="rounded-lg border border-white/20 bg-emerald-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-lg border border-white/20 bg-emerald-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
           >
             Next
           </button>

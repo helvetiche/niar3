@@ -1,6 +1,7 @@
 import "server-only";
 import { getFirestore } from "firebase-admin/firestore";
 import { getFirebaseAdminApp } from "./app";
+import { logger } from "@/lib/logger";
 
 const MAX_BATCH_SIZE = 500;
 
