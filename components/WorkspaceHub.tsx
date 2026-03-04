@@ -111,6 +111,18 @@ const HUB_TOOLS: HubTool[] = [
       { id: "auto-merge", label: "Auto Merge", icon: ArrowsMergeIcon },
     ],
   },
+  {
+    id: "consolidate-land-profiles",
+    name: "CONSOLIDATE LAND PROFILES",
+    description:
+      "Consolidate multiple land profile Excel files into a single template. Extract data from specific sheets and cells, organize by lot number.",
+    icon: DatabaseIcon,
+    tags: [
+      { id: "land-data", label: "Land Data", icon: MicrosoftExcelLogoIcon },
+      { id: "consolidate", label: "Consolidate", icon: ArrowsMergeIcon },
+      { id: "auto-extract", label: "Auto Extract", icon: SparkleIcon },
+    ],
+  },
 ];
 
 export function WorkspaceHub() {

@@ -17,6 +17,7 @@ export const WORKSPACE_TABS = [
   "swrft",
   "ifr-scanner",
   "accounts",
+  "consolidate-land-profiles",
 ] as const;
 export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
 

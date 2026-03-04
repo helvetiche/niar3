@@ -10,6 +10,7 @@ import { WorkspaceHub } from "@/components/WorkspaceHub";
 import { TemplatesTool } from "@/components/TemplatesTool";
 import { WorkspaceToolPlaceholder } from "@/components/WorkspaceToolPlaceholder";
 import { AccountManagement } from "@/components/AccountManagement";
+import ConsolidateLandProfilesTool from "@/components/ConsolidateLandProfilesTool";
 import {
   useWorkspaceTab,
   type WorkspaceTab,
@@ -46,6 +47,10 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   accounts: {
     name: "ACCOUNTS",
     description: "Manage user accounts and permissions in the system.",
+  },
+  "consolidate-land-profiles": {
+    name: "CONSOLIDATE LAND PROFILES",
+    description: "Consolidate multiple land profile Excel files into a single template.",
   },
 };
 
@@ -99,6 +104,8 @@ export default function WorkspacePage() {
             <SwrftToolStepped />
           ) : selectedTab === "accounts" ? (
             <AccountManagement />
+          ) : selectedTab === "consolidate-land-profiles" ? (
+            <ConsolidateLandProfilesTool />
           ) : (
             TOOL_CONTENT[selectedTab] && (
               <WorkspaceToolPlaceholder
