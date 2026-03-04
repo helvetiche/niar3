@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { WorkspaceLoadingScreen } from "@/components/WorkspaceLoadingScreen";
 import { GenerateProfilesToolStepped } from "@/components/GenerateProfilesToolStepped";
-import { ConsolidateIfrToolStepped } from "@/components/ConsolidateIfrToolStepped";
 import { MergeFilesToolStepped } from "@/components/MergeFilesToolStepped";
 import { SwrftToolStepped } from "@/components/SwrftToolStepped";
 import { LipaSummaryToolStepped } from "@/components/LipaSummaryToolStepped";
@@ -25,16 +24,11 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   "template-manager": {
     name: "TEMPLATE MANAGER",
     description:
-      "Manage shared templates used by IFR Scanner and Consolidate Billing Unit.",
+      "Manage shared templates used by IFR Scanner and Accomplishment Report.",
   },
   "lipa-summary": {
     name: "LIPA SUMMARY",
     description: "Generate summary reports for LIPA documents and records.",
-  },
-  "consolidate-ifr": {
-    name: "CONSOLIDATE BILLING UNIT",
-    description:
-      "Merge and consolidate billing unit documents into a single file.",
   },
   "merge-files": {
     name: "MERGE FILES",
@@ -99,8 +93,6 @@ export default function WorkspacePage() {
             <TemplatesTool />
           ) : selectedTab === "ifr-scanner" ? (
             <GenerateProfilesToolStepped />
-          ) : selectedTab === "consolidate-ifr" ? (
-            <ConsolidateIfrToolStepped />
           ) : selectedTab === "merge-files" ? (
             <MergeFilesToolStepped />
           ) : selectedTab === "swrft" ? (

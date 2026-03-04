@@ -17,18 +17,14 @@ import { useTemplates } from "@/hooks/useTemplates";
 import {
   getBaseName,
   getFileKey,
-  detectDivisionAndIAFromFilename,
   sanitizeFolderName,
 } from "@/lib/file-utils";
 import { downloadBlob, getErrorMessage } from "@/lib/utils";
-import { DEFAULT_MERGED_CONSOLIDATION_FILE_NAME } from "@/lib/file-utils";
 import { ERROR_MESSAGES } from "@/constants/error-messages";
 import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
 
 const defaultZipName = "BILLING UNITS";
 const defaultBillingUnitFolderName = "billing unit";
-const scannerConsolidationTemplateStorageKey =
-  "ifr-scanner:last-consolidation-template-id";
 const OVERLAY_OPAQUE_MS = 280;
 const OVERLAY_FADE_MS = 320;
 const OVERLAY_ERROR_FADE_MS = 240;
@@ -42,21 +38,10 @@ export function GenerateProfilesToolStepped() {
   const [sourceFiles, setSourceFiles] = useState<File[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [zipName, setZipName] = useState(defaultZipName);
-  const [createConsolidation, setCreateConsolidation] = useState(false);
-  const [createMergedConsolidation, setCreateMergedConsolidation] =
-    useState(false);
-  const [mergedConsolidationFileName, setMergedConsolidationFileName] =
-    useState(DEFAULT_MERGED_CONSOLIDATION_FILE_NAME);
-  const [consolidationTemplateId, setConsolidationTemplateId] = useState("");
   const [billingUnitFolderName, setBillingUnitFolderName] = useState(
     defaultBillingUnitFolderName,
   );
   const [sourceFolderNames, setSourceFolderNames] = useState<
-    Record<string, string>
-  >({});
-  const [sourceConsolidationDivisions, setSourceConsolidationDivisions] =
-    useState<Record<string, string>>({});
-  const [sourceConsolidationIAs, setSourceConsolidationIAs] = useState<
     Record<string, string>
   >({});
   const [isGenerating, setIsGenerating] = useState(false);
@@ -68,43 +53,7 @@ export function GenerateProfilesToolStepped() {
   const elapsedIntervalRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const {
-    data: consolidationTemplates = [],
-    isLoading: isLoadingConsolidationTemplates,
-    error: templatesError,
-  } = useTemplates(createConsolidation ? "consolidate-ifr" : ("" as never));
-
   const { data: ifrTemplates = [] } = useTemplates("ifr-scanner");
-
-  useEffect(() => {
-    if (templatesError) {
-      toast.error(
-        getErrorMessage(templatesError, ERROR_MESSAGES.FAILED_LOAD_TEMPLATES),
-      );
-    }
-  }, [templatesError]);
-
-  useEffect(() => {
-    if (!createConsolidation || !consolidationTemplates.length) return;
-
-    setConsolidationTemplateId((previous) => {
-      if (
-        previous &&
-        consolidationTemplates.some((item) => item.id === previous)
-      )
-        return previous;
-      const savedTemplateId = window.localStorage.getItem(
-        scannerConsolidationTemplateStorageKey,
-      );
-      if (
-        savedTemplateId &&
-        consolidationTemplates.some((item) => item.id === savedTemplateId)
-      ) {
-        return savedTemplateId;
-      }
-      return consolidationTemplates[0]?.id ?? "";
-    });
-  }, [createConsolidation, consolidationTemplates]);
 
   useEffect(() => {
     if (sourceFiles.length === 0) {
@@ -121,40 +70,7 @@ export function GenerateProfilesToolStepped() {
       });
       return next;
     });
-
-    setSourceConsolidationDivisions((previous) => {
-      const next: Record<string, string> = {};
-      sourceFiles.forEach((file) => {
-        const fileKey = getFileKey(file);
-        const detected = detectDivisionAndIAFromFilename(file.name);
-        const existingDivision = previous[fileKey];
-        next[fileKey] = existingDivision ?? detected.division;
-      });
-      return next;
-    });
-
-    setSourceConsolidationIAs((previous) => {
-      const next: Record<string, string> = {};
-      sourceFiles.forEach((file) => {
-        const fileKey = getFileKey(file);
-        const detected = detectDivisionAndIAFromFilename(file.name);
-        const existingIA = previous[fileKey];
-        next[fileKey] = existingIA ?? detected.ia;
-      });
-      return next;
-    });
   }, [sourceFiles]);
-
-  useEffect(() => {
-    if (!consolidationTemplateId.trim()) {
-      window.localStorage.removeItem(scannerConsolidationTemplateStorageKey);
-      return;
-    }
-    window.localStorage.setItem(
-      scannerConsolidationTemplateStorageKey,
-      consolidationTemplateId.trim(),
-    );
-  }, [consolidationTemplateId]);
 
   const handleFileSelection = (incoming: FileList | null) => {
     setSourceFiles(Array.from(incoming ?? []));
@@ -167,10 +83,6 @@ export function GenerateProfilesToolStepped() {
     }
     if (!selectedTemplateId) {
       toast.error("Please select a template from Template Manager.");
-      return;
-    }
-    if (createConsolidation && !consolidationTemplateId) {
-      toast.error("Please select a consolidation template.");
       return;
     }
 
@@ -192,14 +104,8 @@ export function GenerateProfilesToolStepped() {
     try {
       const blob = await generateBillingUnitsZip(sourceFiles, {
         templateId: selectedTemplateId,
-        createConsolidation,
-        consolidationTemplateId,
-        createMergedConsolidation,
-        mergedConsolidationFileName,
         billingUnitFolderName,
         sourceFolderNames,
-        sourceConsolidationDivisions,
-        sourceConsolidationIAs,
       });
       const outputName = zipName.trim() || defaultZipName;
       const filename = outputName.endsWith(".zip")
@@ -238,20 +144,6 @@ export function GenerateProfilesToolStepped() {
     setSourceFolderNames((previous) => ({
       ...previous,
       [fileKey]: sanitized,
-    }));
-  };
-
-  const updateDivision = (fileKey: string, value: string) => {
-    setSourceConsolidationDivisions((previous) => ({
-      ...previous,
-      [fileKey]: value.replace(/[^0-9]/g, ""),
-    }));
-  };
-
-  const updateIA = (fileKey: string, value: string) => {
-    setSourceConsolidationIAs((previous) => ({
-      ...previous,
-      [fileKey]: value.trimStart(),
     }));
   };
 
@@ -332,7 +224,7 @@ export function GenerateProfilesToolStepped() {
               Configure File Mappings
             </h3>
             <p className="mt-1 text-sm text-white/80">
-              Set folder names and metadata for each uploaded file.
+              Set folder names for each uploaded file.
             </p>
           </div>
 
@@ -356,8 +248,6 @@ export function GenerateProfilesToolStepped() {
             {sourceFiles.map((file) => {
               const fileKey = getFileKey(file);
               const folderName = sourceFolderNames[fileKey] || "";
-              const division = sourceConsolidationDivisions[fileKey] || "";
-              const ia = sourceConsolidationIAs[fileKey] || "";
 
               return (
                 <div
@@ -367,45 +257,19 @@ export function GenerateProfilesToolStepped() {
                   <p className="mb-2 truncate text-sm font-medium text-white">
                     {file.name}
                   </p>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    <label className="block">
-                      <span className="mb-1 block text-xs text-white/70">
-                        Folder Name
-                      </span>
-                      <input
-                        type="text"
-                        value={folderName}
-                        onChange={(e) =>
-                          updateFolderName(fileKey, e.target.value)
-                        }
-                        className="w-full rounded border border-white/30 bg-white/5 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1 block text-xs text-white/70">
-                        Division
-                      </span>
-                      <input
-                        type="text"
-                        value={division}
-                        onChange={(e) =>
-                          updateDivision(fileKey, e.target.value)
-                        }
-                        className="w-full rounded border border-white/30 bg-white/5 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1 block text-xs text-white/70">
-                        IA
-                      </span>
-                      <input
-                        type="text"
-                        value={ia}
-                        onChange={(e) => updateIA(fileKey, e.target.value)}
-                        className="w-full rounded border border-white/30 bg-white/5 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
-                      />
-                    </label>
-                  </div>
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-white/70">
+                      Division Folder Name
+                    </span>
+                    <input
+                      type="text"
+                      value={folderName}
+                      onChange={(e) =>
+                        updateFolderName(fileKey, e.target.value)
+                      }
+                      className="w-full rounded border border-white/30 bg-white/5 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
+                    />
+                  </label>
                 </div>
               );
             })}
@@ -456,106 +320,6 @@ export function GenerateProfilesToolStepped() {
       ),
     },
     {
-      title: "Consolidation",
-      description: "Optional settings",
-      content: (
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-medium text-white">
-              Consolidation Options
-            </h3>
-            <p className="mt-1 text-sm text-white/80">
-              Optionally create consolidated billing unit files.
-            </p>
-          </div>
-
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={createConsolidation}
-              onChange={(e) => setCreateConsolidation(e.target.checked)}
-              className="h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-600 focus:ring-2 focus:ring-white/30"
-            />
-            <span className="text-sm font-medium text-white">
-              Create consolidation files
-            </span>
-          </label>
-
-          {createConsolidation && (
-            <div className="space-y-3 rounded-lg border border-white/30 bg-white/5 p-4">
-              <div>
-                <p className="mb-2 text-sm font-medium text-white">
-                  Consolidation Template
-                </p>
-                {isLoadingConsolidationTemplates ? (
-                  <p className="text-xs text-white/70">Loading templates...</p>
-                ) : consolidationTemplates.length === 0 ? (
-                  <p className="text-xs text-white/70">
-                    No consolidation templates available.
-                  </p>
-                ) : (
-                  <select
-                    value={consolidationTemplateId}
-                    onChange={(e) => setConsolidationTemplateId(e.target.value)}
-                    className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                  >
-                    {consolidationTemplates.map((template) => (
-                      <option
-                        key={template.id}
-                        value={template.id}
-                        className="bg-gray-800"
-                      >
-                        {template.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {sourceFiles.length > 1 && (
-                <>
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={createMergedConsolidation}
-                      onChange={(e) =>
-                        setCreateMergedConsolidation(e.target.checked)
-                      }
-                      className="h-4 w-4 rounded border-white/40 bg-white/10 text-emerald-600 focus:ring-2 focus:ring-white/30"
-                    />
-                    <span className="text-sm font-medium text-white">
-                      Create merged consolidation file
-                    </span>
-                  </label>
-                  <p className="text-xs text-white/70">
-                    Merge all {sourceFiles.length} consolidation files into one
-                    workbook.
-                  </p>
-
-                  {createMergedConsolidation && (
-                    <label className="block">
-                      <span className="mb-1 block text-xs text-white/70">
-                        Merged File Name
-                      </span>
-                      <input
-                        type="text"
-                        value={mergedConsolidationFileName}
-                        onChange={(e) =>
-                          setMergedConsolidationFileName(e.target.value)
-                        }
-                        placeholder={DEFAULT_MERGED_CONSOLIDATION_FILE_NAME}
-                        className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                      />
-                    </label>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
       title: "Review",
       description: "Generate output",
       content: (
@@ -588,27 +352,9 @@ export function GenerateProfilesToolStepped() {
                 {zipName || defaultZipName}
               </p>
               <p>
-                <span className="text-white/70">Consolidation:</span>{" "}
-                {createConsolidation ? "Enabled" : "Disabled"}
+                <span className="text-white/70">Billing Unit Folder:</span>{" "}
+                {billingUnitFolderName || defaultBillingUnitFolderName}
               </p>
-              {createConsolidation && (
-                <>
-                  <p>
-                    <span className="text-white/70">
-                      Consolidation Template:
-                    </span>{" "}
-                    {consolidationTemplateId
-                      ? consolidationTemplates.find(
-                          (t) => t.id === consolidationTemplateId,
-                        )?.name || consolidationTemplateId
-                      : "Not selected"}
-                  </p>
-                  <p>
-                    <span className="text-white/70">Merged File:</span>{" "}
-                    {createMergedConsolidation ? "Yes" : "No"}
-                  </p>
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -646,8 +392,6 @@ export function GenerateProfilesToolStepped() {
         canProceed={(step) => {
           if (step === 0) return sourceFiles.length > 0;
           if (step === 2) return !!selectedTemplateId;
-          if (step === 3 && createConsolidation)
-            return !!consolidationTemplateId;
           return true;
         }}
         completeButtonText={isGenerating ? "Generating..." : "Generate"}

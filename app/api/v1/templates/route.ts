@@ -14,7 +14,7 @@ import { logger } from "@/lib/logger";
 import { stripHtml } from "@/lib/sanitize";
 
 const isScope = (value: unknown): value is TemplateScope =>
-  value === "ifr-scanner" || value === "consolidate-ifr" || value === "swrft";
+  value === "ifr-scanner" || value === "swrft";
 
 const sanitizeFilename = (name: string): string =>
   name.replace(/[^a-zA-Z0-9._-]/g, "_");

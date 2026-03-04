@@ -81,7 +81,7 @@ export async function setCalendarNotesForDate(
   await ref.set({ items }, { merge: true });
 }
 
-export type TemplateScope = "ifr-scanner" | "consolidate-ifr" | "swrft";
+export type TemplateScope = "ifr-scanner" | "swrft";
 
 export type StoredTemplate = {
   id: string;
@@ -97,7 +97,7 @@ export type StoredTemplate = {
 };
 
 const isTemplateScope = (value: unknown): value is TemplateScope =>
-  value === "ifr-scanner" || value === "consolidate-ifr" || value === "swrft";
+  value === "ifr-scanner" || value === "swrft";
 
 function templateCollection() {
   return getDb().collection("templates");

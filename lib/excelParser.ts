@@ -13,7 +13,6 @@ export const parseExcelFile = (buffer: Buffer): ParsedSheet[] => {
     cellHTML: false,
     cellText: false,
     sheetStubs: false,
-    dense: true,
   });
 
   return workbook.SheetNames.map((sheetName) => {

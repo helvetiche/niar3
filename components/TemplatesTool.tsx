@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   GearIcon,
-  StackIcon,
   FileXlsIcon,
   MagnifyingGlassIcon,
   UsersThreeIcon,
@@ -13,7 +12,6 @@ import { TemplateManager } from "@/components/TemplateManager";
 
 export function TemplatesTool() {
   const [scannerTemplateId, setScannerTemplateId] = useState("");
-  const [consolidationTemplateId, setConsolidationTemplateId] = useState("");
   const [swrftTemplateId, setSwrftTemplateId] = useState("");
 
   return (
@@ -40,13 +38,13 @@ export function TemplatesTool() {
           </span>
         </div>
         <p className="mt-2 text-sm text-white/85 text-justify">
-          Use this page as the centralized template workspace for IFR Scanner,
-          Consolidate Billing Unit, and Accomplishment Report. You can review
-          saved templates, select active ones, upload replacements, rename
-          outdated files, and keep a clean list that stays consistent for every
-          authenticated user. This prevents duplicate uploads per account,
-          improves alignment across teams, and keeps all template-driven outputs
-          standardized from one controlled place.
+          Use this page as the centralized template workspace for IFR Scanner
+          and Accomplishment Report. You can review saved templates, select
+          active ones, upload replacements, rename outdated files, and keep a
+          clean list that stays consistent for every authenticated user. This
+          prevents duplicate uploads per account, improves alignment across
+          teams, and keeps all template-driven outputs standardized from one
+          controlled place.
         </p>
       </div>
 
@@ -60,18 +58,6 @@ export function TemplatesTool() {
             scope="ifr-scanner"
             selectedTemplateId={scannerTemplateId}
             onSelectedTemplateIdChange={setScannerTemplateId}
-          />
-        </section>
-
-        <section className="rounded-xl border border-white/35 bg-white/10 p-4">
-          <p className="flex items-center gap-2 text-sm font-medium text-white">
-            <StackIcon size={16} className="text-white" />
-            Consolidate Billing Unit Templates
-          </p>
-          <TemplateManager
-            scope="consolidate-ifr"
-            selectedTemplateId={consolidationTemplateId}
-            onSelectedTemplateIdChange={setConsolidationTemplateId}
           />
         </section>
 

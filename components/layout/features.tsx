@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { ComponentType } from "react";
 import {
   FileTextIcon,
-  StackIcon,
   ArrowsMergeIcon,
   MagnifyingGlassIcon,
   SparkleIcon,
@@ -14,9 +13,6 @@ import {
   CheckCircleIcon,
   ClockClockwiseIcon,
   ShieldCheckIcon,
-  FilesIcon,
-  FunnelSimpleIcon,
-  LinkSimpleIcon,
   ScissorsIcon,
   FilePdfIcon,
   MicrosoftExcelLogoIcon,
@@ -46,18 +42,6 @@ const FEATURES = [
       { id: "accurate", label: "Accurate", icon: CheckCircleIcon },
       { id: "quick", label: "Quick Turnaround", icon: ClockClockwiseIcon },
       { id: "verified", label: "Verified Data", icon: ShieldCheckIcon },
-    ] satisfies FeatureTag[],
-  },
-  {
-    id: "consolidate-billing-unit",
-    title: "CONSOLIDATE BILLING UNIT",
-    description:
-      "Combine multiple billing unit documents into one consistent file, preserve essential information, remove duplication, and simplify verification across records quickly.",
-    icon: StackIcon,
-    tags: [
-      { id: "batch", label: "Combine", icon: FilesIcon },
-      { id: "clean", label: "Clean Structure", icon: FunnelSimpleIcon },
-      { id: "connected", label: "Linked Records", icon: LinkSimpleIcon },
     ] satisfies FeatureTag[],
   },
   {

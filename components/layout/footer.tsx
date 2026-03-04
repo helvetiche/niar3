@@ -34,7 +34,7 @@ const FOOTER_PANELS = [
     label: "ABOUT",
     icon: InfoIcon,
     content:
-      "This productivity tools platform is designed for NIA employees who manage documents, summaries, scans, and file consolidation across daily operations. It combines useful utilities in one workspace to support faster processing, clearer outputs, and dependable collaboration while keeping the user experience simple, focused, and practical for routine agency needs nationwide.",
+      "This productivity tools platform is designed for NIA employees who manage documents, summaries, and scans across daily operations. It combines useful utilities in one workspace to support faster processing, clearer outputs, and dependable collaboration while keeping the user experience simple, focused, and practical for routine agency needs nationwide.",
   },
   {
     id: "limitation",

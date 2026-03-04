@@ -45,7 +45,7 @@ export async function withApiRateLimit(
 }
 
 /**
- * Use for heavy operations (merge-files, consolidate-ifr, generate-profiles, lipa-summary).
+ * Use for heavy operations (merge-files, generate-profiles, lipa-summary).
  * Stricter limit: 5 requests per minute per IP.
  */
 export async function withHeavyOperationRateLimit(

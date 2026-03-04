@@ -2,14 +2,8 @@
 
 export type GenerateBillingUnitsOptions = {
   templateId: string;
-  createConsolidation?: boolean;
-  consolidationTemplateId?: string;
-  createMergedConsolidation?: boolean;
-  mergedConsolidationFileName?: string;
   billingUnitFolderName?: string;
   sourceFolderNames?: Record<string, string>;
-  sourceConsolidationDivisions?: Record<string, string>;
-  sourceConsolidationIAs?: Record<string, string>;
 };
 
 export const generateBillingUnitsZip = async (
@@ -27,25 +21,6 @@ export const generateBillingUnitsZip = async (
   if (options.templateId?.trim()) {
     formData.append("templateId", options.templateId.trim());
   }
-
-  if (options.createConsolidation) {
-    formData.append("createConsolidation", "true");
-    if (options.consolidationTemplateId?.trim()) {
-      formData.append(
-        "consolidationTemplateId",
-        options.consolidationTemplateId.trim(),
-      );
-    }
-    if (options.createMergedConsolidation) {
-      formData.append("createMergedConsolidation", "true");
-      if (options.mergedConsolidationFileName?.trim()) {
-        formData.append(
-          "mergedConsolidationFileName",
-          options.mergedConsolidationFileName.trim(),
-        );
-      }
-    }
-  }
   if (options.billingUnitFolderName?.trim()) {
     formData.append(
       "billingUnitFolderName",
@@ -56,18 +31,6 @@ export const generateBillingUnitsZip = async (
     formData.append(
       "sourceFolderNames",
       JSON.stringify(options.sourceFolderNames),
-    );
-  }
-  if (options.sourceConsolidationDivisions) {
-    formData.append(
-      "sourceConsolidationDivisions",
-      JSON.stringify(options.sourceConsolidationDivisions),
-    );
-  }
-  if (options.sourceConsolidationIAs) {
-    formData.append(
-      "sourceConsolidationIAs",
-      JSON.stringify(options.sourceConsolidationIAs),
     );
   }
 

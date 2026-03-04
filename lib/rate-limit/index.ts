@@ -51,7 +51,7 @@ export const publicRateLimit = redis
   : null;
 
 /**
- * Stricter limit for heavy operations (merge, consolidate, generate-profiles, lipa-summary).
+ * Stricter limit for heavy operations (merge, generate-profiles, lipa-summary).
  * 5 requests per minute per IP to prevent DoS.
  */
 export const heavyOperationRateLimit = redis

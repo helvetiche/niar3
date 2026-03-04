@@ -1,7 +1,6 @@
 import {
   GearIcon,
   FileTextIcon,
-  StackIcon,
   ArrowsMergeIcon,
   MagnifyingGlassIcon,
   UsersThreeIcon,
@@ -21,13 +20,6 @@ export const AVAILABLE_TOOLS: AvailableTool[] = [
     name: "LIPA Summary",
     description: "Generate summary reports for LIPA documents",
     icon: FileTextIcon,
-    isBasic: true,
-  },
-  {
-    id: "consolidate-ifr",
-    name: "Consolidate Billing Unit",
-    description: "Merge billing unit documents",
-    icon: StackIcon,
     isBasic: true,
   },
   {

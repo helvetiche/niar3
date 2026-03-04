@@ -16,10 +16,6 @@ Central dashboard providing quick access to all available tools and features. Na
 
 Automated document scanning and data extraction tool. Upload IFR documents and let the system process and extract relevant information automatically. Supports batch processing for multiple files.
 
-### Consolidate Billing Unit
-
-Merge and consolidate multiple billing unit documents into a single, organized file. Customize folder structures and apply templates for consistent output formatting.
-
 ### Merge Files
 
 Combine multiple documents into unified files:
@@ -30,7 +26,7 @@ Combine multiple documents into unified files:
 
 ### LIPA Summary
 
-Generate comprehensive summary reports from LIPA documents. Scan multiple files and produce consolidated reports with relevant data points.
+Generate comprehensive summary reports from LIPA documents. Scan multiple files and produce formatted reports with relevant data points.
 
 ### Template Manager
 

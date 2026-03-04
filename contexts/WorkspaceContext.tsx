@@ -13,7 +13,6 @@ export const WORKSPACE_TABS = [
   "hub",
   "template-manager",
   "lipa-summary",
-  "consolidate-ifr",
   "merge-files",
   "swrft",
   "ifr-scanner",

@@ -273,9 +273,9 @@ export function TemplateManager({
             <p className="mt-2 hidden text-xs leading-5 text-white/80 sm:block">
               Select the template you want to use for the next run. When
               selected, the current tool automatically references this template
-              during generation or consolidation. If you remove a selected
-              template, the selection is cleared and you must choose another one
-              before continuing.
+              during generation. If you remove a selected template, the
+              selection is cleared and you must choose another one before
+              continuing.
             </p>
 
             <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto]">

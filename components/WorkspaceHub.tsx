@@ -21,7 +21,6 @@ import {
   ShieldCheckIcon,
   SparkleIcon,
   SquaresFourIcon,
-  StackIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
 import {
@@ -74,18 +73,6 @@ const HUB_TOOLS: HubTool[] = [
       { id: "fast-scan", label: "Fast Scan", icon: ScanIcon },
       { id: "field-extract", label: "Field Extraction", icon: DatabaseIcon },
       { id: "error-check", label: "Error Check", icon: WarningCircleIcon },
-    ],
-  },
-  {
-    id: "consolidate-ifr",
-    name: "CONSOLIDATE BILLING UNIT",
-    description:
-      "Combine multiple billing unit documents into one consistent file, preserve essential information, remove duplication, and simplify verification across records quickly.",
-    icon: StackIcon,
-    tags: [
-      { id: "combine", label: "Combine", icon: FilesIcon },
-      { id: "clean", label: "Clean Structure", icon: FunnelSimpleIcon },
-      { id: "linked", label: "Linked Records", icon: LinkSimpleIcon },
     ],
   },
   {

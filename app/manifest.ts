@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "NIA Productivity Tools",
     short_name: "NIA Tools",
     description:
-      "NIA Region 3 productivity tools. Automate manual processes into minute-level results. LIPA Summary, Consolidate Billing Unit, Merge Files, IFR Scanner.",
+      "NIA Region 3 productivity tools. Automate manual processes into minute-level results. LIPA Summary, Merge Files, IFR Scanner.",
     start_url: "/",
     scope: "/",
     id: "/",

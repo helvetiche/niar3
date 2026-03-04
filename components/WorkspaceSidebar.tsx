@@ -8,7 +8,6 @@ import {
   GearIcon,
   FileTextIcon,
   FileXlsIcon,
-  StackIcon,
   ArrowsMergeIcon,
   MagnifyingGlassIcon,
   CaretLeftIcon,
@@ -58,7 +57,7 @@ const TOOLS = [
     id: "template-manager" as const,
     name: "TEMPLATE MANAGER",
     description:
-      "View and update shared templates used across IFR and consolidation tools.",
+      "View and update shared templates used across IFR and accomplishment report tools.",
     icon: GearIcon,
   },
   {
@@ -66,13 +65,6 @@ const TOOLS = [
     name: "LIPA SUMMARY",
     description: "Generate summary reports for LIPA documents and records.",
     icon: FileTextIcon,
-  },
-  {
-    id: "consolidate-ifr" as const,
-    name: "CONSOLIDATE BILLING UNIT",
-    description:
-      "Merge and consolidate billing unit documents into a single file.",
-    icon: StackIcon,
   },
   {
     id: "merge-files" as const,

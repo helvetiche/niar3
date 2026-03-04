@@ -54,24 +54,9 @@ export const detectDivisionAndIAFromFilename = (
   };
 };
 
-export const buildConsolidationFileName = (
-  division: string,
-  ia: string,
-  includeExtension = false,
-): string => {
-  const digits = division.replace(/[^0-9]/g, "");
-  const paddedDivision = digits ? digits.padStart(2, "0") : "00";
-  const iaName = ia.trim().toUpperCase() || "IA";
-  const name = `${paddedDivision} ${iaName} CONSOLIDATED`;
-  return includeExtension ? `${name}.xlsx` : name;
-};
-
-export const DEFAULT_MERGED_CONSOLIDATION_FILE_NAME =
-  "ALL DIVISION CONSOLIDATED";
-
 export const ensureXlsxExtension = (
   value: string,
-  fallback = DEFAULT_MERGED_CONSOLIDATION_FILE_NAME,
+  fallback = "output",
 ): string => {
   const cleaned = value
     .replace(/[\\/:*?"<>|]/g, "-")

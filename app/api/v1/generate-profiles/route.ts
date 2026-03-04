@@ -10,8 +10,6 @@ import { processMastersList } from "@/lib/mastersListProcessor";
 import { generateProfileBuffer } from "@/lib/profileGenerator";
 import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
 import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
-import { buildConsolidatedWorkbook } from "@/lib/consolidation";
-import { mergeExcelBuffers } from "@/lib/merge-files";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 import { validateUploads, UPLOAD_LIMIT_PRESETS } from "@/lib/upload-limits";
 import {
@@ -20,9 +18,6 @@ import {
   getFileKey,
   getUniqueFolderName,
   detectDivisionAndIAFromFilename,
-  buildConsolidationFileName,
-  ensureXlsxExtension,
-  DEFAULT_MERGED_CONSOLIDATION_FILE_NAME,
 } from "@/lib/file-utils";
 import { HTTP_STATUS } from "@/constants/http-status";
 import { ERROR_MESSAGES } from "@/constants/error-messages";
@@ -84,48 +79,11 @@ export async function POST(request: Request) {
     const singleFile = formData.get("file");
     const template = formData.get("template");
     const templateId = formData.get("templateId");
-    const createConsolidationRaw = formData.get("createConsolidation");
-    const consolidationTemplateIdRaw = formData.get("consolidationTemplateId");
-    const createMergedConsolidationRaw = formData.get(
-      "createMergedConsolidation",
-    );
-    const mergedConsolidationFileNameRaw = formData.get(
-      "mergedConsolidationFileName",
-    );
-    const consolidationDivisionRaw = formData.get("consolidationDivision");
-    const consolidationIARaw = formData.get("consolidationIA");
     const billingUnitFolderNameRaw =
       formData.get("billingUnitFolderName") ??
       formData.get("profileFolderName");
     const sourceFolderNamesRaw = formData.get("sourceFolderNames");
-    const sourceConsolidationDivisionsRaw = formData.get(
-      "sourceConsolidationDivisions",
-    );
-    const sourceConsolidationIAsRaw = formData.get("sourceConsolidationIAs");
 
-    const createConsolidation =
-      typeof createConsolidationRaw === "string" &&
-      createConsolidationRaw.toLowerCase() === "true";
-    const consolidationTemplateId =
-      typeof consolidationTemplateIdRaw === "string"
-        ? consolidationTemplateIdRaw.trim()
-        : "";
-    const createMergedConsolidation =
-      typeof createMergedConsolidationRaw === "string" &&
-      createMergedConsolidationRaw.toLowerCase() === "true";
-    const mergedConsolidationFileName =
-      typeof mergedConsolidationFileNameRaw === "string" &&
-      mergedConsolidationFileNameRaw.trim()
-        ? mergedConsolidationFileNameRaw.trim()
-        : DEFAULT_MERGED_CONSOLIDATION_FILE_NAME;
-    const consolidationDivision =
-      typeof consolidationDivisionRaw === "string"
-        ? consolidationDivisionRaw.replace(/[^0-9]/g, "") || "0"
-        : "0";
-    const consolidationIA =
-      typeof consolidationIARaw === "string" && consolidationIARaw.trim()
-        ? consolidationIARaw.trim()
-        : "IA";
     const billingUnitFolderName =
       typeof billingUnitFolderNameRaw === "string" &&
       billingUnitFolderNameRaw.trim()
@@ -134,14 +92,6 @@ export async function POST(request: Request) {
     const sourceFolderNames = parseTextMap(
       sourceFolderNamesRaw,
       sanitizeFolderName,
-    );
-    const sourceConsolidationDivisions = parseTextMap(
-      sourceConsolidationDivisionsRaw,
-      (value) => value.replace(/[^0-9]/g, ""),
-    );
-    const sourceConsolidationIAs = parseTextMap(
-      sourceConsolidationIAsRaw,
-      (value) => value.trim(),
     );
 
     const sourceFiles =
@@ -205,24 +155,6 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: ERROR_MESSAGES.MISSING_TEMPLATE },
-          { status: HTTP_STATUS.BAD_REQUEST },
-        ),
-      );
-    }
-    if (createConsolidation && !consolidationTemplateId) {
-      await logAuditTrailEntry({
-        uid: user.uid,
-        action: "generate-profiles.post",
-        status: "rejected",
-        route: "/api/v1/generate-profiles",
-        method: "POST",
-        request,
-        httpStatus: 400,
-        details: { reason: "missing-consolidation-template" },
-      });
-      return applySecurityHeaders(
-        NextResponse.json(
-          { error: ERROR_MESSAGES.MISSING_CONSOLIDATION_TEMPLATE },
           { status: HTTP_STATUS.BAD_REQUEST },
         ),
       );
@@ -291,41 +223,6 @@ export async function POST(request: Request) {
     const zip = new JSZip();
     const seenDivisionFolders = new Map<string, number>();
     let totalGeneratedProfiles = 0;
-    const consolidatedFilesForMerge: Array<{
-      fileName: string;
-      buffer: Buffer;
-    }> = [];
-
-    let consolidationTemplateBuffer: Buffer | null = null;
-    if (createConsolidation) {
-      const consolidationTemplate = await getTemplateRecord(
-        consolidationTemplateId,
-      );
-      if (!consolidationTemplate) {
-        await logAuditTrailEntry({
-          uid: user.uid,
-          action: "generate-profiles.post",
-          status: "rejected",
-          route: "/api/v1/generate-profiles",
-          method: "POST",
-          request,
-          httpStatus: 404,
-          details: {
-            reason: "consolidation-template-not-found",
-            consolidationTemplateId,
-          },
-        });
-        return applySecurityHeaders(
-          NextResponse.json(
-            { error: ERROR_MESSAGES.CONSOLIDATION_TEMPLATE_NOT_FOUND },
-            { status: HTTP_STATUS.NOT_FOUND },
-          ),
-        );
-      }
-      consolidationTemplateBuffer = await downloadBufferFromStorage(
-        consolidationTemplate.storagePath,
-      );
-    }
 
     for (const sourceFile of sourceFiles) {
       const sourceBuffer = Buffer.from(await sourceFile.arrayBuffer());
@@ -359,18 +256,10 @@ export async function POST(request: Request) {
       }
 
       const sourceFileKey = getFileKey(sourceFile);
-      const sourceDivision =
-        sourceConsolidationDivisions[sourceFileKey] ??
-        detectDivisionAndIAFromFilename(sourceFile.name).division ??
-        consolidationDivision ??
-        "0";
-      const sourceIA =
-        sourceConsolidationIAs[sourceFileKey] ??
-        detectDivisionAndIAFromFilename(sourceFile.name).ia ??
-        consolidationIA ??
-        "IA";
+      const detected = detectDivisionAndIAFromFilename(sourceFile.name);
+      const sourceDivision = detected.division ?? "0";
+      const sourceIA = detected.ia ?? "IA";
 
-      const generatedProfileFiles: { fileName: string; buffer: Buffer }[] = [];
       for (const [index, lotGroup] of lotGroups.entries()) {
         const { buffer, filename } = await generateProfileBuffer(
           lotGroup,
@@ -381,50 +270,8 @@ export async function POST(request: Request) {
             templateBuffer,
           },
         );
-        generatedProfileFiles.push({ fileName: filename, buffer });
         profilesFolder.file(filename, buffer);
-      }
-
-      totalGeneratedProfiles += generatedProfileFiles.length;
-
-      if (createConsolidation && consolidationTemplateBuffer) {
-        const consolidationFileName = buildConsolidationFileName(
-          sourceDivision,
-          sourceIA,
-        );
-        const consolidated = await buildConsolidatedWorkbook({
-          templateBuffer: consolidationTemplateBuffer,
-          inputFiles: generatedProfileFiles,
-          fileName: consolidationFileName,
-          division: sourceDivision,
-          ia: sourceIA,
-        });
-        divisionFolder.file(consolidated.outputName, consolidated.buffer);
-        consolidatedFilesForMerge.push({
-          fileName: consolidated.outputName,
-          buffer: consolidated.buffer,
-        });
-      }
-    }
-
-    if (
-      createConsolidation &&
-      createMergedConsolidation &&
-      consolidatedFilesForMerge.length > 0
-    ) {
-      if (consolidatedFilesForMerge.length === 1) {
-        const singleFile = consolidatedFilesForMerge[0];
-        const outputName = ensureXlsxExtension(mergedConsolidationFileName);
-        zip.file(outputName, singleFile.buffer);
-      } else {
-        const { buffer, outputName } = await mergeExcelBuffers({
-          inputFiles: consolidatedFilesForMerge,
-          fileName: mergedConsolidationFileName,
-          excelPageNames: consolidatedFilesForMerge.map((item) =>
-            getBaseName(item.fileName),
-          ),
-        });
-        zip.file(outputName, buffer);
+        totalGeneratedProfiles += 1;
       }
     }
 
@@ -464,10 +311,6 @@ export async function POST(request: Request) {
       details: {
         sourceFileCount: sourceFiles.length,
         totalGeneratedProfiles,
-        createConsolidation,
-        createMergedConsolidation:
-          createConsolidation && createMergedConsolidation,
-        mergedConsolidationFileCount: consolidatedFilesForMerge.length,
       },
     });
 
