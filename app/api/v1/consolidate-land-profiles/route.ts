@@ -56,6 +56,18 @@ export async function POST(request: NextRequest) {
       landProfileFiles
     );
     
+    if (processedCount === 0) {
+      return applySecurityHeaders(
+        NextResponse.json(
+          {
+            error: 'Consolidation failed',
+            details: errors,
+          },
+          { status: 500 }
+        )
+      );
+    }
+    
     // Return the file with metadata in headers
     const response = secureFileResponse(buffer, {
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -65,12 +77,9 @@ export async function POST(request: NextRequest) {
     // Add custom headers for metadata
     response.headers.set('X-Processed-Count', processedCount.toString());
     response.headers.set('X-Error-Count', errors.length.toString());
-    if (errors.length > 0) {
-      response.headers.set('X-Errors', JSON.stringify(errors));
-    }
-    if (warnings.length > 0) {
-      response.headers.set('X-Warnings', JSON.stringify(warnings));
-    }
+    response.headers.set('X-Warning-Count', warnings.length.toString());
+    response.headers.set('X-Errors', JSON.stringify(errors));
+    response.headers.set('X-Warnings', JSON.stringify(warnings));
     
     return response;
   } catch (error) {

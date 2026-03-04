@@ -22,7 +22,7 @@ export default function ConsolidateLandProfilesTool() {
   const [landProfileFiles, setLandProfileFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ count: number; errors: string[]; warning?: string } | null>(null);
+  const [success, setSuccess] = useState<{ count: number; errors: string[]; warnings: string[] } | null>(null);
   
   const templateInputRef = useRef<HTMLInputElement>(null);
   const landProfileInputRef = useRef<HTMLInputElement>(null);
@@ -100,6 +100,7 @@ export default function ConsolidateLandProfilesTool() {
       // Get metadata from headers
       const processedCount = parseInt(response.headers.get('X-Processed-Count') || '0');
       const errorCount = parseInt(response.headers.get('X-Error-Count') || '0');
+      const warningCount = parseInt(response.headers.get('X-Warning-Count') || '0');
       const errors = JSON.parse(response.headers.get('X-Errors') || '[]');
       const warnings = JSON.parse(response.headers.get('X-Warnings') || '[]');
 
@@ -114,7 +115,7 @@ export default function ConsolidateLandProfilesTool() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      setSuccess({ count: processedCount, errors, warning: warnings.length > 0 ? warnings.join(' ') : undefined });
+      setSuccess({ count: processedCount, errors, warnings });
       
       if (errorCount === 0) {
         // Clear files on complete success
@@ -247,21 +248,22 @@ export default function ConsolidateLandProfilesTool() {
               <CheckCircleIcon size={20} className="text-green-400 shrink-0 mt-0.5" weight="duotone" />
               <div className="text-sm text-white">
                 <p className="font-medium">Successfully processed {success.count} land profile(s)!</p>
-                {success.warning && (
-                  <div className="mt-2 p-2 bg-yellow-900/30 border border-yellow-500/50 rounded">
-                    <p className="text-yellow-200 font-medium">⚠️ Important:</p>
-                    <p className="text-yellow-100">{success.warning}</p>
-                    <p className="text-yellow-100 mt-1 text-xs">
-                      To get Area, Principal, and Penalty values: Open each land profile in Excel, press Cmd+S to save, then re-upload.
-                    </p>
+                {success.warnings.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-yellow-500/40 bg-yellow-900/20 p-3">
+                    <p className="font-medium text-yellow-300 mb-1">Important Notes:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      {success.warnings.map((warning, idx) => (
+                        <li key={idx} className="text-yellow-200/90">{warning}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
                 {success.errors.length > 0 && (
-                  <div className="mt-2">
-                    <p className="font-medium">Warnings:</p>
-                    <ul className="list-disc list-inside mt-1 space-y-1">
+                  <div className="mt-3 rounded-lg border border-red-500/40 bg-red-900/20 p-3">
+                    <p className="font-medium text-red-300 mb-1">Errors:</p>
+                    <ul className="list-disc list-inside space-y-1">
                       {success.errors.map((err, idx) => (
-                        <li key={idx} className="text-white/80">{err}</li>
+                        <li key={idx} className="text-red-200/90">{err}</li>
                       ))}
                     </ul>
                   </div>

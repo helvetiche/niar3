@@ -146,7 +146,6 @@ const getCellValueByAddress = (
 
 export const extractSOADetails = (
   sheet: ParsedSheet,
-  _accSheet: ParsedSheet | null,
 ): SOADetail[] => {
   const details: SOADetail[] = [];
   const soaStart = findRowByText(sheet.data, "STATEMENT OF ACCOUNT");
@@ -184,7 +183,7 @@ export const extractData = (
 
   let bestSoaDetails: SOADetail[] = [];
   for (const soaSheet of soaSheets) {
-    const extracted = extractSOADetails(soaSheet, accSheet ?? null);
+    const extracted = extractSOADetails(soaSheet);
     if (extracted.length === 0) continue;
     const first = extracted[0];
     if (first.principal && first.penalty) {

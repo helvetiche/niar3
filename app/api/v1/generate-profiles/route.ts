@@ -255,7 +255,6 @@ export async function POST(request: Request) {
         );
       }
 
-      const sourceFileKey = getFileKey(sourceFile);
       const detected = detectDivisionAndIAFromFilename(sourceFile.name);
       const sourceDivision = detected.division ?? "0";
       const sourceIA = detected.ia ?? "IA";

@@ -25,7 +25,7 @@ export async function extractLandProfileData(
   try {
     console.log(`\nExtracting from: ${fileName}`);
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(fileBuffer);
+    await workbook.xlsx.load(fileBuffer as unknown as ArrayBuffer);
     
     const rowNumber = parseInt(fileName.match(/^(\d+)\s/)?.[1] || '0', 10);
     if (!rowNumber) {
@@ -104,7 +104,7 @@ export async function consolidateWithExcelJS(
   
   try {
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(templateBuffer);
+    await workbook.xlsx.load(templateBuffer as unknown as ArrayBuffer);
     const sheet = workbook.getWorksheet(1);
     
     if (!sheet) {

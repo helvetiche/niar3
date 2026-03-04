@@ -8,8 +8,6 @@ import {
   GearIcon,
   FilePdfIcon,
   FileTextIcon,
-  FilesIcon,
-  FunnelSimpleIcon,
   HouseIcon,
   LightningIcon,
   LinkSimpleIcon,

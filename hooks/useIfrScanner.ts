@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   getFileKey,
   getBaseName,
@@ -11,22 +11,20 @@ export function useIfrScanner() {
     Record<string, string>
   >({});
 
-  useEffect(() => {
+  // Compute derived folder names from source files
+  const derivedFolderNames = useMemo(() => {
     if (sourceFiles.length === 0) {
-      setSourceFolderNames({});
-      return;
+      return {};
     }
 
-    setSourceFolderNames((previous) => {
-      const next: Record<string, string> = {};
-      sourceFiles.forEach((file) => {
-        const fileKey = getFileKey(file);
-        const existingName = previous[fileKey];
-        next[fileKey] = existingName || getBaseName(file.name);
-      });
-      return next;
+    const next: Record<string, string> = {};
+    sourceFiles.forEach((file) => {
+      const fileKey = getFileKey(file);
+      const existingName = sourceFolderNames[fileKey];
+      next[fileKey] = existingName || getBaseName(file.name);
     });
-  }, [sourceFiles]);
+    return next;
+  }, [sourceFiles, sourceFolderNames]);
 
   const updateFolderName = useCallback((fileKey: string, value: string) => {
     const sanitized = sanitizeFolderName(value);
@@ -39,7 +37,7 @@ export function useIfrScanner() {
   return {
     sourceFiles,
     setSourceFiles,
-    sourceFolderNames,
+    sourceFolderNames: derivedFolderNames,
     updateFolderName,
   };
 }

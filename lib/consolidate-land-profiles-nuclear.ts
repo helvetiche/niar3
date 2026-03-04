@@ -37,7 +37,7 @@ export async function extractNuclearData(
       throw new Error(`Sheet "01 SOA 01" not found`);
     }
     
-    const getValue = (sheet: any, addr: string): string => {
+    const getValue = (sheet: XlsxPopulate.Sheet, addr: string): string => {
       try {
         const val = sheet.cell(addr).value();
         return val ? String(val).trim() : '';
