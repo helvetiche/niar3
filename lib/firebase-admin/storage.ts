@@ -1,6 +1,8 @@
 import "server-only";
 import { getStorage } from "firebase-admin/storage";
 import { getFirebaseAdminApp } from "./app";
+import { withRetry } from "@/lib/retry";
+import { logger } from "@/lib/logger";
 
 /**
  * Resolves the Firebase Storage bucket name from environment variables.
@@ -29,7 +31,7 @@ function getBucket() {
 }
 
 /**
- * Uploads a buffer to Firebase Storage at the specified path.
+ * Uploads a buffer to Firebase Storage at the specified path with retry logic.
  * @param storagePath - Destination path in storage bucket
  * @param buffer - File content as Buffer
  * @param contentType - MIME type of the file
@@ -39,29 +41,49 @@ export async function uploadBufferToStorage(
   buffer: Buffer,
   contentType: string,
 ): Promise<void> {
-  await getBucket().file(storagePath).save(buffer, {
-    resumable: false,
-    contentType,
-  });
+  await withRetry(
+    async () => {
+      await getBucket().file(storagePath).save(buffer, {
+        resumable: false,
+        contentType,
+      });
+    },
+    { maxAttempts: 3, delayMs: 1000 },
+  );
 }
 
 /**
- * Downloads a file from Firebase Storage as a Buffer.
+ * Downloads a file from Firebase Storage as a Buffer with retry logic.
  * @param storagePath - Source path in storage bucket
  * @returns File content as Buffer
  */
 export async function downloadBufferFromStorage(
   storagePath: string,
 ): Promise<Buffer> {
-  const [contents] = await getBucket().file(storagePath).download();
-  return contents;
+  return await withRetry(
+    async () => {
+      const [contents] = await getBucket().file(storagePath).download();
+      return contents;
+    },
+    { maxAttempts: 3, delayMs: 1000 },
+  );
 }
 
 /**
- * Deletes a file from Firebase Storage.
+ * Deletes a file from Firebase Storage with retry logic.
  * Ignores errors if file doesn't exist.
  * @param storagePath - Path to file in storage bucket
  */
 export async function deleteFromStorage(storagePath: string): Promise<void> {
-  await getBucket().file(storagePath).delete({ ignoreNotFound: true });
+  try {
+    await withRetry(
+      async () => {
+        await getBucket().file(storagePath).delete({ ignoreNotFound: true });
+      },
+      { maxAttempts: 2, delayMs: 500 },
+    );
+  } catch (error) {
+    // Log but don't throw - deletion is best-effort
+    logger.warn(`Failed to delete file from storage: ${storagePath}`, error);
+  }
 }
