@@ -1,4 +1,6 @@
 import ExcelJS from "exceljs";
+import { logger } from "@/lib/logger";
+import { logger } from "@/lib/logger";
 
 export interface LandProfileData {
   lotNo: string;
@@ -36,13 +38,13 @@ export async function extractLandProfileData(
 
     const accDetailsSheet = workbook.getWorksheet("00 ACC DETAILS 01");
     if (!accDetailsSheet) {
-      console.error(`  ERROR: Sheet "00 ACC DETAILS 01" not found`);
+      logger.error(`Sheet "00 ACC DETAILS 01" not found in ${fileName}`);
       throw new Error(`Sheet "00 ACC DETAILS 01" not found`);
     }
 
     const soaSheet = workbook.getWorksheet("01 SOA 01");
     if (!soaSheet) {
-      console.error(`  ERROR: Sheet "01 SOA 01" not found`);
+      logger.error(`Sheet "01 SOA 01" not found in ${fileName}`);
       throw new Error(`Sheet "01 SOA 01" not found`);
     }
 
@@ -66,9 +68,7 @@ export async function extractLandProfileData(
     const principal = getCellValue(soaSheet, "D100");
     const penalty = getCellValue(soaSheet, "F100");
 
-    console.log(`  Area (G13): ${area}`);
-    console.log(`  Principal (D100): ${principal}`);
-    console.log(`  Penalty (F100): ${penalty}`);
+    logger.debug(`Area (G13): ${area}, Principal (D100): ${principal}, Penalty (F100): ${penalty}`);
 
     const data: LandProfileData = {
       lotNo: getCellValue(accDetailsSheet, "C3"),

@@ -187,7 +187,7 @@ export async function extractIFRData(
 
     return results;
   } catch (error) {
-    console.error(`Error extracting from ${fileName}:`, error);
+    logger.error(`Error extracting from ${fileName}:`, error);
     return [];
   }
 }

@@ -1,4 +1,5 @@
 import XlsxPopulate from "xlsx-populate";
+import { logger } from "@/lib/logger";
 
 export interface NuclearLandProfileData {
   lotNo: string;
@@ -78,7 +79,7 @@ export async function extractNuclearData(
       fileName,
     };
   } catch (error) {
-    console.error(`Error extracting from ${fileName}:`, error);
+    logger.error(`Error extracting from ${fileName}:`, error);
     return null;
   }
 }

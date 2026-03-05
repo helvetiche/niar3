@@ -255,7 +255,7 @@ export async function POST(request: NextRequest) {
       issues,
     });
   } catch (error) {
-    console.error("IFR Checker error:", error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    logger.error("IFR Checker error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

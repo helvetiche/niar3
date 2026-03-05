@@ -4,17 +4,51 @@ import {
   applySecurityHeaders,
   secureFileResponse,
 } from "@/lib/security-headers";
+import { withAuth } from "@/lib/auth";
+import { withHeavyOperationRateLimit } from "@/lib/rate-limit/with-api-rate-limit";
+import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = await withHeavyOperationRateLimit(request);
+  if (rateLimitResponse) {
+    await logAuditTrailEntry({
+      action: "consolidate-land-profiles.post",
+      status: "rejected",
+      route: "/api/v1/consolidate-land-profiles",
+      method: "POST",
+      request,
+      httpStatus: 429,
+      details: { reason: "rate-limited" },
+    });
+    return rateLimitResponse;
+  }
+
+  const auth = await withAuth(request, {
+    action: "consolidate-land-profiles.post",
+  });
+  if (auth instanceof NextResponse) return auth;
+  const { user } = auth;
+
   try {
     const formData = await request.formData();
 
     // Get template file
     const templateFile = formData.get("template") as File;
     if (!templateFile) {
+      await logAuditTrailEntry({
+        uid: user.uid,
+        action: "consolidate-land-profiles.post",
+        status: "rejected",
+        route: "/api/v1/consolidate-land-profiles",
+        method: "POST",
+        request,
+        httpStatus: 400,
+        details: { reason: "missing-template" },
+      });
       return applySecurityHeaders(
         NextResponse.json(
           { error: "Template file is required" },
@@ -41,6 +75,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (ifrFiles.length === 0) {
+      await logAuditTrailEntry({
+        uid: user.uid,
+        action: "consolidate-land-profiles.post",
+        status: "rejected",
+        route: "/api/v1/consolidate-land-profiles",
+        method: "POST",
+        request,
+        httpStatus: 400,
+        details: { reason: "no-ifr-files" },
+      });
       return applySecurityHeaders(
         NextResponse.json(
           { error: "At least one IFR file is required" },
@@ -60,11 +104,20 @@ export async function POST(request: NextRequest) {
     );
 
     if (processedCount === 0) {
+      await logAuditTrailEntry({
+        uid: user.uid,
+        action: "consolidate-land-profiles.post",
+        status: "error",
+        route: "/api/v1/consolidate-land-profiles",
+        method: "POST",
+        request,
+        httpStatus: 500,
+        details: { reason: "no-files-processed", errorCount: errors.length },
+      });
       return applySecurityHeaders(
         NextResponse.json(
           {
             error: "Consolidation failed",
-            details: errors,
           },
           { status: 500 },
         ),
@@ -85,14 +138,39 @@ export async function POST(request: NextRequest) {
     response.headers.set("X-Errors", JSON.stringify(errors));
     response.headers.set("X-Warnings", JSON.stringify(warnings));
 
+    await logAuditTrailEntry({
+      uid: user.uid,
+      action: "consolidate-land-profiles.post",
+      status: "success",
+      route: "/api/v1/consolidate-land-profiles",
+      method: "POST",
+      request,
+      httpStatus: 200,
+      details: {
+        processedCount,
+        errorCount: errors.length,
+        warningCount: warnings.length,
+        fileCount: ifrFiles.length,
+      },
+    });
+
     return response;
   } catch (error) {
-    console.error("Error in consolidate-ifr API:", error);
+    logger.error("Error in consolidate-land-profiles API:", error);
+    await logAuditTrailEntry({
+      uid: user.uid,
+      action: "consolidate-land-profiles.post",
+      status: "error",
+      route: "/api/v1/consolidate-land-profiles",
+      method: "POST",
+      request,
+      httpStatus: 500,
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+    });
     return applySecurityHeaders(
       NextResponse.json(
         {
           error: "Internal server error",
-          details: error instanceof Error ? error.message : "Unknown error",
         },
         { status: 500 },
       ),
