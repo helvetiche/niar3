@@ -35,6 +35,7 @@ export default function ExperimentPage() {
     }>;
     onlyInHuman?: string[];
     onlyInSystem?: string[];
+    error?: string;
   } | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
 
@@ -400,7 +401,7 @@ export default function ExperimentPage() {
                                         ? "+"
                                         : ""}
                                       {typeof diff.difference === "number"
-                                        ? diff.difference.toFixed(2)
+                                        ? Number(diff.difference).toFixed(2)
                                         : diff.difference}
                                     </span>
                                   )}
