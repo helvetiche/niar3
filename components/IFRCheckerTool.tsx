@@ -1,7 +1,21 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { CheckCircleIcon, WarningCircleIcon, XCircleIcon, DatabaseIcon } from '@phosphor-icons/react';
+import { useRef, useState, useMemo } from "react";
+import toast from "react-hot-toast";
+import {
+  CheckCircleIcon,
+  WarningIcon,
+  XCircleIcon,
+  DatabaseIcon,
+  UploadSimpleIcon,
+  ShieldCheckIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+} from "@phosphor-icons/react";
+import { WorkspaceStepper } from "@/components/WorkspaceStepper";
+import { getErrorMessage } from "@/lib/utils";
 
 interface Issue {
   lotCode: string;
@@ -10,7 +24,7 @@ interface Issue {
   ifrValue: string | number;
   consolidatedValue: string | number;
   difference?: number;
-  severity: 'error' | 'warning';
+  severity: "error" | "warning";
   reason: string;
 }
 
@@ -27,332 +41,563 @@ interface CheckResult {
   issues: Issue[];
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export default function IFRCheckerTool() {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [ifrFiles, setIfrFiles] = useState<FileList | null>(null);
+  const ifrFileInputRef = useRef<HTMLInputElement | null>(null);
+  const consolidatedFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [ifrFiles, setIfrFiles] = useState<File[]>([]);
   const [consolidatedFile, setConsolidatedFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<CheckResult | null>(null);
 
-  const handleIFRFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIfrFiles(e.target.files);
+  // Pagination, search, and filter states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [severityFilter, setSeverityFilter] = useState<"all" | "error" | "warning">("all");
+  const [fieldFilter, setFieldFilter] = useState<string>("all");
+
+  const handleIFRFilesSelection = (incoming: FileList | null) => {
+    setIfrFiles(Array.from(incoming ?? []));
     setResult(null);
   };
 
-  const handleConsolidatedFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setConsolidatedFile(e.target.files[0]);
+  const handleConsolidatedFileSelection = (incoming: FileList | null) => {
+    const file = incoming?.[0];
+    if (file) {
+      setConsolidatedFile(file);
       setResult(null);
     }
   };
 
-  const runCheck = async () => {
-    if (!ifrFiles || ifrFiles.length === 0 || !consolidatedFile) return;
+  const runValidation = async () => {
+    if (ifrFiles.length === 0 || !consolidatedFile) {
+      toast.error("Please upload both IFR files and consolidated file.");
+      return;
+    }
 
-    setLoading(true);
-    setCurrentStep(3);
-    
+    setIsChecking(true);
+
     try {
       const formData = new FormData();
-      
-      for (let i = 0; i < ifrFiles.length; i++) {
-        formData.append('ifrFiles', ifrFiles[i]);
-      }
-      formData.append('consolidatedFile', consolidatedFile);
 
-      const res = await fetch('/api/v1/ifr-checker', {
-        method: 'POST',
+      for (const file of ifrFiles) {
+        formData.append("ifrFiles", file);
+      }
+      formData.append("consolidatedFile", consolidatedFile);
+
+      const res = await fetch("/api/v1/ifr-checker", {
+        method: "POST",
         body: formData,
       });
 
+      if (!res.ok) {
+        throw new Error("Validation failed");
+      }
+
       const data = await res.json();
       setResult(data);
+      setCurrentPage(1); // Reset to first page
+      setSearchQuery(""); // Reset search
+      setSeverityFilter("all"); // Reset filters
+      setFieldFilter("all");
+
+      if (data.issues.length === 0) {
+        toast.success("Perfect match! No issues found.");
+      } else {
+        toast.success(`Validation complete. Found ${data.issues.length} issue(s).`);
+      }
     } catch (error) {
-      setResult({
-        success: false,
-        summary: { totalLots: 0, consolidatedLots: 0, matchingLots: 0, totalIssues: 0, errors: 0, warnings: 0 },
-        issues: [],
-      });
+      toast.error(getErrorMessage(error, "Failed to validate files."));
+      setResult(null);
     } finally {
-      setLoading(false);
+      setIsChecking(false);
     }
   };
 
-  const resetTool = () => {
-    setCurrentStep(1);
-    setIfrFiles(null);
-    setConsolidatedFile(null);
-    setResult(null);
+  // Get unique fields for filter dropdown
+  const uniqueFields = useMemo(() => {
+    if (!result) return [];
+    const fields = new Set(result.issues.map(issue => issue.field));
+    return Array.from(fields).sort();
+  }, [result]);
+
+  // Filter and search issues
+  const filteredIssues = useMemo(() => {
+    if (!result) return [];
+
+    let filtered = result.issues;
+
+    // Apply severity filter
+    if (severityFilter !== "all") {
+      filtered = filtered.filter(issue => issue.severity === severityFilter);
+    }
+
+    // Apply field filter
+    if (fieldFilter !== "all") {
+      filtered = filtered.filter(issue => issue.field === fieldFilter);
+    }
+
+    // Apply search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(issue =>
+        issue.lotCode.toLowerCase().includes(query) ||
+        issue.field.toLowerCase().includes(query) ||
+        issue.reason.toLowerCase().includes(query) ||
+        String(issue.ifrValue).toLowerCase().includes(query) ||
+        String(issue.consolidatedValue).toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [result, severityFilter, fieldFilter, searchQuery]);
+
+  // Paginate filtered issues
+  const paginatedIssues = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return filteredIssues.slice(startIndex, endIndex);
+  }, [filteredIssues, currentPage]);
+
+  const totalPages = Math.ceil(filteredIssues.length / ITEMS_PER_PAGE);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of results
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const canProceedToStep2 = ifrFiles && ifrFiles.length > 0;
-  const canProceedToStep3 = canProceedToStep2 && consolidatedFile;
-
-  return (
-    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
-      {/* Header */}
-      <header className="mb-6">
-        <h2 className="text-xl font-medium text-white sm:text-2xl">IFR Checker</h2>
-        <p className="mt-2 text-sm text-white/85">
-          Validate consolidated files against source IFR data and identify discrepancies automatically.
-        </p>
-      </header>
-
-      {/* Stepper */}
-      <div className="mb-6 flex items-center justify-between">
-        {[1, 2, 3].map((step) => (
-          <div key={step} className="flex flex-1 items-center">
-            <div className="flex items-center">
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-semibold transition ${
-                  currentStep >= step
-                    ? 'border-white bg-white text-emerald-900'
-                    : 'border-white/40 bg-emerald-900/60 text-white/60'
-                }`}
-              >
-                {step}
-              </div>
-              <span
-                className={`ml-2 text-sm font-medium ${
-                  currentStep >= step ? 'text-white' : 'text-white/60'
-                }`}
-              >
-                {step === 1 && 'Upload IFR Files'}
-                {step === 2 && 'Upload Consolidated'}
-                {step === 3 && 'View Results'}
-              </span>
-            </div>
-            {step < 3 && (
-              <div
-                className={`mx-4 h-0.5 flex-1 ${
-                  currentStep > step ? 'bg-white' : 'bg-white/40'
-                }`}
-              />
-            )}
+  const steps = [
+    {
+      title: "Upload IFR Files",
+      description: "Source data",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Upload IFR Files (Source Data)
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Upload one or more Excel files (.xlsx or .xls) containing the
+              original IFR data.
+            </p>
           </div>
-        ))}
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-auto rounded-xl border border-emerald-700/70 bg-emerald-900/60 p-4 backdrop-blur-sm sm:p-6">
-        {/* Step 1: Upload IFR Files */}
-        {currentStep === 1 && (
-          <div className="space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-white">
-                Upload IFR Files (Source Data):
-              </label>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                multiple
-                onChange={handleIFRFilesChange}
-                className="block w-full rounded-lg border border-white/30 bg-white/10 p-3 text-sm text-white file:mr-4 file:rounded file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-900 hover:file:bg-white/90"
-              />
-              {ifrFiles && (
-                <p className="mt-2 flex items-center gap-2 text-sm text-green-300">
-                  <CheckCircleIcon size={16} weight="fill" />
-                  {ifrFiles.length} IFR file(s) selected
-                </p>
-              )}
+          <input
+            ref={ifrFileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            multiple
+            onChange={(e) => handleIFRFilesSelection(e.target.files)}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            onClick={() => ifrFileInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleIFRFilesSelection(e.dataTransfer.files);
+            }}
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/5 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/10"
+          >
+            <UploadSimpleIcon size={34} className="text-white" />
+            <span className="font-medium">
+              Drag and drop IFR files here, or click to browse
+            </span>
+          </button>
+
+          {ifrFiles.length > 0 && (
+            <div className="rounded-xl border border-white/35 bg-white/5 p-4">
+              <p className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                <CheckCircleIcon size={16} className="text-white" />
+                {ifrFiles.length} IFR file(s) selected
+              </p>
+              <ul className="space-y-1 text-sm text-white/80">
+                {ifrFiles.map((file, idx) => (
+                  <li key={idx} className="truncate">
+                    • {file.name}
+                  </li>
+                ))}
+              </ul>
             </div>
-
-            {canProceedToStep2 && (
-              <button
-                onClick={() => setCurrentStep(2)}
-                className="rounded-lg bg-white px-6 py-3 font-semibold text-emerald-900 transition hover:bg-white/90"
-              >
-                Next: Upload Consolidated File
-              </button>
-            )}
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Upload Consolidated",
+      description: "File to validate",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Upload Consolidated File
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Upload the consolidated Excel file that you want to validate
+              against the IFR source data.
+            </p>
           </div>
-        )}
 
-        {/* Step 2: Upload Consolidated File */}
-        {currentStep === 2 && (
-          <div className="space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-white">
-                Upload Consolidated File (To Validate):
-              </label>
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleConsolidatedFileChange}
-                className="block w-full rounded-lg border border-white/30 bg-white/10 p-3 text-sm text-white file:mr-4 file:rounded file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-900 hover:file:bg-white/90"
-              />
-              {consolidatedFile && (
-                <p className="mt-2 flex items-center gap-2 text-sm text-green-300">
-                  <CheckCircleIcon size={16} weight="fill" />
-                  {consolidatedFile.name}
-                </p>
-              )}
+          <input
+            ref={consolidatedFileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={(e) => handleConsolidatedFileSelection(e.target.files)}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            onClick={() => consolidatedFileInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleConsolidatedFileSelection(e.dataTransfer.files);
+            }}
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/5 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/10"
+          >
+            <UploadSimpleIcon size={34} className="text-white" />
+            <span className="font-medium">
+              Drag and drop consolidated file here, or click to browse
+            </span>
+          </button>
+
+          {consolidatedFile && (
+            <div className="rounded-xl border border-white/35 bg-white/5 p-4">
+              <p className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                <CheckCircleIcon size={16} className="text-white" />
+                Consolidated file selected
+              </p>
+              <p className="text-sm text-white/80">• {consolidatedFile.name}</p>
             </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Review",
+      description: "Run validation",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Review & Validate
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Review your files and run the validation check.
+            </p>
+          </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setCurrentStep(1)}
-                className="rounded-lg border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20"
-              >
-                Back
-              </button>
-              {canProceedToStep3 && (
-                <button
-                  onClick={runCheck}
-                  disabled={loading}
-                  className="rounded-lg bg-white px-6 py-3 font-semibold text-emerald-900 transition hover:bg-white/90 disabled:opacity-50"
-                >
-                  Run Validation Check
-                </button>
-              )}
+          <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+            <h4 className="mb-3 text-sm font-medium text-white">Summary</h4>
+            <div className="space-y-2 text-sm text-white/90">
+              <p>
+                <span className="text-white/70">IFR Files:</span>{" "}
+                {ifrFiles.length}
+              </p>
+              <p>
+                <span className="text-white/70">Consolidated File:</span>{" "}
+                {consolidatedFile?.name || "Not selected"}
+              </p>
             </div>
           </div>
-        )}
 
-        {/* Step 3: Results */}
-        {currentStep === 3 && (
-          <div className="space-y-6">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="mb-4 h-16 w-16 animate-spin rounded-full border-4 border-white/20 border-t-white"></div>
-                <p className="text-white">Validating consolidated file against IFR data...</p>
-              </div>
-            ) : result ? (
-              <>
-                {/* Summary */}
-                <div className="rounded-lg border border-white/20 bg-white/5 p-6 backdrop-blur-sm">
-                  <h3 className="mb-4 text-lg font-semibold text-white">Validation Summary</h3>
-                  <div className="grid grid-cols-3 gap-8 text-sm text-white/90">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <DatabaseIcon size={16} className="text-white/60" />
-                        <span>Total Lots in IFR: <strong className="text-white">{result.summary.totalLots}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <DatabaseIcon size={16} className="text-white/60" />
-                        <span>Consolidated Lots: <strong className="text-white">{result.summary.consolidatedLots}</strong></span>
-                      </div>
+          {result && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+                <h4 className="mb-3 text-sm font-medium text-white">
+                  Validation Results
+                </h4>
+                <div className="grid grid-cols-3 gap-4 text-sm text-white/90">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <DatabaseIcon size={16} className="text-white/60" />
+                      Total Lots in IFR: {result.summary.totalLots}
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircleIcon size={16} weight="fill" className="text-green-400" />
-                        <span>Matching Lots: <strong className="text-green-300">{result.summary.matchingLots}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <WarningCircleIcon size={16} weight="fill" className="text-white/60" />
-                        <span>Total Issues: <strong className="text-white">{result.summary.totalIssues}</strong></span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <DatabaseIcon size={16} className="text-white/60" />
+                      Consolidated Lots: {result.summary.consolidatedLots}
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <XCircleIcon size={16} weight="fill" className="text-red-400" />
-                        <span>Errors: <strong className="text-red-300">{result.summary.errors}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <WarningCircleIcon size={16} weight="fill" className="text-yellow-400" />
-                        <span>Warnings: <strong className="text-yellow-300">{result.summary.warnings}</strong></span>
-                      </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircleIcon size={16} className="text-white/60" />
+                      Matching Lots: {result.summary.matchingLots}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <WarningIcon size={16} className="text-white/60" />
+                      Total Issues: {result.summary.totalIssues}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <XCircleIcon size={16} className="text-white/60" />
+                      Errors: {result.summary.errors}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <WarningIcon size={16} className="text-white/60" />
+                      Warnings: {result.summary.warnings}
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Issues Table or Success Message */}
-                {result.issues.length === 0 ? (
-                  <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-8 text-center backdrop-blur-sm">
-                    <CheckCircleIcon size={64} weight="fill" className="mx-auto mb-4 text-green-300" />
-                    <div className="text-2xl font-semibold text-white">Perfect Match!</div>
-                    <p className="mt-2 text-white/80">
-                      The consolidated file matches the IFR data perfectly. No issues found.
+              {result.issues.length === 0 ? (
+                <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-8 text-center">
+                  <CheckCircleIcon
+                    size={64}
+                    weight="fill"
+                    className="mx-auto mb-4 text-green-300"
+                  />
+                  <div className="text-2xl font-semibold text-white">
+                    Perfect Match!
+                  </div>
+                  <p className="mt-2 text-white/80">
+                    The consolidated file matches the IFR data perfectly. No
+                    issues found.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Search and Filters */}
+                  <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-white/40 bg-white/5 px-3 py-2">
+                        <MagnifyingGlassIcon
+                          size={18}
+                          className="shrink-0 text-white/70"
+                        />
+                        <input
+                          type="search"
+                          placeholder="Search by lot code, field, or reason..."
+                          value={searchQuery}
+                          onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full bg-transparent text-sm text-white placeholder:text-white/60 focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="flex items-center gap-2 rounded-lg border border-white/40 bg-white/5 px-3 py-2">
+                          <FunnelIcon size={16} className="text-white/70" />
+                          <select
+                            value={severityFilter}
+                            onChange={(e) => {
+                              setSeverityFilter(e.target.value as "all" | "error" | "warning");
+                              setCurrentPage(1);
+                            }}
+                            className="bg-transparent text-sm text-white focus:outline-none"
+                          >
+                            <option value="all">All Severity</option>
+                            <option value="error">Errors Only</option>
+                            <option value="warning">Warnings Only</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2 rounded-lg border border-white/40 bg-white/5 px-3 py-2">
+                          <FunnelIcon size={16} className="text-white/70" />
+                          <select
+                            value={fieldFilter}
+                            onChange={(e) => {
+                              setFieldFilter(e.target.value);
+                              setCurrentPage(1);
+                            }}
+                            className="bg-transparent text-sm text-white focus:outline-none"
+                          >
+                            <option value="all">All Fields</option>
+                            {uniqueFields.map((field) => (
+                              <option key={field} value={field}>
+                                {field}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-white/60">
+                      Showing {paginatedIssues.length} of {filteredIssues.length} issue(s)
+                      {filteredIssues.length !== result.issues.length && ` (filtered from ${result.issues.length} total)`}
                     </p>
                   </div>
-                ) : (
-                  <div className="rounded-lg border border-white/20 bg-white/5 p-4 backdrop-blur-sm">
-                    <h3 className="mb-4 text-lg font-semibold text-white">
-                      Issues Found ({result.issues.length}):
-                    </h3>
+
+                  {/* Issues Table */}
+                  <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+                    <h4 className="mb-3 text-sm font-medium text-white">
+                      Issues Found
+                    </h4>
                     <div className="overflow-x-auto rounded-lg border border-white/20">
                       <table className="w-full text-sm">
                         <thead className="border-b border-white/20 bg-white/5">
                           <tr className="text-left text-white">
-                            <th className="border-r border-white/10 p-3 font-semibold">Severity</th>
-                            <th className="border-r border-white/10 p-3 font-semibold">Lot Code</th>
-                            <th className="border-r border-white/10 p-3 font-semibold">Field</th>
-                            <th className="border-r border-white/10 p-3 font-semibold">IFR Value</th>
-                            <th className="border-r border-white/10 p-3 font-semibold">Consolidated</th>
-                            <th className="border-r border-white/10 p-3 font-semibold">Difference</th>
+                            <th className="border-r border-white/10 p-3 font-semibold">
+                              Severity
+                            </th>
+                            <th className="border-r border-white/10 p-3 font-semibold">
+                              Lot Code
+                            </th>
+                            <th className="border-r border-white/10 p-3 font-semibold">
+                              Field
+                            </th>
+                            <th className="border-r border-white/10 p-3 font-semibold">
+                              IFR Value
+                            </th>
+                            <th className="border-r border-white/10 p-3 font-semibold">
+                              Consolidated
+                            </th>
+                            <th className="border-r border-white/10 p-3 font-semibold">
+                              Difference
+                            </th>
                             <th className="p-3 font-semibold">Reason</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {result.issues.map((issue, idx) => (
-                            <tr
-                              key={idx}
-                              className={`border-b border-white/10 ${
-                                issue.severity === 'error'
-                                  ? 'bg-red-500/5 hover:bg-red-500/10'
-                                  : 'bg-yellow-500/5 hover:bg-yellow-500/10'
-                              } transition`}
-                            >
-                              <td className="border-r border-white/10 p-3">
-                                {issue.severity === 'error' ? (
-                                  <span className="inline-flex items-center gap-1 rounded bg-red-500 px-2 py-1 text-xs font-semibold text-white">
-                                    <XCircleIcon size={14} weight="fill" />
-                                    ERROR
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 rounded bg-yellow-500 px-2 py-1 text-xs font-semibold text-white">
-                                    <WarningCircleIcon size={14} weight="fill" />
-                                    WARNING
-                                  </span>
-                                )}
+                          {paginatedIssues.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="p-8 text-center text-white/60">
+                                No issues match your search criteria
                               </td>
-                              <td className="border-r border-white/10 p-3 font-mono font-semibold text-white">
-                                {issue.lotCode}
-                              </td>
-                              <td className="border-r border-white/10 p-3 text-white/80">{issue.field}</td>
-                              <td className="border-r border-white/10 p-3 font-mono text-white">
-                                {issue.ifrValue}
-                              </td>
-                              <td className="border-r border-white/10 p-3 font-mono text-white">
-                                {issue.consolidatedValue}
-                              </td>
-                              <td className="border-r border-white/10 p-3 font-mono">
-                                {issue.difference !== undefined ? (
-                                  <span
-                                    className={
-                                      issue.difference > 0 ? 'text-red-300' : 'text-green-300'
-                                    }
-                                  >
-                                    {issue.difference > 0 ? '+' : ''}
-                                    {typeof issue.difference === 'number'
-                                      ? issue.difference.toFixed(2)
-                                      : issue.difference}
-                                  </span>
-                                ) : (
-                                  <span className="text-white/40">-</span>
-                                )}
-                              </td>
-                              <td className="p-3 text-xs text-white/70">{issue.reason}</td>
                             </tr>
-                          ))}
+                          ) : (
+                            paginatedIssues.map((issue, idx) => (
+                              <tr
+                                key={idx}
+                                className={`border-b border-white/10 ${
+                                  issue.severity === "error"
+                                    ? "bg-red-500/5 hover:bg-red-500/10"
+                                    : "bg-yellow-500/5 hover:bg-yellow-500/10"
+                                } transition`}
+                              >
+                                <td className="border-r border-white/10 p-3">
+                                  {issue.severity === "error" ? (
+                                    <span className="inline-flex items-center gap-1 rounded bg-red-500 px-2 py-1 text-xs font-semibold text-white">
+                                      <XCircleIcon size={14} weight="fill" />
+                                      ERROR
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 rounded bg-yellow-500 px-2 py-1 text-xs font-semibold text-white">
+                                      <WarningIcon size={14} weight="fill" />
+                                      WARNING
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="border-r border-white/10 p-3 font-mono font-semibold text-white">
+                                  {issue.lotCode}
+                                </td>
+                                <td className="border-r border-white/10 p-3 text-white/80">
+                                  {issue.field}
+                                </td>
+                                <td className="border-r border-white/10 p-3 font-mono text-white">
+                                  {issue.ifrValue}
+                                </td>
+                                <td className="border-r border-white/10 p-3 font-mono text-white">
+                                  {issue.consolidatedValue}
+                                </td>
+                                <td className="border-r border-white/10 p-3 font-mono">
+                                  {issue.difference !== undefined ? (
+                                    <span
+                                      className={
+                                        issue.difference > 0
+                                          ? "text-red-300"
+                                          : "text-green-300"
+                                      }
+                                    >
+                                      {issue.difference > 0 ? "+" : ""}
+                                      {typeof issue.difference === "number"
+                                        ? issue.difference.toFixed(2)
+                                        : issue.difference}
+                                    </span>
+                                  ) : (
+                                    <span className="text-white/40">-</span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-xs text-white/70">
+                                  {issue.reason}
+                                </td>
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>
-                  </div>
-                )}
 
-                {/* Reset Button */}
-                <button
-                  onClick={resetTool}
-                  className="rounded-lg border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20"
-                >
-                  Check Another File
-                </button>
-              </>
-            ) : null}
-          </div>
-        )}
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="mt-4 flex items-center justify-between">
+                        <p className="text-xs text-white/60">
+                          Page {currentPage} of {totalPages}
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="inline-flex items-center gap-1 rounded-lg border border-white/40 bg-white/5 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <CaretLeftIcon size={14} weight="bold" />
+                            Previous
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="inline-flex items-center gap-1 rounded-lg border border-white/40 bg-white/5 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            Next
+                            <CaretRightIcon size={14} weight="bold" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-3 shadow-xl shadow-emerald-950/30 sm:p-4 md:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="flex items-center gap-2 text-xl font-medium text-white">
+          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+            <ShieldCheckIcon size={18} className="text-white" />
+          </span>
+          IFR Checker
+        </h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <DatabaseIcon size={12} className="text-white" />
+            Data Validation
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <CheckCircleIcon size={12} className="text-white" />
+            Quality Assurance
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-white/85">
+          Validate consolidated files against source IFR data and identify
+          discrepancies automatically.
+        </p>
       </div>
+
+      <WorkspaceStepper
+        steps={steps}
+        onComplete={() => void runValidation()}
+        canProceed={(step) => {
+          if (step === 0) return ifrFiles.length > 0;
+          if (step === 1) return !!consolidatedFile;
+          return true;
+        }}
+        completeButtonText={isChecking ? "Validating..." : "Run Validation"}
+      />
     </section>
   );
 }

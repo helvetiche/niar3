@@ -18,6 +18,8 @@ import {
   SignOutIcon,
   XIcon,
   UsersThreeIcon,
+  ShieldCheckIcon,
+  FolderOpenIcon,
 } from "@phosphor-icons/react";
 import type { AuthUser } from "@/types/auth";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
@@ -84,6 +86,18 @@ const TOOLS = [
     name: "IFR SCANNER",
     description: "Scan and extract data from IFR documents automatically.",
     icon: MagnifyingGlassIcon,
+  },
+  {
+    id: "consolidate-land-profiles" as const,
+    name: "CONSOLIDATE IFR",
+    description: "Consolidate multiple IFR files into a single output file with automatic calculations.",
+    icon: FolderOpenIcon,
+  },
+  {
+    id: "ifr-checker" as const,
+    name: "IFR CHECKER",
+    description: "Validate consolidated files against source IFR data and identify discrepancies.",
+    icon: ShieldCheckIcon,
   },
   {
     id: "accounts" as const,

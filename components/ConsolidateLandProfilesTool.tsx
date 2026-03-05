@@ -1,113 +1,129 @@
-'use client';
+"use client";
 
-import { useState, useRef } from 'react';
+import { useRef, useState } from "react";
+import toast from "react-hot-toast";
 import {
   UploadSimpleIcon,
   FileIcon,
   XIcon,
   DownloadSimpleIcon,
-  SpinnerGapIcon,
   CheckCircleIcon,
-  WarningCircleIcon,
   MicrosoftExcelLogoIcon,
-} from '@phosphor-icons/react';
+  FolderOpenIcon,
+  InfoIcon,
+  FileXlsIcon,
+} from "@phosphor-icons/react";
+import { WorkspaceStepper } from "@/components/WorkspaceStepper";
+import { TemplateManagerInline } from "@/components/TemplateManagerInline";
+import { useTemplates } from "@/hooks/useTemplates";
+import { getErrorMessage } from "@/lib/utils";
 
 interface UploadedFile {
   file: File;
   id: string;
 }
 
+interface ConsolidationResult {
+  count: number;
+  errors: string[];
+  warnings: string[];
+}
+
 export default function ConsolidateLandProfilesTool() {
+  const templateInputRef = useRef<HTMLInputElement | null>(null);
+  const landProfileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [templateFile, setTemplateFile] = useState<File | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [landProfileFiles, setLandProfileFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ count: number; errors: string[]; warnings: string[] } | null>(null);
-  
-  const templateInputRef = useRef<HTMLInputElement>(null);
-  const landProfileInputRef = useRef<HTMLInputElement>(null);
+  const [result, setResult] = useState<ConsolidationResult | null>(null);
 
-  const handleTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const { data: consolidationTemplates = [] } = useTemplates("consolidation");
+
+  const handleTemplateSelection = (incoming: FileList | null) => {
+    const file = incoming?.[0];
     if (file) {
       setTemplateFile(file);
-      setError(null);
-      setSuccess(null);
+      setSelectedTemplateId(""); // Clear template manager selection
+      setResult(null);
     }
   };
 
-  const handleLandProfileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const newFiles = files.map(file => ({
+  const handleLandProfileSelection = (incoming: FileList | null) => {
+    const files = Array.from(incoming ?? []);
+    const newFiles = files.map((file) => ({
       file,
       id: `${file.name}-${Date.now()}-${Math.random()}`,
     }));
-    
-    setLandProfileFiles(prev => [...prev, ...newFiles]);
-    setError(null);
-    setSuccess(null);
-    
-    // Reset input
+
+    setLandProfileFiles((prev) => [...prev, ...newFiles]);
+    setResult(null);
+
     if (landProfileInputRef.current) {
-      landProfileInputRef.current.value = '';
+      landProfileInputRef.current.value = "";
     }
   };
 
   const removeLandProfileFile = (id: string) => {
-    setLandProfileFiles(prev => prev.filter(f => f.id !== id));
+    setLandProfileFiles((prev) => prev.filter((f) => f.id !== id));
   };
 
   const removeTemplateFile = () => {
     setTemplateFile(null);
     if (templateInputRef.current) {
-      templateInputRef.current.value = '';
+      templateInputRef.current.value = "";
     }
   };
 
   const handleConsolidate = async () => {
-    if (!templateFile) {
-      setError('Please upload a template file');
-      return;
-    }
-
-    if (landProfileFiles.length === 0) {
-      setError('Please upload at least one land profile file');
+    if ((!templateFile && !selectedTemplateId) || landProfileFiles.length === 0) {
+      toast.error("Please select a template and upload land profile files.");
       return;
     }
 
     setIsProcessing(true);
-    setError(null);
-    setSuccess(null);
 
     try {
       const formData = new FormData();
-      formData.append('template', templateFile);
-      
+
+      // Use uploaded template file or fetch from template manager
+      if (templateFile) {
+        formData.append("template", templateFile);
+      } else if (selectedTemplateId) {
+        // Fetch the template from the server
+        const templateResponse = await fetch(`/api/v1/templates/${selectedTemplateId}`);
+        if (!templateResponse.ok) {
+          throw new Error("Failed to fetch template");
+        }
+        const templateBlob = await templateResponse.blob();
+        const templateFileName = consolidationTemplates.find(t => t.id === selectedTemplateId)?.name || "template.xlsx";
+        formData.append("template", templateBlob, templateFileName);
+      }
+
       landProfileFiles.forEach((item, index) => {
         formData.append(`landProfile_${index}`, item.file);
       });
 
-      const response = await fetch('/api/v1/consolidate-land-profiles', {
-        method: 'POST',
+      const response = await fetch("/api/v1/consolidate-land-profiles", {
+        method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to consolidate land profiles');
+        throw new Error(errorData.error || "Failed to consolidate files");
       }
 
-      // Get metadata from headers
-      const processedCount = parseInt(response.headers.get('X-Processed-Count') || '0');
-      const errorCount = parseInt(response.headers.get('X-Error-Count') || '0');
-      const warningCount = parseInt(response.headers.get('X-Warning-Count') || '0');
-      const errors = JSON.parse(response.headers.get('X-Errors') || '[]');
-      const warnings = JSON.parse(response.headers.get('X-Warnings') || '[]');
+      const processedCount = parseInt(
+        response.headers.get("X-Processed-Count") || "0",
+      );
+      const errors = JSON.parse(response.headers.get("X-Errors") || "[]");
+      const warnings = JSON.parse(response.headers.get("X-Warnings") || "[]");
 
-      // Download the file
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `consolidated-land-profiles-${Date.now()}.xlsx`;
       document.body.appendChild(a);
@@ -115,210 +131,359 @@ export default function ConsolidateLandProfilesTool() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      setSuccess({ count: processedCount, errors, warnings });
-      
-      if (errorCount === 0) {
-        // Clear files on complete success
-        setTemplateFile(null);
-        setLandProfileFiles([]);
-        if (templateInputRef.current) templateInputRef.current.value = '';
+      setResult({ count: processedCount, errors, warnings });
+
+      if (errors.length === 0) {
+        toast.success(
+          `Successfully consolidated ${processedCount} land profile(s)!`,
+        );
+      } else {
+        toast.success(
+          `Consolidated with ${errors.length} error(s). Check results for details.`,
+        );
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+    } catch (error) {
+      toast.error(
+        getErrorMessage(error, "Failed to consolidate land profiles."),
+      );
+      setResult(null);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  return (
-    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
-      <header className="mb-6">
-        <h2 className="flex items-center gap-2 text-xl font-medium text-white sm:text-2xl">
-          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
-            <MicrosoftExcelLogoIcon size={20} className="text-white" weight="duotone" />
-          </span>
-          Consolidate Land Profiles
-        </h2>
-        <p className="mt-2 max-w-3xl text-sm text-white/85">
-          Upload a template and multiple land profile Excel files to consolidate them into a single file.
-        </p>
-      </header>
+  const steps = [
+    {
+      title: "Select Template",
+      description: "Choose or upload",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Select Template File
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Choose a saved template or upload a new consolidation template
+              Excel file.
+            </p>
+          </div>
 
-      <div className="space-y-6">
-        {/* Template Upload */}
-        <div className="rounded-xl border border-emerald-700/70 bg-emerald-900/60 p-4 backdrop-blur-sm sm:p-5">
-          <h3 className="text-base font-medium text-white mb-3">Template File</h3>
-          <button
-            type="button"
-            onClick={() => templateInputRef.current?.click()}
-            disabled={isProcessing}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/40 bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <UploadSimpleIcon size={18} weight="duotone" />
-            {templateFile ? 'Change Template' : 'Upload Template'}
-          </button>
-          <input
-            ref={templateInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleTemplateUpload}
-            className="hidden"
-          />
-          
-          {templateFile && (
-            <div className="mt-3 flex items-center justify-between rounded-lg border border-green-500/40 bg-green-900/20 p-3">
-              <div className="flex items-center gap-2">
-                <FileIcon size={18} className="text-green-400" weight="duotone" />
-                <span className="text-sm text-white">{templateFile.name}</span>
-              </div>
-              <button
-                type="button"
-                onClick={removeTemplateFile}
-                disabled={isProcessing}
-                className="rounded p-1 text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
-              >
-                <XIcon size={16} />
-              </button>
+          <div>
+            <p className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
+              <FileXlsIcon size={16} className="text-white" />
+              Consolidation Template
+            </p>
+            <TemplateManagerInline
+              scope="consolidation"
+              selectedTemplateId={selectedTemplateId}
+              onSelectedTemplateIdChange={(id) => {
+                setSelectedTemplateId(id);
+                setTemplateFile(null); // Clear uploaded file
+                if (templateInputRef.current) {
+                  templateInputRef.current.value = "";
+                }
+              }}
+            />
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/20"></div>
             </div>
-          )}
-        </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-emerald-900 px-2 text-white/60">OR</span>
+            </div>
+          </div>
 
-        {/* Land Profile Files Upload */}
-        <div className="rounded-xl border border-emerald-700/70 bg-emerald-900/60 p-4 backdrop-blur-sm sm:p-5">
-          <h3 className="text-base font-medium text-white mb-3">
-            Land Profile Files ({landProfileFiles.length})
-          </h3>
-          <button
-            type="button"
-            onClick={() => landProfileInputRef.current?.click()}
-            disabled={isProcessing}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/40 bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <UploadSimpleIcon size={18} weight="duotone" />
-            Add Land Profile Files
-          </button>
+          <div>
+            <p className="mb-3 text-sm font-medium text-white">
+              Upload Template File
+            </p>
+            <input
+              ref={templateInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(e) => handleTemplateSelection(e.target.files)}
+              className="hidden"
+            />
+
+            <button
+              type="button"
+              onClick={() => templateInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleTemplateSelection(e.dataTransfer.files);
+              }}
+              className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/5 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/10"
+            >
+              <UploadSimpleIcon size={34} className="text-white" />
+              <span className="font-medium">
+                Drag and drop template file here, or click to browse
+              </span>
+            </button>
+
+            {templateFile && (
+              <div className="mt-3 rounded-xl border border-white/35 bg-white/5 p-4">
+                <p className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+                  <CheckCircleIcon size={16} className="text-white" />
+                  Template file selected
+                </p>
+                <div className="flex items-center justify-between rounded-lg border border-white/20 bg-white/5 p-3">
+                  <div className="flex items-center gap-2">
+                    <FileIcon size={18} className="text-white/80" />
+                    <span className="text-sm text-white">
+                      {templateFile.name}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removeTemplateFile}
+                    className="rounded p-1 text-white/70 transition hover:bg-white/20 hover:text-white"
+                  >
+                    <XIcon size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Upload Land Profiles",
+      description: "Select IFR files",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Upload Land Profile Files
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Upload one or more IFR Excel files to consolidate. Files will be
+              processed and merged into the template.
+            </p>
+          </div>
+
           <input
             ref={landProfileInputRef}
             type="file"
             accept=".xlsx,.xls"
             multiple
-            onChange={handleLandProfileUpload}
+            onChange={(e) => handleLandProfileSelection(e.target.files)}
             className="hidden"
           />
-          
+
+          <button
+            type="button"
+            onClick={() => landProfileInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              handleLandProfileSelection(e.dataTransfer.files);
+            }}
+            className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/5 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/10"
+          >
+            <UploadSimpleIcon size={34} className="text-white" />
+            <span className="font-medium">
+              Drag and drop IFR files here, or click to browse
+            </span>
+          </button>
+
           {landProfileFiles.length > 0 && (
-            <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
-              {landProfileFiles.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between rounded-lg border border-blue-500/40 bg-blue-900/20 p-3"
-                >
-                  <div className="flex items-center gap-2">
-                    <FileIcon size={18} className="text-blue-400" weight="duotone" />
-                    <span className="text-sm text-white">{item.file.name}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeLandProfileFile(item.id)}
-                    disabled={isProcessing}
-                    className="rounded p-1 text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
+            <div className="rounded-xl border border-white/35 bg-white/5 p-4">
+              <p className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
+                <CheckCircleIcon size={16} className="text-white" />
+                {landProfileFiles.length} IFR file(s) selected
+              </p>
+              <div className="max-h-64 space-y-2 overflow-y-auto">
+                {landProfileFiles.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between rounded-lg border border-white/20 bg-white/5 p-3"
                   >
-                    <XIcon size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Error Alert */}
-        {error && (
-          <div className="rounded-xl border border-red-500/50 bg-red-900/30 p-4">
-            <div className="flex items-start gap-3">
-              <WarningCircleIcon size={20} className="text-red-400 shrink-0 mt-0.5" weight="duotone" />
-              <p className="text-sm text-white">{error}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Success Alert */}
-        {success && (
-          <div className="rounded-xl border border-green-500/50 bg-green-900/30 p-4">
-            <div className="flex items-start gap-3">
-              <CheckCircleIcon size={20} className="text-green-400 shrink-0 mt-0.5" weight="duotone" />
-              <div className="text-sm text-white">
-                <p className="font-medium">Successfully processed {success.count} land profile(s)!</p>
-                {success.warnings.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-yellow-500/40 bg-yellow-900/20 p-3">
-                    <p className="font-medium text-yellow-300 mb-1">Important Notes:</p>
-                    <ul className="list-disc list-inside space-y-1">
-                      {success.warnings.map((warning, idx) => (
-                        <li key={idx} className="text-yellow-200/90">{warning}</li>
-                      ))}
-                    </ul>
+                    <div className="flex items-center gap-2">
+                      <FileIcon size={18} className="text-white/80" />
+                      <span className="text-sm text-white">
+                        {item.file.name}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeLandProfileFile(item.id)}
+                      className="rounded p-1 text-white/70 transition hover:bg-white/20 hover:text-white"
+                    >
+                      <XIcon size={16} />
+                    </button>
                   </div>
-                )}
-                {success.errors.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-red-500/40 bg-red-900/20 p-3">
-                    <p className="font-medium text-red-300 mb-1">Errors:</p>
-                    <ul className="list-disc list-inside space-y-1">
-                      {success.errors.map((err, idx) => (
-                        <li key={idx} className="text-red-200/90">{err}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                ))}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Consolidate Button */}
-        <button
-          onClick={handleConsolidate}
-          disabled={!templateFile || landProfileFiles.length === 0 || isProcessing}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-6 py-4 text-base font-semibold text-emerald-900 transition hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isProcessing ? (
-            <>
-              <SpinnerGapIcon size={20} className="animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <DownloadSimpleIcon size={20} weight="duotone" />
-              Consolidate & Download
-            </>
           )}
-        </button>
-
-        {/* Instructions */}
-        <div className="rounded-xl border border-emerald-700/70 bg-emerald-900/60 p-4 backdrop-blur-sm sm:p-5">
-          <h3 className="text-base font-medium text-white mb-3">Instructions</h3>
-          <ul className="space-y-2 text-sm text-white/80">
-            <li className="flex gap-2">
-              <span className="text-white/60">1.</span>
-              <span>Upload the consolidation template Excel file</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-white/60">2.</span>
-              <span>Upload one or more land profile Excel files</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-white/60">3.</span>
-              <span>Land profile filenames must start with a number (e.g., "01 2512-C-10B...")</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-white/60">4.</span>
-              <span>The system will extract data from sheets "00 ACC DETAILS 01" and "01 SOA 01"</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-white/60">5.</span>
-              <span>Click "Consolidate & Download" to generate the consolidated file</span>
-            </li>
-          </ul>
         </div>
+      ),
+    },
+    {
+      title: "Review",
+      description: "Consolidate files",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Review & Consolidate
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Review your files and consolidate them into a single output file.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+            <h4 className="mb-3 text-sm font-medium text-white">Summary</h4>
+            <div className="space-y-2 text-sm text-white/90">
+              <p>
+                <span className="text-white/70">Template:</span>{" "}
+                {templateFile
+                  ? templateFile.name
+                  : selectedTemplateId
+                    ? consolidationTemplates.find((t) => t.id === selectedTemplateId)
+                        ?.name || "Selected"
+                    : "Not selected"}
+              </p>
+              <p>
+                <span className="text-white/70">IFR Files:</span>{" "}
+                {landProfileFiles.length}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
+              <InfoIcon size={16} className="text-white/60" />
+              Processing Notes
+            </div>
+            <ul className="space-y-1 text-sm text-white/80">
+              <li className="flex gap-2">
+                <span className="text-white/60">•</span>
+                <span>
+                  The system extracts data from sheets "00 ACC DETAILS 01" and
+                  "01 SOA 01"
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-white/60">•</span>
+                <span>
+                  IFR calculations are performed automatically using the
+                  irrigation rate table
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-white/60">•</span>
+                <span>Duplicate crop seasons per lot are removed</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-white/60">•</span>
+                <span>
+                  Years before 1975 and 75-D are skipped, but 75-W is included
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          {result && (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircleIcon
+                    size={20}
+                    weight="fill"
+                    className="mt-0.5 shrink-0 text-green-300"
+                  />
+                  <div className="text-sm text-white">
+                    <p className="font-medium">
+                      Successfully processed {result.count} land profile(s)!
+                    </p>
+                    <p className="mt-1 text-white/80">
+                      The consolidated file has been downloaded.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {result.warnings.length > 0 && (
+                <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-medium text-yellow-300">
+                    <InfoIcon size={16} />
+                    Important Notes ({result.warnings.length})
+                  </div>
+                  <ul className="space-y-1 text-sm text-yellow-200/90">
+                    {result.warnings.map((warning, idx) => (
+                      <li key={idx} className="flex gap-2">
+                        <span className="text-yellow-300/60">•</span>
+                        <span>{warning}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {result.errors.length > 0 && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-medium text-red-300">
+                    <XIcon size={16} />
+                    Errors ({result.errors.length})
+                  </div>
+                  <ul className="space-y-1 text-sm text-red-200/90">
+                    {result.errors.map((err, idx) => (
+                      <li key={idx} className="flex gap-2">
+                        <span className="text-red-300/60">•</span>
+                        <span>{err}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-3 shadow-xl shadow-emerald-950/30 sm:p-4 md:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="flex items-center gap-2 text-xl font-medium text-white">
+          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+            <MicrosoftExcelLogoIcon size={18} className="text-white" />
+          </span>
+          Consolidate Land Profiles
+        </h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <FolderOpenIcon size={12} className="text-white" />
+            IFR Consolidation
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <DownloadSimpleIcon size={12} className="text-white" />
+            Excel Output
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-white/85">
+          Consolidate multiple IFR files into a single output file with
+          automatic calculations.
+        </p>
       </div>
+
+      <WorkspaceStepper
+        steps={steps}
+        onComplete={() => void handleConsolidate()}
+        canProceed={(step) => {
+          if (step === 0) return !!(templateFile || selectedTemplateId);
+          if (step === 1) return landProfileFiles.length > 0;
+          return true;
+        }}
+        completeButtonText={isProcessing ? "Processing..." : "Consolidate"}
+      />
     </section>
   );
 }

@@ -6,7 +6,7 @@ import {
   invalidateTemplateCache,
 } from "@/lib/services/template-cache";
 
-export type TemplateScope = "ifr-scanner" | "swrft";
+export type TemplateScope = "ifr-scanner" | "swrft" | "consolidation";
 
 export type StoredTemplate = {
   id: string;
@@ -67,8 +67,15 @@ export async function uploadTemplate(
     );
   }
 
-  invalidateTemplateCache(scope);
-  return response.json() as Promise<StoredTemplate>;
+  const newTemplate = await response.json() as StoredTemplate;
+  
+  // Update cache with new template instead of invalidating
+  const cached = getCachedTemplates(scope);
+  if (cached) {
+    setCachedTemplates(scope, [newTemplate, ...cached]);
+  }
+  
+  return newTemplate;
 }
 
 export async function deleteTemplate(templateId: string): Promise<void> {
@@ -83,6 +90,7 @@ export async function deleteTemplate(templateId: string): Promise<void> {
     );
   }
 
+  // Invalidate all caches since we don't know which scope this template belongs to
   invalidateTemplateCache();
 }
 
@@ -113,6 +121,14 @@ export async function updateTemplate(
     );
   }
 
-  invalidateTemplateCache();
-  return response.json() as Promise<StoredTemplate>;
+  const updatedTemplate = await response.json() as StoredTemplate;
+  
+  // Update cache with updated template
+  const cached = getCachedTemplates(updatedTemplate.scope);
+  if (cached) {
+    const updatedCache = cached.map(t => t.id === templateId ? updatedTemplate : t);
+    setCachedTemplates(updatedTemplate.scope, updatedCache);
+  }
+  
+  return updatedTemplate;
 }

@@ -81,7 +81,7 @@ export async function setCalendarNotesForDate(
   await ref.set({ items }, { merge: true });
 }
 
-export type TemplateScope = "ifr-scanner" | "swrft";
+export type TemplateScope = "ifr-scanner" | "swrft" | "consolidation";
 
 export type StoredTemplate = {
   id: string;
