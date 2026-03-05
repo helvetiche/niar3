@@ -2,6 +2,15 @@ import * as XLSX from 'xlsx';
 import XlsxPopulate from 'xlsx-populate';
 import { lookupIrrigationRate } from './irrigation-rate-table';
 
+/**
+ * Round a number to specified decimal places using "round half up" method
+ * This matches Excel's ROUND function behavior
+ */
+function roundHalfUp(num: number, decimals: number): number {
+  const multiplier = Math.pow(10, decimals);
+  return Math.round(num * multiplier + Number.EPSILON) / multiplier;
+}
+
 export interface IFRLotData {
   lotCode: string;
   ownerLastName: string;
@@ -78,7 +87,7 @@ export async function extractIFRData(
       const ownerFirstName = sheet[`${COL_OWNER_FIRST}${row}`]?.v || '';
       const tillerLastName = sheet[`${COL_TILLER_LAST}${row}`]?.v || '';
       const tillerFirstName = sheet[`${COL_TILLER_FIRST}${row}`]?.v || '';
-      const oldAccount = parseFloat(String(sheet[`${COL_OLD_ACCOUNT}${row}`]?.v || 0));
+      const oldAccountValue = parseFloat(String(sheet[`${COL_OLD_ACCOUNT}${row}`]?.v || 0));
 
       if (!lotCode) continue;
 
@@ -92,7 +101,7 @@ export async function extractIFRData(
           ownerFirstName: String(ownerFirstName),
           tillerLastName: String(tillerLastName),
           tillerFirstName: String(tillerFirstName),
-          oldAccount: oldAccount,
+          oldAccount: oldAccountValue, // Take old account from first occurrence only
           latestArea: 0,
           latestYear: 0,
           totalPrincipal: 0,
@@ -102,7 +111,7 @@ export async function extractIFRData(
         });
       }
 
-      const group = lotGroups.get(lotKey)!;
+      const group = lotGroups.get(lotKey)!;;
 
       // Update latest area (use the most recent year's area)
       if (cropYear && area) {
@@ -116,9 +125,10 @@ export async function extractIFRData(
       // Calculate principal and penalty if we have season data
       if (!cropSeason || !cropYear || !area) continue;
 
-      // Skip years before 1976
+      // Skip years before 1975, and skip 75-D (before July 1, 1975)
       const yearNum = parseInt(String(cropYear));
-      if (yearNum < 1976) continue;
+      if (yearNum < 1975) continue;
+      if (yearNum === 1975 && String(cropSeason).toUpperCase() === 'DRY') continue;
 
       // Build crop season code
       const yearCode = yearNum >= 2000 ? String(yearNum) : String(yearNum).slice(-2);
@@ -133,7 +143,7 @@ export async function extractIFRData(
       const rateData = lookupIrrigationRate(cropSeasonCode);
       if (!rateData) continue;
 
-      // Calculate using the area from this row
+      // Calculate using the area from THIS SPECIFIC ROW (not latest area)
       const areaNum = parseFloat(String(area));
       const principal = areaNum * rateData.rate;
       const penalty = principal * (rateData.penaltyMonths / 100);
@@ -146,7 +156,10 @@ export async function extractIFRData(
     // Convert to array of results
     const results: IFRLotData[] = [];
     for (const group of lotGroups.values()) {
-      const total = group.totalPrincipal + group.totalPenalty + group.oldAccount;
+      const principal = roundHalfUp(group.totalPrincipal, 2);
+      const penalty = roundHalfUp(group.totalPenalty, 2);
+      const oldAccount = roundHalfUp(group.oldAccount, 2);
+      const total = roundHalfUp(principal + penalty + oldAccount, 2);
 
       results.push({
         lotCode: group.lotCode,
@@ -154,11 +167,11 @@ export async function extractIFRData(
         ownerFirstName: group.ownerFirstName,
         tillerLastName: group.tillerLastName,
         tillerFirstName: group.tillerFirstName,
-        area: parseFloat(group.latestArea.toFixed(4)),
-        principal: parseFloat(group.totalPrincipal.toFixed(2)),
-        penalty: parseFloat(group.totalPenalty.toFixed(2)),
-        oldAccount: parseFloat(group.oldAccount.toFixed(2)),
-        total: parseFloat(total.toFixed(2)),
+        area: roundHalfUp(group.latestArea, 4),
+        principal,
+        penalty,
+        oldAccount,
+        total,
         rowNumber: 0, // Will be assigned during consolidation
         fileName,
         numberOfSeasons: group.numberOfSeasons,
@@ -209,6 +222,7 @@ export async function consolidateIFR(
           sheet.cell(`J${currentRow}`).value(data.principal);
           sheet.cell(`K${currentRow}`).value(data.penalty);
           sheet.cell(`L${currentRow}`).value(data.oldAccount);
+          sheet.cell(`M${currentRow}`).value(data.total);
 
           currentRow++;
           processedCount++;

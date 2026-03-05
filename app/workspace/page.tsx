@@ -11,6 +11,7 @@ import { TemplatesTool } from "@/components/TemplatesTool";
 import { WorkspaceToolPlaceholder } from "@/components/WorkspaceToolPlaceholder";
 import { AccountManagement } from "@/components/AccountManagement";
 import ConsolidateLandProfilesTool from "@/components/ConsolidateLandProfilesTool";
+import IFRCheckerTool from "@/components/IFRCheckerTool";
 import {
   useWorkspaceTab,
   type WorkspaceTab,
@@ -51,6 +52,10 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   "consolidate-land-profiles": {
     name: "CONSOLIDATE LAND PROFILES",
     description: "Consolidate multiple land profile Excel files into a single template.",
+  },
+  "ifr-checker": {
+    name: "IFR CHECKER",
+    description: "Validate consolidated files against source IFR data and identify discrepancies.",
   },
 };
 
@@ -106,6 +111,8 @@ export default function WorkspacePage() {
             <AccountManagement />
           ) : selectedTab === "consolidate-land-profiles" ? (
             <ConsolidateLandProfilesTool />
+          ) : selectedTab === "ifr-checker" ? (
+            <IFRCheckerTool />
           ) : (
             TOOL_CONTENT[selectedTab] && (
               <WorkspaceToolPlaceholder

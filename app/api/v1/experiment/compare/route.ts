@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
     const humanBuffer = Buffer.from(await humanFile.arrayBuffer());
     const systemBuffer = Buffer.from(await systemFile.arrayBuffer());
 
-    const humanWorkbook = XLSX.read(humanBuffer, { type: 'buffer' });
-    const systemWorkbook = XLSX.read(systemBuffer, { type: 'buffer' });
+    const humanWorkbook = XLSX.read(humanBuffer, { type: 'buffer', cellFormula: true });
+    const systemWorkbook = XLSX.read(systemBuffer, { type: 'buffer', cellFormula: true });
 
     const humanSheet = humanWorkbook.Sheets[humanWorkbook.SheetNames[0]];
     const systemSheet = systemWorkbook.Sheets[systemWorkbook.SheetNames[0]];
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Compare lot codes that exist in BOTH files
-    const columnsToCompare = ['C', 'D', 'F', 'G', 'I', 'J', 'K', 'L'];
+    const columnsToCompare = ['C', 'D', 'F', 'G', 'I', 'J', 'K', 'L', 'M'];
     const columnNames: Record<string, string> = {
       C: 'Owner Last Name',
       D: 'Owner First Name',
@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
       J: 'Principal',
       K: 'Penalty',
       L: 'Old Account',
+      M: 'Total',
     };
 
     for (const [lotCode, humanRow] of humanLots) {
@@ -93,34 +94,106 @@ export async function POST(request: NextRequest) {
       if (!systemRow) continue; // Skip if not in both files
 
       const rowDifferences: any[] = [];
+      const financialFields = ['J', 'K', 'L', 'M']; // Principal, Penalty, Old Account, Total
+      let hasFinancialDifference = false;
+
+      // First pass: check if there are any differences
+      const allComparisons: any[] = [];
 
       for (const col of columnsToCompare) {
         const humanCell = humanSheet[`${col}${humanRow}`];
         const systemCell = systemSheet[`${col}${systemRow}`];
 
-        const humanValue = humanCell?.v;
-        const systemValue = systemCell?.v;
+        // Get the actual value (handles formulas with cached values)
+        let humanValue = humanCell?.v;
+        let systemValue = systemCell?.v;
+
+        // For Total column (M), calculate it from J+K+L if missing
+        if (col === 'M') {
+          // Calculate human total if missing or zero
+          if (humanValue === undefined || humanValue === 0 || humanValue === '') {
+            const principal = humanSheet[`J${humanRow}`]?.v || 0;
+            const penalty = humanSheet[`K${humanRow}`]?.v || 0;
+            const oldAccount = humanSheet[`L${humanRow}`]?.v || 0;
+            const calculated = Number(principal) + Number(penalty) + Number(oldAccount);
+            if (calculated > 0) humanValue = calculated;
+          }
+          // Calculate system total if missing or zero
+          if (systemValue === undefined || systemValue === 0 || systemValue === '') {
+            const principal = systemSheet[`J${systemRow}`]?.v || 0;
+            const penalty = systemSheet[`K${systemRow}`]?.v || 0;
+            const oldAccount = systemSheet[`L${systemRow}`]?.v || 0;
+            const calculated = Number(principal) + Number(penalty) + Number(oldAccount);
+            if (calculated > 0) systemValue = calculated;
+          }
+        }
+
+        // Treat "N" as empty (for area and other fields)
+        if (humanValue === 'N' || humanValue === 'n') humanValue = undefined;
+        if (systemValue === 'N' || systemValue === 'n') systemValue = undefined;
+
+        // Trim strings and treat empty strings as undefined
+        if (typeof humanValue === 'string') {
+          humanValue = humanValue.trim();
+          if (humanValue === '') humanValue = undefined;
+        }
+        if (typeof systemValue === 'string') {
+          systemValue = systemValue.trim();
+          if (systemValue === '') systemValue = undefined;
+        }
 
         // Compare values (handle numbers with tolerance for floating point)
         let isDifferent = false;
-        if (typeof humanValue === 'number' && typeof systemValue === 'number') {
-          // Allow 0.01 difference for floating point comparison
-          isDifferent = Math.abs(humanValue - systemValue) > 0.01;
-        } else {
-          isDifferent = humanValue !== systemValue;
+        
+        // Both empty - they match
+        if (humanValue === undefined && systemValue === undefined) {
+          isDifferent = false;
+        }
+        // One empty, one not - they differ
+        else if (humanValue === undefined || systemValue === undefined) {
+          isDifferent = true;
+        }
+        // Both are numbers - compare with tolerance
+        else if (typeof humanValue === 'number' && typeof systemValue === 'number') {
+          isDifferent = Math.abs(humanValue - systemValue) > 0.02;
+        }
+        // Both are strings - compare directly
+        else {
+          isDifferent = String(humanValue) !== String(systemValue);
         }
 
-        if (isDifferent) {
+        // Track if this is a financial field difference
+        if (isDifferent && financialFields.includes(col)) {
+          hasFinancialDifference = true;
+        }
+
+        allComparisons.push({
+          col,
+          humanValue,
+          systemValue,
+          isDifferent,
+        });
+      }
+
+      // Second pass: add to differences
+      for (const comparison of allComparisons) {
+        const { col, humanValue, systemValue, isDifferent } = comparison;
+        
+        // Always include if different, OR if it's a financial field and there's any financial difference
+        const shouldInclude = isDifferent || (hasFinancialDifference && financialFields.includes(col));
+
+        if (shouldInclude) {
           rowDifferences.push({
             column: col,
             columnName: columnNames[col],
             humanCell: `${col}${humanRow}`,
             systemCell: `${col}${systemRow}`,
-            humanValue: humanValue ?? 'empty',
-            systemValue: systemValue ?? 'empty',
+            humanValue: humanValue === undefined ? 'empty' : humanValue,
+            systemValue: systemValue === undefined ? 'empty' : systemValue,
             difference: typeof humanValue === 'number' && typeof systemValue === 'number'
               ? (systemValue - humanValue).toFixed(2)
               : 'N/A',
+            isDifferent, // Mark whether this specific field differs
           });
         }
       }

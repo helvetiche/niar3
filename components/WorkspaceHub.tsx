@@ -121,6 +121,18 @@ const HUB_TOOLS: HubTool[] = [
       { id: "auto-extract", label: "Auto Extract", icon: SparkleIcon },
     ],
   },
+  {
+    id: "ifr-checker",
+    name: "IFR CHECKER",
+    description:
+      "Validate consolidated files against source IFR data. Identify discrepancies in calculations, missing lots, and data mismatches automatically.",
+    icon: ShieldCheckIcon,
+    tags: [
+      { id: "validate", label: "Validate Data", icon: CheckCircleIcon },
+      { id: "find-errors", label: "Find Errors", icon: WarningCircleIcon },
+      { id: "compare", label: "Compare Files", icon: MagnifyingGlassIcon },
+    ],
+  },
 ];
 
 export function WorkspaceHub() {

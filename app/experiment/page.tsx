@@ -291,7 +291,7 @@ export default function ExperimentPage() {
                       <tbody>
                         {compareResults.details.map((detail: any, idx: number) => (
                           detail.differences.map((diff: any, diffIdx: number) => (
-                            <tr key={`${idx}-${diffIdx}`} className="hover:bg-gray-50">
+                            <tr key={`${idx}-${diffIdx}`} className={diff.isDifferent ? "hover:bg-gray-50" : "bg-gray-100 hover:bg-gray-150"}>
                               {diffIdx === 0 && (
                                 <td 
                                   className="border p-2 font-mono font-semibold" 
@@ -300,7 +300,10 @@ export default function ExperimentPage() {
                                   {detail.lotCode}
                                 </td>
                               )}
-                              <td className="border p-2">{diff.columnName}</td>
+                              <td className="border p-2">
+                                {diff.columnName}
+                                {!diff.isDifferent && <span className="ml-2 text-xs text-gray-500">(match)</span>}
+                              </td>
                               <td className="border p-2 bg-green-50 font-mono">
                                 {typeof diff.humanValue === 'number' 
                                   ? diff.humanValue.toFixed(2) 
@@ -312,12 +315,13 @@ export default function ExperimentPage() {
                                   : diff.systemValue}
                               </td>
                               <td className="border p-2 font-mono">
-                                {diff.difference !== 'N/A' && (
+                                {diff.isDifferent && diff.difference !== 'N/A' && (
                                   <span className={diff.difference > 0 ? 'text-red-600' : 'text-green-600'}>
                                     {diff.difference > 0 ? '+' : ''}{diff.difference}
                                   </span>
                                 )}
-                                {diff.difference === 'N/A' && '-'}
+                                {diff.isDifferent && diff.difference === 'N/A' && '-'}
+                                {!diff.isDifferent && <span className="text-gray-400">✓</span>}
                               </td>
                             </tr>
                           ))
