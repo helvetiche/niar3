@@ -1,19 +1,18 @@
-import fs from "node:fs";
+import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import XlsxPopulate from "xlsx-populate";
 import type { LotGroup } from "@/lib/mastersListProcessor";
+import { EXCEL_SHEETS, EXCEL_CELLS } from "@/constants/excel-sheets";
 
 const TEMPLATE_CANDIDATES = [
   path.join(process.cwd(), "data", "template.xlsx"),
   path.join(process.cwd(), "public", "template.xlsx"),
 ];
 
-const ACC_SHEET = "00 ACC DETAILS 01";
-const SOA_SHEET = "01 SOA 01";
-
 const getTemplatePath = (): string => {
   for (const candidate of TEMPLATE_CANDIDATES) {
-    if (fs.existsSync(candidate)) return candidate;
+    if (existsSync(candidate)) return candidate;
   }
   throw new Error(
     `Template not found. Add template.xlsx in data/ or public/, or upload a template file. Tried: ${TEMPLATE_CANDIDATES.join(", ")}`,
@@ -96,25 +95,25 @@ export const generateProfileBuffer = async (
   const division = options?.division ?? "";
   const nameOfIA = options?.nameOfIA ?? "";
 
-  setCell(workbook, ACC_SHEET, "C3", lotCode);
-  setCell(workbook, ACC_SHEET, "C4", division);
-  workbook.sheet(ACC_SHEET).cell("C4").style("horizontalAlignment", "left");
-  setCell(workbook, ACC_SHEET, "C5", nameOfIA);
-  setCell(workbook, ACC_SHEET, "C7", landOwnerFirst);
-  setCell(workbook, ACC_SHEET, "C9", landOwnerLast);
-  setCell(workbook, ACC_SHEET, "C11", farmerFirst);
-  setCell(workbook, ACC_SHEET, "C13", farmerLast);
+  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.LOT_CODE, lotCode);
+  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.DIVISION, division);
+  workbook.sheet(EXCEL_SHEETS.ACC_DETAILS).cell(EXCEL_CELLS.ACC_DETAILS.DIVISION).style("horizontalAlignment", "left");
+  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.NAME_OF_IA, nameOfIA);
+  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME, landOwnerFirst);
+  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME, landOwnerLast);
+  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME, farmerFirst);
+  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME, farmerLast);
 
   for (let i = 0; i < lotGroup.rows.length; i += 1) {
     const row = lotGroup.rows[i];
     const rowNumber = 30 + i;
 
-    setCell(workbook, ACC_SHEET, `B${String(rowNumber)}`, row.cropSeason);
-    setCell(workbook, ACC_SHEET, `C${String(rowNumber)}`, row.cropYear);
-    setCell(workbook, ACC_SHEET, `D${String(rowNumber)}`, row.plantedArea);
+    setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, `B${String(rowNumber)}`, row.cropSeason);
+    setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, `C${String(rowNumber)}`, row.cropYear);
+    setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, `D${String(rowNumber)}`, row.plantedArea);
   }
 
-  setCell(workbook, SOA_SHEET, "G101", oldAccount);
+  setCell(workbook, EXCEL_SHEETS.SOA, EXCEL_CELLS.SOA.OLD_ACCOUNT, oldAccount);
 
   const output = await workbook.outputAsync();
   const buffer = Buffer.isBuffer(output)

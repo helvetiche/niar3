@@ -1,7 +1,11 @@
 import * as XLSX from "xlsx";
 
+export type CellValue = string | number | boolean | Date | null | undefined;
+export type SheetRow = CellValue[];
+export type SheetData = SheetRow[];
+
 export interface ParsedSheet {
-  data: unknown[][];
+  data: SheetData;
   name: string;
   worksheet: XLSX.WorkSheet;
 }
@@ -21,10 +25,10 @@ export const parseExcelFile = (buffer: Buffer): ParsedSheet[] => {
       header: 1,
       raw: true,
       defval: "",
-    });
+    }) as SheetData;
 
     return {
-      data: data as unknown[][],
+      data,
       name: sheetName,
       worksheet,
     };

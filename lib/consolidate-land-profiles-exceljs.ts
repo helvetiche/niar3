@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import { logger } from "@/lib/logger";
+import { EXCEL_SHEETS, EXCEL_CELLS } from "@/constants/excel-sheets";
 import { logger } from "@/lib/logger";
 
 export interface LandProfileData {
@@ -36,16 +37,16 @@ export async function extractLandProfileData(
 
     logger.debug(`Row number: ${rowNumber}`);
 
-    const accDetailsSheet = workbook.getWorksheet("00 ACC DETAILS 01");
+    const accDetailsSheet = workbook.getWorksheet(EXCEL_SHEETS.ACC_DETAILS);
     if (!accDetailsSheet) {
-      logger.error(`Sheet "00 ACC DETAILS 01" not found in ${fileName}`);
-      throw new Error(`Sheet "00 ACC DETAILS 01" not found`);
+      logger.error(`Sheet "${EXCEL_SHEETS.ACC_DETAILS}" not found in ${fileName}`);
+      throw new Error(`Sheet "${EXCEL_SHEETS.ACC_DETAILS}" not found`);
     }
 
-    const soaSheet = workbook.getWorksheet("01 SOA 01");
+    const soaSheet = workbook.getWorksheet(EXCEL_SHEETS.SOA);
     if (!soaSheet) {
-      logger.error(`Sheet "01 SOA 01" not found in ${fileName}`);
-      throw new Error(`Sheet "01 SOA 01" not found`);
+      logger.error(`Sheet "${EXCEL_SHEETS.SOA}" not found in ${fileName}`);
+      throw new Error(`Sheet "${EXCEL_SHEETS.SOA}" not found`);
     }
 
     const getCellValue = (sheet: ExcelJS.Worksheet, addr: string): string => {
@@ -64,19 +65,19 @@ export async function extractLandProfileData(
     };
 
     // Extract from exact cell addresses
-    const area = getCellValue(soaSheet, "G13");
-    const principal = getCellValue(soaSheet, "D100");
-    const penalty = getCellValue(soaSheet, "F100");
+    const area = getCellValue(soaSheet, EXCEL_CELLS.ACC_DETAILS.AREA);
+    const principal = getCellValue(soaSheet, EXCEL_CELLS.SOA.PRINCIPAL);
+    const penalty = getCellValue(soaSheet, EXCEL_CELLS.SOA.PENALTY);
 
-    logger.debug(`Area (G13): ${area}, Principal (D100): ${principal}, Penalty (F100): ${penalty}`);
+    logger.debug(`Area: ${area}, Principal: ${principal}, Penalty: ${penalty}`);
 
     const data: LandProfileData = {
-      lotNo: getCellValue(accDetailsSheet, "C3"),
-      ownerFirstName: getCellValue(accDetailsSheet, "C7"),
-      ownerLastName: getCellValue(accDetailsSheet, "C9"),
-      tillerFirstName: getCellValue(accDetailsSheet, "C11"),
-      tillerLastName: getCellValue(accDetailsSheet, "C13"),
-      oldAccount: getCellValue(soaSheet, "G101"),
+      lotNo: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE),
+      ownerFirstName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME),
+      ownerLastName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME),
+      tillerFirstName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME),
+      tillerLastName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME),
+      oldAccount: getCellValue(soaSheet, EXCEL_CELLS.SOA.OLD_ACCOUNT),
       area,
       principal,
       penalty,

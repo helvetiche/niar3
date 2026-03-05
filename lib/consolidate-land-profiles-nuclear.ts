@@ -1,5 +1,6 @@
 import XlsxPopulate from "xlsx-populate";
 import { logger } from "@/lib/logger";
+import { EXCEL_SHEETS, EXCEL_CELLS } from "@/constants/excel-sheets";
 
 export interface NuclearLandProfileData {
   lotNo: string;
@@ -29,14 +30,14 @@ export async function extractNuclearData(
       throw new Error(`Cannot extract row number from filename: ${fileName}`);
     }
 
-    const accDetailsSheet = workbook.sheet("00 ACC DETAILS 01");
+    const accDetailsSheet = workbook.sheet(EXCEL_SHEETS.ACC_DETAILS);
     if (!accDetailsSheet) {
-      throw new Error(`Sheet "00 ACC DETAILS 01" not found`);
+      throw new Error(`Sheet "${EXCEL_SHEETS.ACC_DETAILS}" not found`);
     }
 
-    const soaSheet = workbook.sheet("01 SOA 01");
+    const soaSheet = workbook.sheet(EXCEL_SHEETS.SOA);
     if (!soaSheet) {
-      throw new Error(`Sheet "01 SOA 01" not found`);
+      throw new Error(`Sheet "${EXCEL_SHEETS.SOA}" not found`);
     }
 
     const getValue = (sheet: XlsxPopulate.Sheet, addr: string): string => {
@@ -66,15 +67,15 @@ export async function extractNuclearData(
     };
 
     return {
-      lotNo: getValue(accDetailsSheet, "C3"),
-      ownerFirstName: getValue(accDetailsSheet, "C7"),
-      ownerLastName: getValue(accDetailsSheet, "C9"),
-      tillerFirstName: getValue(accDetailsSheet, "C11"),
-      tillerLastName: getValue(accDetailsSheet, "C13"),
+      lotNo: getValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE),
+      ownerFirstName: getValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME),
+      ownerLastName: getValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME),
+      tillerFirstName: getValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME),
+      tillerLastName: getValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME),
       // Financial data from cached formulas in SOA sheet
-      principal: getNumericValue(soaSheet, "D100"),
-      penalty: getNumericValue(soaSheet, "F100"),
-      oldAccount: getNumericValue(soaSheet, "G101"),
+      principal: getNumericValue(soaSheet, EXCEL_CELLS.SOA.PRINCIPAL),
+      penalty: getNumericValue(soaSheet, EXCEL_CELLS.SOA.PENALTY),
+      oldAccount: getNumericValue(soaSheet, EXCEL_CELLS.SOA.OLD_ACCOUNT),
       rowNumber,
       fileName,
     };
