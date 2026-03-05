@@ -1,7 +1,6 @@
 import ExcelJS from "exceljs";
 import { logger } from "@/lib/logger";
 import { EXCEL_SHEETS, EXCEL_CELLS } from "@/constants/excel-sheets";
-import { logger } from "@/lib/logger";
 
 export interface LandProfileData {
   lotNo: string;
