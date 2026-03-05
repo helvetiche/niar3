@@ -144,9 +144,7 @@ const getCellValueByAddress = (
   return getCellValue(data, rowIndex, colIndex, true);
 };
 
-export const extractSOADetails = (
-  sheet: ParsedSheet,
-): SOADetail[] => {
+export const extractSOADetails = (sheet: ParsedSheet): SOADetail[] => {
   const details: SOADetail[] = [];
   const soaStart = findRowByText(sheet.data, "STATEMENT OF ACCOUNT");
   if (soaStart === -1) return details;

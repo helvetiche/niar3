@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import * as XLSX from 'xlsx';
-import { lookupIrrigationRate } from '@/lib/irrigation-rate-table';
+import { NextRequest, NextResponse } from "next/server";
+import * as XLSX from "xlsx";
+import { lookupIrrigationRate } from "@/lib/irrigation-rate-table";
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get("file") as File;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const workbook = XLSX.read(buffer, { 
-      type: 'buffer',
+    const workbook = XLSX.read(buffer, {
+      type: "buffer",
       cellFormula: true,
       cellStyles: true,
     });
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     } = {
       fileName: file.name,
       sheets: workbook.SheetNames,
-      sheetUsed: '',
+      sheetUsed: "",
       lotSummaries: [],
       debug: {
         sampleRows: [],
@@ -48,34 +48,35 @@ export async function POST(request: NextRequest) {
     };
 
     // Look for registry sheet - use first sheet if specific name not found
-    let registrySheet = workbook.Sheets['03 REGISTRY'] || workbook.Sheets['REGISTRY'];
-    
+    let registrySheet =
+      workbook.Sheets["03 REGISTRY"] || workbook.Sheets["REGISTRY"];
+
     if (!registrySheet) {
       // Use the first sheet
       const firstSheetName = workbook.SheetNames[0];
       registrySheet = workbook.Sheets[firstSheetName];
       results.sheetUsed = firstSheetName;
     } else {
-      results.sheetUsed = '03 REGISTRY or REGISTRY';
+      results.sheetUsed = "03 REGISTRY or REGISTRY";
     }
-    
+
     if (!registrySheet) {
       return NextResponse.json({
-        error: 'No valid sheet found',
+        error: "No valid sheet found",
         availableSheets: workbook.SheetNames,
       });
     }
 
     // Column mapping based on mastersListProcessor.ts and IFR structure
-    const COL_LOT_CODE = 'C';     // Column C: Lot Code
-    const COL_CROP_SEASON = 'D';  // Column D: Crop Season
-    const COL_CROP_YEAR = 'E';    // Column E: Crop Year
-    const COL_PLANTED_AREA = 'H'; // Column H: Planted Area
-    const COL_OLD_ACCOUNT = 'Q';  // Column Q: Old Account
+    const COL_LOT_CODE = "C"; // Column C: Lot Code
+    const COL_CROP_SEASON = "D"; // Column D: Crop Season
+    const COL_CROP_YEAR = "E"; // Column E: Crop Year
+    const COL_PLANTED_AREA = "H"; // Column H: Planted Area
+    const COL_OLD_ACCOUNT = "Q"; // Column Q: Old Account
 
     // Parse rows starting from row 2 (assuming row 1 is header)
-    const range = XLSX.utils.decode_range(registrySheet['!ref'] || 'A1');
-    
+    const range = XLSX.utils.decode_range(registrySheet["!ref"] || "A1");
+
     // First, show sample of first 3 rows for debugging
     for (let row = 2; row <= Math.min(4, range.e.r); row++) {
       results.debug.sampleRows.push({
@@ -87,21 +88,24 @@ export async function POST(request: NextRequest) {
         Q: registrySheet[`Q${row}`]?.v,
       });
     }
-    
+
     // Group by lot code
-    const lotGroups = new Map<string, {
-      lotCode: string;
-      rows: any[];
-      totalPrincipal: number;
-      totalPenalty: number;
-      oldAccount: number;
-      grandTotal: number;
-      duplicatesRemoved: number;
-    }>();
-    
+    const lotGroups = new Map<
+      string,
+      {
+        lotCode: string;
+        rows: Array<Record<string, unknown>>;
+        totalPrincipal: number;
+        totalPenalty: number;
+        oldAccount: number;
+        grandTotal: number;
+        duplicatesRemoved: number;
+      }
+    >();
+
     // Track seen crop seasons per lot to detect duplicates
     const seenCropSeasons = new Map<string, Set<string>>();
-    
+
     for (let row = 2; row <= range.e.r; row++) {
       const lotCode = registrySheet[`${COL_LOT_CODE}${row}`]?.v;
       const cropSeason = registrySheet[`${COL_CROP_SEASON}${row}`]?.v;
@@ -119,15 +123,16 @@ export async function POST(request: NextRequest) {
           lotCode: String(lotCode),
           cropSeason,
           cropYear,
-          note: 'Skipped - prior to July 1, 1975 (old account period)',
+          note: "Skipped - prior to July 1, 1975 (old account period)",
         });
         continue;
       }
 
       // Build crop season code
       // For years 2000+, use full year; for years before 2000, use 2-digit
-      const yearCode = yearNum >= 2000 ? String(yearNum) : String(yearNum).slice(-2);
-      const seasonCode = String(cropSeason).toUpperCase() === 'DRY' ? 'D' : 'W';
+      const yearCode =
+        yearNum >= 2000 ? String(yearNum) : String(yearNum).slice(-2);
+      const seasonCode = String(cropSeason).toUpperCase() === "DRY" ? "D" : "W";
       const cropSeasonCode = `${yearCode}-${seasonCode}`;
 
       // Lookup rate and penalty
@@ -140,7 +145,7 @@ export async function POST(request: NextRequest) {
           cropSeason,
           cropYear,
           cropSeasonCode,
-          error: 'Crop season not found in lookup table',
+          error: "Crop season not found in lookup table",
         });
         continue;
       }
@@ -169,20 +174,20 @@ export async function POST(request: NextRequest) {
 
       // Group by lot code
       const lotKey = String(lotCode);
-      
+
       // Check for duplicates: same lot code + same crop season code
       if (!seenCropSeasons.has(lotKey)) {
         seenCropSeasons.set(lotKey, new Set());
       }
-      
+
       const seasonSet = seenCropSeasons.get(lotKey)!;
       if (seasonSet.has(cropSeasonCode)) {
         // Duplicate found - skip this row
         results.debug.allCalculations.push({
           ...calcDetail,
-          warning: 'Duplicate crop season - skipped',
+          warning: "Duplicate crop season - skipped",
         });
-        
+
         if (!lotGroups.has(lotKey)) {
           lotGroups.set(lotKey, {
             lotCode: lotKey,
@@ -197,10 +202,10 @@ export async function POST(request: NextRequest) {
         lotGroups.get(lotKey)!.duplicatesRemoved++;
         continue;
       }
-      
+
       // Mark this season as seen
       seasonSet.add(cropSeasonCode);
-      
+
       if (!lotGroups.has(lotKey)) {
         lotGroups.set(lotKey, {
           lotCode: lotKey,
@@ -223,8 +228,12 @@ export async function POST(request: NextRequest) {
     for (const group of lotGroups.values()) {
       group.totalPrincipal = parseFloat(group.totalPrincipal.toFixed(2));
       group.totalPenalty = parseFloat(group.totalPenalty.toFixed(2));
-      group.grandTotal = parseFloat((group.totalPrincipal + group.totalPenalty + group.oldAccount).toFixed(2));
-      
+      group.grandTotal = parseFloat(
+        (group.totalPrincipal + group.totalPenalty + group.oldAccount).toFixed(
+          2,
+        ),
+      );
+
       results.lotSummaries.push({
         lotCode: group.lotCode,
         numberOfSeasons: group.rows.length,
@@ -239,10 +248,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(results);
   } catch (error) {
-    console.error('Experiment error:', error);
-    return NextResponse.json(
-      { error: String(error) },
-      { status: 500 }
-    );
+    console.error("Experiment error:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }

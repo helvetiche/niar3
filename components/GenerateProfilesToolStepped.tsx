@@ -14,11 +14,7 @@ import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { generateBillingUnitsZip } from "@/lib/api/billing-units";
 import { TemplateManagerInline } from "@/components/TemplateManagerInline";
 import { useTemplates } from "@/hooks/useTemplates";
-import {
-  getBaseName,
-  getFileKey,
-  sanitizeFolderName,
-} from "@/lib/file-utils";
+import { getBaseName, getFileKey, sanitizeFolderName } from "@/lib/file-utils";
 import { downloadBlob, getErrorMessage } from "@/lib/utils";
 import { ERROR_MESSAGES } from "@/constants/error-messages";
 import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";

@@ -1,6 +1,6 @@
-import * as XLSX from 'xlsx';
-import XlsxPopulate from 'xlsx-populate';
-import { lookupIrrigationRate } from './irrigation-rate-table';
+import * as XLSX from "xlsx";
+import XlsxPopulate from "xlsx-populate";
+import { lookupIrrigationRate } from "./irrigation-rate-table";
 
 /**
  * Round a number to specified decimal places using "round half up" method
@@ -33,12 +33,12 @@ export interface IFRLotData {
  */
 export async function extractIFRData(
   fileBuffer: Buffer,
-  fileName: string
+  fileName: string,
 ): Promise<IFRLotData[]> {
   try {
     // Read with XLSX for data extraction
     const workbook = XLSX.read(fileBuffer, {
-      type: 'buffer',
+      type: "buffer",
       cellFormula: true,
     });
 
@@ -50,44 +50,49 @@ export async function extractIFRData(
     }
 
     // Column mapping
-    const COL_LOT_CODE = 'C';
-    const COL_CROP_SEASON = 'D';
-    const COL_CROP_YEAR = 'E';
-    const COL_PLANTED_AREA = 'H';
-    const COL_OWNER_LAST = 'M';
-    const COL_OWNER_FIRST = 'N';
-    const COL_TILLER_LAST = 'O';
-    const COL_TILLER_FIRST = 'P';
-    const COL_OLD_ACCOUNT = 'Q';
+    const COL_LOT_CODE = "C";
+    const COL_CROP_SEASON = "D";
+    const COL_CROP_YEAR = "E";
+    const COL_PLANTED_AREA = "H";
+    const COL_OWNER_LAST = "M";
+    const COL_OWNER_FIRST = "N";
+    const COL_TILLER_LAST = "O";
+    const COL_TILLER_FIRST = "P";
+    const COL_OLD_ACCOUNT = "Q";
 
-    const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
+    const range = XLSX.utils.decode_range(sheet["!ref"] || "A1");
 
     // Group data by lot code
-    const lotGroups = new Map<string, {
-      lotCode: string;
-      ownerLastName: string;
-      ownerFirstName: string;
-      tillerLastName: string;
-      tillerFirstName: string;
-      oldAccount: number;
-      latestArea: number;
-      latestYear: number;
-      totalPrincipal: number;
-      totalPenalty: number;
-      numberOfSeasons: number;
-      seenSeasons: Set<string>;
-    }>();
+    const lotGroups = new Map<
+      string,
+      {
+        lotCode: string;
+        ownerLastName: string;
+        ownerFirstName: string;
+        tillerLastName: string;
+        tillerFirstName: string;
+        oldAccount: number;
+        latestArea: number;
+        latestYear: number;
+        totalPrincipal: number;
+        totalPenalty: number;
+        numberOfSeasons: number;
+        seenSeasons: Set<string>;
+      }
+    >();
 
     for (let row = 2; row <= range.e.r; row++) {
       const lotCode = sheet[`${COL_LOT_CODE}${row}`]?.v;
       const cropSeason = sheet[`${COL_CROP_SEASON}${row}`]?.v;
       const cropYear = sheet[`${COL_CROP_YEAR}${row}`]?.v;
       const area = sheet[`${COL_PLANTED_AREA}${row}`]?.v;
-      const ownerLastName = sheet[`${COL_OWNER_LAST}${row}`]?.v || '';
-      const ownerFirstName = sheet[`${COL_OWNER_FIRST}${row}`]?.v || '';
-      const tillerLastName = sheet[`${COL_TILLER_LAST}${row}`]?.v || '';
-      const tillerFirstName = sheet[`${COL_TILLER_FIRST}${row}`]?.v || '';
-      const oldAccountValue = parseFloat(String(sheet[`${COL_OLD_ACCOUNT}${row}`]?.v || 0));
+      const ownerLastName = sheet[`${COL_OWNER_LAST}${row}`]?.v || "";
+      const ownerFirstName = sheet[`${COL_OWNER_FIRST}${row}`]?.v || "";
+      const tillerLastName = sheet[`${COL_TILLER_LAST}${row}`]?.v || "";
+      const tillerFirstName = sheet[`${COL_TILLER_FIRST}${row}`]?.v || "";
+      const oldAccountValue = parseFloat(
+        String(sheet[`${COL_OLD_ACCOUNT}${row}`]?.v || 0),
+      );
 
       if (!lotCode) continue;
 
@@ -111,7 +116,7 @@ export async function extractIFRData(
         });
       }
 
-      const group = lotGroups.get(lotKey)!;;
+      const group = lotGroups.get(lotKey)!;
 
       // Update latest area (use the most recent year's area)
       if (cropYear && area) {
@@ -128,11 +133,13 @@ export async function extractIFRData(
       // Skip years before 1975, and skip 75-D (before July 1, 1975)
       const yearNum = parseInt(String(cropYear));
       if (yearNum < 1975) continue;
-      if (yearNum === 1975 && String(cropSeason).toUpperCase() === 'DRY') continue;
+      if (yearNum === 1975 && String(cropSeason).toUpperCase() === "DRY")
+        continue;
 
       // Build crop season code
-      const yearCode = yearNum >= 2000 ? String(yearNum) : String(yearNum).slice(-2);
-      const seasonCode = String(cropSeason).toUpperCase() === 'DRY' ? 'D' : 'W';
+      const yearCode =
+        yearNum >= 2000 ? String(yearNum) : String(yearNum).slice(-2);
+      const seasonCode = String(cropSeason).toUpperCase() === "DRY" ? "D" : "W";
       const cropSeasonCode = `${yearCode}-${seasonCode}`;
 
       // Skip duplicates
@@ -190,8 +197,13 @@ export async function extractIFRData(
  */
 export async function consolidateIFR(
   templateBuffer: Buffer,
-  ifrFiles: { buffer: Buffer; fileName: string }[]
-): Promise<{ buffer: Buffer; processedCount: number; errors: string[]; warnings: string[] }> {
+  ifrFiles: { buffer: Buffer; fileName: string }[],
+): Promise<{
+  buffer: Buffer;
+  processedCount: number;
+  errors: string[];
+  warnings: string[];
+}> {
   const errors: string[] = [];
   const warnings: string[] = [];
   let processedCount = 0;
@@ -228,17 +240,22 @@ export async function consolidateIFR(
           processedCount++;
         }
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
         errors.push(`Error processing ${file.fileName}: ${errorMsg}`);
       }
     }
 
     if (processedCount > 0) {
-      warnings.push(`Successfully consolidated ${processedCount} IFR files with calculated Principal and Penalty values.`);
+      warnings.push(
+        `Successfully consolidated ${processedCount} IFR files with calculated Principal and Penalty values.`,
+      );
     }
 
     const output = await workbook.outputAsync();
-    const buffer = Buffer.isBuffer(output) ? output : Buffer.from(output as ArrayBuffer);
+    const buffer = Buffer.isBuffer(output)
+      ? output
+      : Buffer.from(output as ArrayBuffer);
 
     return { buffer, processedCount, errors, warnings };
   } catch (error) {

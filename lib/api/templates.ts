@@ -67,14 +67,14 @@ export async function uploadTemplate(
     );
   }
 
-  const newTemplate = await response.json() as StoredTemplate;
-  
+  const newTemplate = (await response.json()) as StoredTemplate;
+
   // Update cache with new template instead of invalidating
   const cached = getCachedTemplates(scope);
   if (cached) {
     setCachedTemplates(scope, [newTemplate, ...cached]);
   }
-  
+
   return newTemplate;
 }
 
@@ -121,14 +121,16 @@ export async function updateTemplate(
     );
   }
 
-  const updatedTemplate = await response.json() as StoredTemplate;
-  
+  const updatedTemplate = (await response.json()) as StoredTemplate;
+
   // Update cache with updated template
   const cached = getCachedTemplates(updatedTemplate.scope);
   if (cached) {
-    const updatedCache = cached.map(t => t.id === templateId ? updatedTemplate : t);
+    const updatedCache = cached.map((t) =>
+      t.id === templateId ? updatedTemplate : t,
+    );
     setCachedTemplates(updatedTemplate.scope, updatedCache);
   }
-  
+
   return updatedTemplate;
 }

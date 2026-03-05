@@ -1,11 +1,7 @@
 "use client";
 
 import { FileXlsIcon } from "@phosphor-icons/react";
-import {
-  getFileKey,
-  getBaseName,
-  sanitizeFolderName,
-} from "@/lib/file-utils";
+import { getFileKey, getBaseName, sanitizeFolderName } from "@/lib/file-utils";
 
 type SourceFileMappingProps = {
   files: File[];

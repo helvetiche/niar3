@@ -49,9 +49,12 @@ export function TemplateManagerInline({
     try {
       const items = await listTemplates(scope);
       setTemplates(items);
-      
+
       // Validate current selection
-      if (selectedTemplateId && !items.some((t) => t.id === selectedTemplateId)) {
+      if (
+        selectedTemplateId &&
+        !items.some((t) => t.id === selectedTemplateId)
+      ) {
         onSelectedTemplateIdChange("");
         window.localStorage.removeItem(getTemplateStorageKey(scope));
         return;
@@ -80,7 +83,6 @@ export function TemplateManagerInline({
   // Only refresh on mount and when scope changes
   useEffect(() => {
     void refreshTemplates();
-     
   }, [scope]);
 
   useEffect(() => {

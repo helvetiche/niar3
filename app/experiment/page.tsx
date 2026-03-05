@@ -1,19 +1,41 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { IRRIGATION_RATE_TABLE, lookupIrrigationRate } from '@/lib/irrigation-rate-table';
+import { useState } from "react";
+import {
+  IRRIGATION_RATE_TABLE,
+  lookupIrrigationRate,
+} from "@/lib/irrigation-rate-table";
 
 export default function ExperimentPage() {
   const [file, setFile] = useState<File | null>(null);
   const [results, setResults] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
-  const [searchSeason, setSearchSeason] = useState('2012-D');
-  
+  const [searchSeason, setSearchSeason] = useState("2012-D");
+
   // Comparison mode
   const [compareMode, setCompareMode] = useState(false);
   const [humanFile, setHumanFile] = useState<File | null>(null);
   const [systemFile, setSystemFile] = useState<File | null>(null);
-  const [compareResults, setCompareResults] = useState<Record<string, unknown> | null>(null);
+  const [compareResults, setCompareResults] = useState<{
+    summary?: {
+      matchingLots: number;
+      differentLots: number;
+      onlyInHumanCount: number;
+      onlyInSystemCount: number;
+    };
+    details?: Array<{
+      lotCode: string;
+      differences: Array<{
+        columnName: string;
+        isDifferent: boolean;
+        humanValue: string | number;
+        systemValue: string | number;
+        difference: string | number;
+      }>;
+    }>;
+    onlyInHuman?: string[];
+    onlyInSystem?: string[];
+  } | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,13 +64,13 @@ export default function ExperimentPage() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      
-      const res = await fetch('/api/v1/experiment', {
-        method: 'POST',
+      formData.append("file", file);
+
+      const res = await fetch("/api/v1/experiment", {
+        method: "POST",
         body: formData,
       });
-      
+
       const data = await res.json();
       setResults(data);
     } catch (error) {
@@ -63,14 +85,14 @@ export default function ExperimentPage() {
     setCompareLoading(true);
     try {
       const formData = new FormData();
-      formData.append('humanFile', humanFile);
-      formData.append('systemFile', systemFile);
-      
-      const res = await fetch('/api/v1/experiment/compare', {
-        method: 'POST',
+      formData.append("humanFile", humanFile);
+      formData.append("systemFile", systemFile);
+
+      const res = await fetch("/api/v1/experiment/compare", {
+        method: "POST",
         body: formData,
       });
-      
+
       const data = await res.json();
       setCompareResults(data);
     } catch (error) {
@@ -85,17 +107,17 @@ export default function ExperimentPage() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">IFR Calculation Experiment</h1>
-      
+
       <div className="mb-6 flex gap-4">
         <button
           onClick={() => setCompareMode(false)}
-          className={`px-4 py-2 rounded ${!compareMode ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          className={`px-4 py-2 rounded ${!compareMode ? "bg-blue-600 text-white" : "bg-gray-200"}`}
         >
           IFR Calculator
         </button>
         <button
           onClick={() => setCompareMode(true)}
-          className={`px-4 py-2 rounded ${compareMode ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          className={`px-4 py-2 rounded ${compareMode ? "bg-blue-600 text-white" : "bg-gray-200"}`}
         >
           File Comparison
         </button>
@@ -106,12 +128,15 @@ export default function ExperimentPage() {
           <div className="mb-6 p-4 bg-blue-50 rounded">
             <h2 className="font-semibold mb-2">Irrigation Rate Lookup Table</h2>
             <p className="text-sm mb-3">
-              Total entries: {IRRIGATION_RATE_TABLE.length} crop seasons (1975-2016)
+              Total entries: {IRRIGATION_RATE_TABLE.length} crop seasons
+              (1975-2016)
             </p>
-            
+
             <div className="flex gap-2 items-end">
               <div>
-                <label className="block text-sm font-medium mb-1">Search Crop Season:</label>
+                <label className="block text-sm font-medium mb-1">
+                  Search Crop Season:
+                </label>
                 <input
                   type="text"
                   value={searchSeason}
@@ -122,14 +147,12 @@ export default function ExperimentPage() {
               </div>
               {searchResult && (
                 <div className="p-2 bg-green-100 rounded text-sm">
-                  <strong>Rate:</strong> ₱{searchResult.rate.toFixed(2)} | 
+                  <strong>Rate:</strong> ₱{searchResult.rate.toFixed(2)} |
                   <strong> Penalty Months:</strong> {searchResult.penaltyMonths}
                 </div>
               )}
               {!searchResult && searchSeason && (
-                <div className="p-2 bg-red-100 rounded text-sm">
-                  Not found
-                </div>
+                <div className="p-2 bg-red-100 rounded text-sm">Not found</div>
               )}
             </div>
           </div>
@@ -181,9 +204,7 @@ export default function ExperimentPage() {
           )}
 
           {loading && (
-            <div className="p-4 bg-gray-100 rounded">
-              Processing...
-            </div>
+            <div className="p-4 bg-gray-100 rounded">Processing...</div>
           )}
 
           {results && (
@@ -200,7 +221,8 @@ export default function ExperimentPage() {
           <div className="mb-6 p-4 bg-yellow-50 rounded">
             <h2 className="font-semibold mb-2">File Comparison Tool</h2>
             <p className="text-sm">
-              Compare human-consolidated file with system-consolidated file to identify differences.
+              Compare human-consolidated file with system-consolidated file to
+              identify differences.
             </p>
           </div>
 
@@ -216,7 +238,9 @@ export default function ExperimentPage() {
                 className="block w-full text-sm border rounded p-2"
               />
               {humanFile && (
-                <p className="mt-1 text-sm text-green-600">✓ {humanFile.name}</p>
+                <p className="mt-1 text-sm text-green-600">
+                  ✓ {humanFile.name}
+                </p>
               )}
             </div>
 
@@ -231,7 +255,9 @@ export default function ExperimentPage() {
                 className="block w-full text-sm border rounded p-2"
               />
               {systemFile && (
-                <p className="mt-1 text-sm text-green-600">✓ {systemFile.name}</p>
+                <p className="mt-1 text-sm text-green-600">
+                  ✓ {systemFile.name}
+                </p>
               )}
             </div>
           </div>
@@ -249,26 +275,42 @@ export default function ExperimentPage() {
           )}
 
           {compareLoading && (
-            <div className="p-4 bg-gray-100 rounded">
-              Comparing files...
-            </div>
+            <div className="p-4 bg-gray-100 rounded">Comparing files...</div>
           )}
 
           {compareResults && (
             <div className="mt-6">
-              <h2 className="text-xl font-semibold mb-3">Comparison Results:</h2>
-              
+              <h2 className="text-xl font-semibold mb-3">
+                Comparison Results:
+              </h2>
+
               {compareResults.summary && (
                 <div className="mb-4 p-4 bg-blue-50 rounded">
                   <h3 className="font-semibold mb-2">Summary:</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p>✅ Matching Lots: <strong>{compareResults.summary.matchingLots}</strong></p>
-                      <p>❌ Different Lots: <strong>{compareResults.summary.differentLots}</strong></p>
+                      <p>
+                        ✅ Matching Lots:{" "}
+                        <strong>{compareResults.summary.matchingLots}</strong>
+                      </p>
+                      <p>
+                        ❌ Different Lots:{" "}
+                        <strong>{compareResults.summary.differentLots}</strong>
+                      </p>
                     </div>
                     <div>
-                      <p>📄 Only in Human: <strong>{compareResults.summary.onlyInHumanCount}</strong></p>
-                      <p>🤖 Only in System: <strong>{compareResults.summary.onlyInSystemCount}</strong></p>
+                      <p>
+                        📄 Only in Human:{" "}
+                        <strong>
+                          {compareResults.summary.onlyInHumanCount}
+                        </strong>
+                      </p>
+                      <p>
+                        🤖 Only in System:{" "}
+                        <strong>
+                          {compareResults.summary.onlyInSystemCount}
+                        </strong>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -276,25 +318,49 @@ export default function ExperimentPage() {
 
               {compareResults.details && compareResults.details.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="font-semibold mb-2">Differences by Lot Code:</h3>
+                  <h3 className="font-semibold mb-2">
+                    Differences by Lot Code:
+                  </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm border-collapse border">
                       <thead>
                         <tr className="bg-gray-200">
                           <th className="border p-2">Lot Code</th>
                           <th className="border p-2">Field</th>
-                          <th className="border p-2 bg-green-100">Human Value</th>
-                          <th className="border p-2 bg-blue-100">System Value</th>
+                          <th className="border p-2 bg-green-100">
+                            Human Value
+                          </th>
+                          <th className="border p-2 bg-blue-100">
+                            System Value
+                          </th>
                           <th className="border p-2">Difference</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {compareResults.details.map((detail: any, idx: number) => (
-                          detail.differences.map((diff: any, diffIdx: number) => (
-                            <tr key={`${idx}-${diffIdx}`} className={diff.isDifferent ? "hover:bg-gray-50" : "bg-gray-100 hover:bg-gray-150"}>
+                        {(
+                          compareResults.details as Array<{
+                            lotCode: string;
+                            differences: Array<{
+                              columnName: string;
+                              isDifferent: boolean;
+                              humanValue: string | number;
+                              systemValue: string | number;
+                              difference: string;
+                            }>;
+                          }>
+                        ).map((detail, idx: number) =>
+                          detail.differences.map((diff, diffIdx: number) => (
+                            <tr
+                              key={`${idx}-${diffIdx}`}
+                              className={
+                                diff.isDifferent
+                                  ? "hover:bg-gray-50"
+                                  : "bg-gray-100 hover:bg-gray-150"
+                              }
+                            >
                               {diffIdx === 0 && (
-                                <td 
-                                  className="border p-2 font-mono font-semibold" 
+                                <td
+                                  className="border p-2 font-mono font-semibold"
                                   rowSpan={detail.differences.length}
                                 >
                                   {detail.lotCode}
@@ -302,61 +368,100 @@ export default function ExperimentPage() {
                               )}
                               <td className="border p-2">
                                 {diff.columnName}
-                                {!diff.isDifferent && <span className="ml-2 text-xs text-gray-500">(match)</span>}
+                                {!diff.isDifferent && (
+                                  <span className="ml-2 text-xs text-gray-500">
+                                    (match)
+                                  </span>
+                                )}
                               </td>
                               <td className="border p-2 bg-green-50 font-mono">
-                                {typeof diff.humanValue === 'number' 
-                                  ? diff.humanValue.toFixed(2) 
+                                {typeof diff.humanValue === "number"
+                                  ? diff.humanValue.toFixed(2)
                                   : diff.humanValue}
                               </td>
                               <td className="border p-2 bg-blue-50 font-mono">
-                                {typeof diff.systemValue === 'number' 
-                                  ? diff.systemValue.toFixed(2) 
+                                {typeof diff.systemValue === "number"
+                                  ? diff.systemValue.toFixed(2)
                                   : diff.systemValue}
                               </td>
                               <td className="border p-2 font-mono">
-                                {diff.isDifferent && diff.difference !== 'N/A' && (
-                                  <span className={diff.difference > 0 ? 'text-red-600' : 'text-green-600'}>
-                                    {diff.difference > 0 ? '+' : ''}{diff.difference}
-                                  </span>
+                                {diff.isDifferent &&
+                                  diff.difference !== "N/A" && (
+                                    <span
+                                      className={
+                                        typeof diff.difference === "number" &&
+                                        diff.difference > 0
+                                          ? "text-red-600"
+                                          : "text-green-600"
+                                      }
+                                    >
+                                      {typeof diff.difference === "number" &&
+                                      diff.difference > 0
+                                        ? "+"
+                                        : ""}
+                                      {typeof diff.difference === "number"
+                                        ? diff.difference.toFixed(2)
+                                        : diff.difference}
+                                    </span>
+                                  )}
+                                {diff.isDifferent &&
+                                  diff.difference === "N/A" &&
+                                  "-"}
+                                {!diff.isDifferent && (
+                                  <span className="text-gray-400">✓</span>
                                 )}
-                                {diff.isDifferent && diff.difference === 'N/A' && '-'}
-                                {!diff.isDifferent && <span className="text-gray-400">✓</span>}
                               </td>
                             </tr>
-                          ))
-                        ))}
+                          )),
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </div>
               )}
 
-              {compareResults.onlyInHuman && compareResults.onlyInHuman.length > 0 && (
-                <div className="mb-4 p-4 bg-yellow-50 rounded">
-                  <h3 className="font-semibold mb-2">Only in Human File ({compareResults.onlyInHuman.length}):</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {compareResults.onlyInHuman.map((lotCode: string, idx: number) => (
-                      <span key={idx} className="px-3 py-1 bg-yellow-200 rounded text-sm font-mono">
-                        {lotCode}
-                      </span>
-                    ))}
+              {compareResults.onlyInHuman &&
+                compareResults.onlyInHuman.length > 0 && (
+                  <div className="mb-4 p-4 bg-yellow-50 rounded">
+                    <h3 className="font-semibold mb-2">
+                      Only in Human File ({compareResults.onlyInHuman.length}):
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {compareResults.onlyInHuman.map(
+                        (lotCode: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="px-3 py-1 bg-yellow-200 rounded text-sm font-mono"
+                          >
+                            {lotCode}
+                          </span>
+                        ),
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {compareResults.onlyInSystem && compareResults.onlyInSystem.length > 0 && (
-                <div className="mb-4 p-4 bg-purple-50 rounded">
-                  <h3 className="font-semibold mb-2">Only in System File ({compareResults.onlyInSystem.length}):</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {compareResults.onlyInSystem.map((lotCode: string, idx: number) => (
-                      <span key={idx} className="px-3 py-1 bg-purple-200 rounded text-sm font-mono">
-                        {lotCode}
-                      </span>
-                    ))}
+              {compareResults.onlyInSystem &&
+                compareResults.onlyInSystem.length > 0 && (
+                  <div className="mb-4 p-4 bg-purple-50 rounded">
+                    <h3 className="font-semibold mb-2">
+                      Only in System File ({compareResults.onlyInSystem.length}
+                      ):
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {compareResults.onlyInSystem.map(
+                        (lotCode: string, idx: number) => (
+                          <span
+                            key={idx}
+                            className="px-3 py-1 bg-purple-200 rounded text-sm font-mono"
+                          >
+                            {lotCode}
+                          </span>
+                        ),
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           )}
         </>

@@ -90,13 +90,15 @@ const TOOLS = [
   {
     id: "consolidate-land-profiles" as const,
     name: "CONSOLIDATE IFR",
-    description: "Consolidate multiple IFR files into a single output file with automatic calculations.",
+    description:
+      "Consolidate multiple IFR files into a single output file with automatic calculations.",
     icon: FolderOpenIcon,
   },
   {
     id: "ifr-checker" as const,
     name: "IFR CHECKER",
-    description: "Validate consolidated files against source IFR data and identify discrepancies.",
+    description:
+      "Validate consolidated files against source IFR data and identify discrepancies.",
     icon: ShieldCheckIcon,
   },
   {

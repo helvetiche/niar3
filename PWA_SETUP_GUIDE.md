@@ -12,6 +12,7 @@
 You need to create the following icon files in the `/public` directory:
 
 ### Required Icons:
+
 - `icon-192.png` - 192x192px (standard icon)
 - `icon-512.png` - 512x512px (standard icon)
 - `icon-192-maskable.png` - 192x192px (with safe zone padding)
@@ -21,6 +22,7 @@ You need to create the following icon files in the `/public` directory:
 ### How to Generate Icons
 
 #### Option 1: Use Online Tools (Recommended)
+
 1. **PWA Asset Generator**: https://www.pwabuilder.com/imageGenerator
    - Upload your logo
    - Download all generated icons
@@ -33,12 +35,14 @@ You need to create the following icon files in the `/public` directory:
 #### Option 2: Manual Creation with Design Tools
 
 **For Standard Icons (icon-192.png, icon-512.png):**
+
 - Create square images (192x192 and 512x512)
 - Use your NIA logo centered
 - Background: #004e3b (your theme color)
 - Export as PNG
 
 **For Maskable Icons (icon-192-maskable.png, icon-512-maskable.png):**
+
 - Create square images (192x192 and 512x512)
 - Add 10% padding on all sides (safe zone)
 - Center your logo within the safe zone
@@ -46,6 +50,7 @@ You need to create the following icon files in the `/public` directory:
 - Export as PNG
 
 **For Apple Icon (apple-icon.png):**
+
 - Create 180x180px square image
 - Use your logo centered
 - Background: #004e3b
@@ -69,22 +74,26 @@ convert logo.png -resize 460x460 -gravity center -background "#004e3b" -extent 5
 ## Testing Your PWA
 
 ### 1. Local Testing
+
 ```bash
 npm run build
 npm start
 ```
 
 ### 2. Check Manifest
+
 - Open DevTools → Application → Manifest
 - Verify all icons are loading correctly
 - Check for any warnings
 
 ### 3. Test Installation
+
 - Chrome: Look for install icon in address bar
 - Edge: Click the + icon in address bar
 - Mobile: "Add to Home Screen" option should appear
 
 ### 4. Lighthouse Audit
+
 - Open DevTools → Lighthouse
 - Run PWA audit
 - Should score 100% with proper icons
@@ -104,13 +113,17 @@ npm start
 ## Next Steps (Optional Enhancements)
 
 ### 1. Add Service Worker for Offline Support
+
 Create `public/sw.js` for caching and offline functionality.
 
 ### 2. Add Push Notifications
+
 Follow the Next.js PWA guide for implementing web push notifications.
 
 ### 3. Add Screenshots
+
 Add screenshots to manifest for better install prompts:
+
 ```typescript
 screenshots: [
   {
@@ -124,17 +137,20 @@ screenshots: [
 ## Troubleshooting
 
 ### Install button not showing?
+
 - Ensure you're on HTTPS (localhost is OK for testing)
 - Check DevTools Console for manifest errors
 - Verify all icon files exist in `/public`
 - Clear browser cache and reload
 
 ### Icons not displaying correctly?
+
 - Verify file paths match manifest
 - Check image dimensions match declared sizes
 - Ensure PNG format (not JPEG)
 
 ### iOS not showing install prompt?
+
 - iOS requires manual "Add to Home Screen" from Share menu
 - Ensure apple-icon.png exists
 - Check viewport meta tag is present

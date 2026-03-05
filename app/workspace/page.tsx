@@ -51,11 +51,13 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   },
   "consolidate-land-profiles": {
     name: "CONSOLIDATE LAND PROFILES",
-    description: "Consolidate multiple land profile Excel files into a single template.",
+    description:
+      "Consolidate multiple land profile Excel files into a single template.",
   },
   "ifr-checker": {
     name: "IFR CHECKER",
-    description: "Validate consolidated files against source IFR data and identify discrepancies.",
+    description:
+      "Validate consolidated files against source IFR data and identify discrepancies.",
   },
 };
 

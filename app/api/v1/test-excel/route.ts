@@ -1,48 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
-import ExcelJS from 'exceljs';
-import * as XLSX from 'xlsx';
-import { HyperFormula } from 'hyperformula';
-import XLSX_CALC from 'xlsx-calc';
+import { NextRequest, NextResponse } from "next/server";
+import ExcelJS from "exceljs";
+import * as XLSX from "xlsx";
+import { HyperFormula } from "hyperformula";
+import XLSX_CALC from "xlsx-calc";
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const method = formData.get('method') as string;
+    const file = formData.get("file") as File;
+    const method = formData.get("method") as string;
 
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    if (method === 'exceljs') {
-      return await testExcelJS(buffer);
-    } else if (method === 'xlsx') {
+    if (method === "exceljs") {
+      return await testExcelJS(buffer.buffer as ArrayBuffer);
+    } else if (method === "xlsx") {
       return await testXLSX(buffer);
-    } else if (method === 'hyperformula') {
+    } else if (method === "hyperformula") {
       return await testHyperFormula(buffer);
-    } else if (method === 'xlsx-calc') {
+    } else if (method === "xlsx-calc") {
       return await testXLSXCalc(buffer);
-    } else if (method === 'targeted') {
+    } else if (method === "targeted") {
       return await testTargetedCells(buffer);
-    } else if (method === 'targeted-calc') {
+    } else if (method === "targeted-calc") {
       return await testTargetedWithCalc(buffer);
-    } else if (method === 'inspect-range') {
+    } else if (method === "inspect-range") {
       return await inspectRange(buffer);
     }
 
-    return NextResponse.json({ error: 'Invalid method' }, { status: 400 });
+    return NextResponse.json({ error: "Invalid method" }, { status: 400 });
   } catch (error) {
-    console.error('Test error:', error);
-    return NextResponse.json(
-      { error: String(error) },
-      { status: 500 }
-    );
+    console.error("Test error:", error);
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
 
-async function testExcelJS(buffer: Buffer) {
+async function testExcelJS(buffer: ArrayBuffer) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
 
@@ -60,7 +57,7 @@ async function testExcelJS(buffer: Buffer) {
       }>;
     }>;
   } = {
-    method: 'ExcelJS',
+    method: "ExcelJS",
     sheets: [],
   };
 
@@ -84,7 +81,7 @@ async function testExcelJS(buffer: Buffer) {
     for (let row = 1; row <= Math.min(10, worksheet.rowCount); row++) {
       for (let col = 1; col <= Math.min(10, worksheet.columnCount); col++) {
         const cell = worksheet.getCell(row, col);
-        
+
         if (cell.value !== null && cell.value !== undefined) {
           sheetData.cells.push({
             address: cell.address,
@@ -106,8 +103,8 @@ async function testExcelJS(buffer: Buffer) {
 }
 
 async function testXLSX(buffer: Buffer) {
-  const workbook = XLSX.read(buffer, { 
-    type: 'buffer',
+  const workbook = XLSX.read(buffer, {
+    type: "buffer",
     cellFormula: true,
     cellStyles: true,
   });
@@ -125,7 +122,7 @@ async function testXLSX(buffer: Buffer) {
       }>;
     }>;
   } = {
-    method: 'XLSX (SheetJS)',
+    method: "XLSX (SheetJS)",
     sheets: [],
   };
 
@@ -146,8 +143,8 @@ async function testXLSX(buffer: Buffer) {
     };
 
     // Get range
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-    
+    const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+
     // Sample first 10 rows, first 10 columns
     const maxRow = Math.min(range.e.r, 9);
     const maxCol = Math.min(range.e.c, 9);
@@ -179,27 +176,27 @@ async function testXLSX(buffer: Buffer) {
 async function testHyperFormula(buffer: Buffer) {
   try {
     // Read workbook with XLSX
-    const workbook = XLSX.read(buffer, { 
-      type: 'buffer',
+    const workbook = XLSX.read(buffer, {
+      type: "buffer",
       cellFormula: true,
       cellStyles: true,
     });
 
     // Build HyperFormula sheets data
-    const sheetsData: Record<string, unknown[][]> = {};
-    
+    const sheetsData: Record<string, (string | number | null)[][]> = {};
+
     workbook.SheetNames.forEach((sheetName) => {
       const worksheet = workbook.Sheets[sheetName];
-      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-      
+      const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+
       // Create 2D array for HyperFormula
-      const sheetArray: unknown[][] = [];
+      const sheetArray: (string | number | null)[][] = [];
       for (let row = range.s.r; row <= range.e.r; row++) {
-        const rowData: unknown[] = [];
+        const rowData: (string | number | null)[] = [];
         for (let col = range.s.c; col <= range.e.c; col++) {
           const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
           const cell = worksheet[cellAddress];
-          
+
           if (cell) {
             // If it has a formula, use the formula; otherwise use the value
             if (cell.f) {
@@ -213,13 +210,13 @@ async function testHyperFormula(buffer: Buffer) {
         }
         sheetArray.push(rowData);
       }
-      
+
       sheetsData[sheetName] = sheetArray;
     });
 
     // Initialize HyperFormula
     const hfInstance = HyperFormula.buildFromSheets(sheetsData, {
-      licenseKey: 'gpl-v3',
+      licenseKey: "gpl-v3",
     });
 
     // Extract calculated results
@@ -236,14 +233,14 @@ async function testHyperFormula(buffer: Buffer) {
         }>;
       }>;
     } = {
-      method: 'HyperFormula (Calculated)',
+      method: "HyperFormula (Calculated)",
       sheets: [],
     };
 
     workbook.SheetNames.forEach((sheetName, sheetIndex) => {
       const worksheet = workbook.Sheets[sheetName];
-      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-      
+      const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+
       const sheetData: {
         name: string;
         cells: Array<{
@@ -269,8 +266,12 @@ async function testHyperFormula(buffer: Buffer) {
 
           if (cell) {
             // Get calculated value from HyperFormula
-            const calculatedValue = hfInstance.getCellValue({ sheet: sheetIndex, col, row });
-            
+            const calculatedValue = hfInstance.getCellValue({
+              sheet: sheetIndex,
+              col,
+              row,
+            });
+
             sheetData.cells.push({
               address: cellAddress,
               originalValue: cell.v,
@@ -288,19 +289,19 @@ async function testHyperFormula(buffer: Buffer) {
     return NextResponse.json(results);
   } catch (error) {
     return NextResponse.json({
-      method: 'HyperFormula',
+      method: "HyperFormula",
       error: String(error),
-      message: 'HyperFormula calculation failed. This might be due to unsupported formulas or complex cross-sheet references.',
+      message:
+        "HyperFormula calculation failed. This might be due to unsupported formulas or complex cross-sheet references.",
     });
   }
 }
 
-
 async function testXLSXCalc(buffer: Buffer) {
   try {
     // Read workbook with XLSX
-    const workbook = XLSX.read(buffer, { 
-      type: 'buffer',
+    const workbook = XLSX.read(buffer, {
+      type: "buffer",
       cellFormula: true,
       cellStyles: true,
     });
@@ -311,10 +312,10 @@ async function testXLSXCalc(buffer: Buffer) {
     } catch (calcError) {
       // If calculation fails, still return what we can read
       return NextResponse.json({
-        method: 'XLSX-CALC',
+        method: "XLSX-CALC",
         error: String(calcError),
-        message: 'XLSX-CALC calculation failed. Showing uncalculated values.',
-        note: 'This library may not support all Excel functions (e.g., PROPER, TEXT, etc.)',
+        message: "XLSX-CALC calculation failed. Showing uncalculated values.",
+        note: "This library may not support all Excel functions (e.g., PROPER, TEXT, etc.)",
       });
     }
 
@@ -331,7 +332,7 @@ async function testXLSXCalc(buffer: Buffer) {
         }>;
       }>;
     } = {
-      method: 'XLSX-CALC (Calculated)',
+      method: "XLSX-CALC (Calculated)",
       sheets: [],
     };
 
@@ -352,8 +353,8 @@ async function testXLSXCalc(buffer: Buffer) {
       };
 
       // Get range
-      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-      
+      const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+
       // Sample first 10 rows, first 10 columns
       const maxRow = Math.min(range.e.r, 9);
       const maxCol = Math.min(range.e.c, 9);
@@ -381,18 +382,17 @@ async function testXLSXCalc(buffer: Buffer) {
     return NextResponse.json(results);
   } catch (error) {
     return NextResponse.json({
-      method: 'XLSX-CALC',
+      method: "XLSX-CALC",
       error: String(error),
-      message: 'XLSX-CALC failed completely.',
+      message: "XLSX-CALC failed completely.",
     });
   }
 }
 
-
 async function testTargetedCells(buffer: Buffer) {
   try {
-    const workbook = XLSX.read(buffer, { 
-      type: 'buffer',
+    const workbook = XLSX.read(buffer, {
+      type: "buffer",
       cellFormula: true,
       cellStyles: true,
     });
@@ -411,20 +411,20 @@ async function testTargetedCells(buffer: Buffer) {
       }>;
       error?: string;
     } = {
-      method: 'Targeted Cell Test',
+      method: "Targeted Cell Test",
       targetCells: [],
     };
 
     // Check if SOA sheet exists
-    const soaSheet = workbook.Sheets['01 SOA 01'];
+    const soaSheet = workbook.Sheets["01 SOA 01"];
     if (soaSheet) {
-      const targetAddresses = ['D100', 'F100', 'G101'];
-      
-      targetAddresses.forEach(addr => {
+      const targetAddresses = ["D100", "F100", "G101"];
+
+      targetAddresses.forEach((addr) => {
         const cell = soaSheet[addr];
         if (cell) {
           results.targetCells.push({
-            sheet: '01 SOA 01',
+            sheet: "01 SOA 01",
             address: addr,
             value: cell.v,
             type: cell.t,
@@ -434,10 +434,10 @@ async function testTargetedCells(buffer: Buffer) {
           });
         } else {
           results.targetCells.push({
-            sheet: '01 SOA 01',
+            sheet: "01 SOA 01",
             address: addr,
             value: null,
-            note: 'Cell not found or empty',
+            note: "Cell not found or empty",
           });
         }
       });
@@ -448,17 +448,16 @@ async function testTargetedCells(buffer: Buffer) {
     return NextResponse.json(results);
   } catch (error) {
     return NextResponse.json({
-      method: 'Targeted Cell Test',
+      method: "Targeted Cell Test",
       error: String(error),
     });
   }
 }
 
-
 async function testTargetedWithCalc(buffer: Buffer) {
   try {
-    const workbook = XLSX.read(buffer, { 
-      type: 'buffer',
+    const workbook = XLSX.read(buffer, {
+      type: "buffer",
       cellFormula: true,
       cellStyles: true,
     });
@@ -478,18 +477,18 @@ async function testTargetedWithCalc(buffer: Buffer) {
       calcError: string | null;
       note?: string;
     } = {
-      method: 'Targeted Cell Test with Calculation',
+      method: "Targeted Cell Test with Calculation",
       beforeCalc: [],
       afterCalc: [],
       calcError: null,
     };
 
     // Check BEFORE calculation
-    const soaSheet = workbook.Sheets['01 SOA 01'];
+    const soaSheet = workbook.Sheets["01 SOA 01"];
     if (soaSheet) {
-      const targetAddresses = ['D100', 'F100', 'G101'];
-      
-      targetAddresses.forEach(addr => {
+      const targetAddresses = ["D100", "F100", "G101"];
+
+      targetAddresses.forEach((addr) => {
         const cell = soaSheet[addr];
         if (cell) {
           results.beforeCalc.push({
@@ -504,13 +503,13 @@ async function testTargetedWithCalc(buffer: Buffer) {
     // Try to calculate
     try {
       XLSX_CALC(workbook);
-      
+
       // Check AFTER calculation
-      const soaSheetAfter = workbook.Sheets['01 SOA 01'];
+      const soaSheetAfter = workbook.Sheets["01 SOA 01"];
       if (soaSheetAfter) {
-        const targetAddresses = ['D100', 'F100', 'G101'];
-        
-        targetAddresses.forEach(addr => {
+        const targetAddresses = ["D100", "F100", "G101"];
+
+        targetAddresses.forEach((addr) => {
           const cell = soaSheetAfter[addr];
           if (cell) {
             results.afterCalc.push({
@@ -523,23 +522,22 @@ async function testTargetedWithCalc(buffer: Buffer) {
       }
     } catch (calcError) {
       results.calcError = String(calcError);
-      results.note = 'Calculation failed, but showing before values';
+      results.note = "Calculation failed, but showing before values";
     }
 
     return NextResponse.json(results);
   } catch (error) {
     return NextResponse.json({
-      method: 'Targeted Cell Test with Calculation',
+      method: "Targeted Cell Test with Calculation",
       error: String(error),
     });
   }
 }
 
-
 async function inspectRange(buffer: Buffer) {
   try {
-    const workbook = XLSX.read(buffer, { 
-      type: 'buffer',
+    const workbook = XLSX.read(buffer, {
+      type: "buffer",
       cellFormula: true,
       cellStyles: true,
     });
@@ -564,15 +562,15 @@ async function inspectRange(buffer: Buffer) {
       }>;
       note?: string;
     } = {
-      method: 'Inspect D17:D99 and F17:F99',
+      method: "Inspect D17:D99 and F17:F99",
       columnD: [],
       columnF: [],
     };
 
-    const soaSheet = workbook.Sheets['01 SOA 01'];
+    const soaSheet = workbook.Sheets["01 SOA 01"];
     if (!soaSheet) {
       return NextResponse.json({
-        method: 'Inspect Range',
+        method: "Inspect Range",
         error: 'Sheet "01 SOA 01" not found',
       });
     }
@@ -605,12 +603,12 @@ async function inspectRange(buffer: Buffer) {
       }
     }
 
-    results.note = 'Showing first 10 rows (D17:D26, F17:F26) as sample';
+    results.note = "Showing first 10 rows (D17:D26, F17:F26) as sample";
 
     return NextResponse.json(results);
   } catch (error) {
     return NextResponse.json({
-      method: 'Inspect Range',
+      method: "Inspect Range",
       error: String(error),
     });
   }

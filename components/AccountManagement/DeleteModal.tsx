@@ -35,9 +35,7 @@ export function DeleteModal({
               />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-white">
-                Delete Account
-              </h3>
+              <h3 className="text-lg font-medium text-white">Delete Account</h3>
               <p className="mt-0.5 text-xs text-rose-200/80">
                 This action cannot be undone
               </p>

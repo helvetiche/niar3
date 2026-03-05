@@ -55,7 +55,9 @@ export default function IFRCheckerTool() {
   // Pagination, search, and filter states
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [severityFilter, setSeverityFilter] = useState<"all" | "error" | "warning">("all");
+  const [severityFilter, setSeverityFilter] = useState<
+    "all" | "error" | "warning"
+  >("all");
   const [fieldFilter, setFieldFilter] = useState<string>("all");
 
   const handleIFRFilesSelection = (incoming: FileList | null) => {
@@ -106,7 +108,9 @@ export default function IFRCheckerTool() {
       if (data.issues.length === 0) {
         toast.success("Perfect match! No issues found.");
       } else {
-        toast.success(`Validation complete. Found ${data.issues.length} issue(s).`);
+        toast.success(
+          `Validation complete. Found ${data.issues.length} issue(s).`,
+        );
       }
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to validate files."));
@@ -119,7 +123,7 @@ export default function IFRCheckerTool() {
   // Get unique fields for filter dropdown
   const uniqueFields = useMemo(() => {
     if (!result) return [];
-    const fields = new Set(result.issues.map(issue => issue.field));
+    const fields = new Set(result.issues.map((issue) => issue.field));
     return Array.from(fields).sort();
   }, [result]);
 
@@ -131,23 +135,24 @@ export default function IFRCheckerTool() {
 
     // Apply severity filter
     if (severityFilter !== "all") {
-      filtered = filtered.filter(issue => issue.severity === severityFilter);
+      filtered = filtered.filter((issue) => issue.severity === severityFilter);
     }
 
     // Apply field filter
     if (fieldFilter !== "all") {
-      filtered = filtered.filter(issue => issue.field === fieldFilter);
+      filtered = filtered.filter((issue) => issue.field === fieldFilter);
     }
 
     // Apply search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(issue =>
-        issue.lotCode.toLowerCase().includes(query) ||
-        issue.field.toLowerCase().includes(query) ||
-        issue.reason.toLowerCase().includes(query) ||
-        String(issue.ifrValue).toLowerCase().includes(query) ||
-        String(issue.consolidatedValue).toLowerCase().includes(query)
+      filtered = filtered.filter(
+        (issue) =>
+          issue.lotCode.toLowerCase().includes(query) ||
+          issue.field.toLowerCase().includes(query) ||
+          issue.reason.toLowerCase().includes(query) ||
+          String(issue.ifrValue).toLowerCase().includes(query) ||
+          String(issue.consolidatedValue).toLowerCase().includes(query),
       );
     }
 
@@ -389,7 +394,9 @@ export default function IFRCheckerTool() {
                           <select
                             value={severityFilter}
                             onChange={(e) => {
-                              setSeverityFilter(e.target.value as "all" | "error" | "warning");
+                              setSeverityFilter(
+                                e.target.value as "all" | "error" | "warning",
+                              );
                               setCurrentPage(1);
                             }}
                             className="bg-transparent text-sm text-white focus:outline-none"
@@ -420,8 +427,10 @@ export default function IFRCheckerTool() {
                       </div>
                     </div>
                     <p className="mt-2 text-xs text-white/60">
-                      Showing {paginatedIssues.length} of {filteredIssues.length} issue(s)
-                      {filteredIssues.length !== result.issues.length && ` (filtered from ${result.issues.length} total)`}
+                      Showing {paginatedIssues.length} of{" "}
+                      {filteredIssues.length} issue(s)
+                      {filteredIssues.length !== result.issues.length &&
+                        ` (filtered from ${result.issues.length} total)`}
                     </p>
                   </div>
 
@@ -458,7 +467,10 @@ export default function IFRCheckerTool() {
                         <tbody>
                           {paginatedIssues.length === 0 ? (
                             <tr>
-                              <td colSpan={7} className="p-8 text-center text-white/60">
+                              <td
+                                colSpan={7}
+                                className="p-8 text-center text-white/60"
+                              >
                                 No issues match your search criteria
                               </td>
                             </tr>

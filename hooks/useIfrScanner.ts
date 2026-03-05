@@ -1,9 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import {
-  getFileKey,
-  getBaseName,
-  sanitizeFolderName,
-} from "@/lib/file-utils";
+import { getFileKey, getBaseName, sanitizeFolderName } from "@/lib/file-utils";
 
 export function useIfrScanner() {
   const [sourceFiles, setSourceFiles] = useState<File[]>([]);

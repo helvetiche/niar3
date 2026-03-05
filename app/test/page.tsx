@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 export default function TestPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -19,14 +19,14 @@ export default function TestPage() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('method', 'exceljs');
-      
-      const res = await fetch('/api/v1/test-excel', {
-        method: 'POST',
+      formData.append("file", file);
+      formData.append("method", "exceljs");
+
+      const res = await fetch("/api/v1/test-excel", {
+        method: "POST",
         body: formData,
       });
-      
+
       const data = await res.json();
       setResults(data);
     } catch (error) {
@@ -41,14 +41,14 @@ export default function TestPage() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('method', 'xlsx');
-      
-      const res = await fetch('/api/v1/test-excel', {
-        method: 'POST',
+      formData.append("file", file);
+      formData.append("method", "xlsx");
+
+      const res = await fetch("/api/v1/test-excel", {
+        method: "POST",
         body: formData,
       });
-      
+
       const data = await res.json();
       setResults(data);
     } catch (error) {
@@ -63,14 +63,14 @@ export default function TestPage() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('method', 'hyperformula');
-      
-      const res = await fetch('/api/v1/test-excel', {
-        method: 'POST',
+      formData.append("file", file);
+      formData.append("method", "hyperformula");
+
+      const res = await fetch("/api/v1/test-excel", {
+        method: "POST",
         body: formData,
       });
-      
+
       const data = await res.json();
       setResults(data);
     } catch (error) {
@@ -85,14 +85,14 @@ export default function TestPage() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('method', 'xlsx-calc');
-      
-      const res = await fetch('/api/v1/test-excel', {
-        method: 'POST',
+      formData.append("file", file);
+      formData.append("method", "xlsx-calc");
+
+      const res = await fetch("/api/v1/test-excel", {
+        method: "POST",
         body: formData,
       });
-      
+
       const data = await res.json();
       setResults(data);
     } catch (error) {
@@ -107,14 +107,14 @@ export default function TestPage() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('method', 'targeted');
-      
-      const res = await fetch('/api/v1/test-excel', {
-        method: 'POST',
+      formData.append("file", file);
+      formData.append("method", "targeted");
+
+      const res = await fetch("/api/v1/test-excel", {
+        method: "POST",
         body: formData,
       });
-      
+
       const data = await res.json();
       setResults(data);
     } catch (error) {
@@ -129,14 +129,14 @@ export default function TestPage() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('method', 'targeted-calc');
-      
-      const res = await fetch('/api/v1/test-excel', {
-        method: 'POST',
+      formData.append("file", file);
+      formData.append("method", "targeted-calc");
+
+      const res = await fetch("/api/v1/test-excel", {
+        method: "POST",
         body: formData,
       });
-      
+
       const data = await res.json();
       setResults(data);
     } catch (error) {
@@ -151,14 +151,14 @@ export default function TestPage() {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('method', 'inspect-range');
-      
-      const res = await fetch('/api/v1/test-excel', {
-        method: 'POST',
+      formData.append("file", file);
+      formData.append("method", "inspect-range");
+
+      const res = await fetch("/api/v1/test-excel", {
+        method: "POST",
         body: formData,
       });
-      
+
       const data = await res.json();
       setResults(data);
     } catch (error) {
@@ -171,21 +171,21 @@ export default function TestPage() {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Excel Formula Testing</h1>
-      
+
       <div className="mb-6 p-4 bg-blue-50 rounded">
         <h2 className="font-semibold mb-2">About Formula Caching:</h2>
         <ul className="list-disc ml-5 space-y-1 text-sm">
           <li>Excel libraries can only read cached formula values</li>
-          <li>If formulas haven't been calculated, values may be empty/stale</li>
+          <li>
+            If formulas haven&apos;t been calculated, values may be empty/stale
+          </li>
           <li>Manual fix: Open file → F9 → Save</li>
           <li>This test compares different library approaches</li>
         </ul>
       </div>
 
       <div className="mb-6">
-        <label className="block mb-2 font-medium">
-          Upload Excel File:
-        </label>
+        <label className="block mb-2 font-medium">Upload Excel File:</label>
         <input
           type="file"
           accept=".xlsx,.xls"
@@ -248,11 +248,7 @@ export default function TestPage() {
         </div>
       )}
 
-      {loading && (
-        <div className="p-4 bg-gray-100 rounded">
-          Processing...
-        </div>
-      )}
+      {loading && <div className="p-4 bg-gray-100 rounded">Processing...</div>}
 
       {results && (
         <div className="mt-6">

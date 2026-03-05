@@ -77,7 +77,10 @@ export default function ConsolidateLandProfilesTool() {
   };
 
   const handleConsolidate = async () => {
-    if ((!templateFile && !selectedTemplateId) || landProfileFiles.length === 0) {
+    if (
+      (!templateFile && !selectedTemplateId) ||
+      landProfileFiles.length === 0
+    ) {
       toast.error("Please select a template and upload IFR files.");
       return;
     }
@@ -92,12 +95,16 @@ export default function ConsolidateLandProfilesTool() {
         formData.append("template", templateFile);
       } else if (selectedTemplateId) {
         // Fetch the template from the server
-        const templateResponse = await fetch(`/api/v1/templates/${selectedTemplateId}`);
+        const templateResponse = await fetch(
+          `/api/v1/templates/${selectedTemplateId}`,
+        );
         if (!templateResponse.ok) {
           throw new Error("Failed to fetch template");
         }
         const templateBlob = await templateResponse.blob();
-        const templateFileName = consolidationTemplates.find(t => t.id === selectedTemplateId)?.name || "template.xlsx";
+        const templateFileName =
+          consolidationTemplates.find((t) => t.id === selectedTemplateId)
+            ?.name || "template.xlsx";
         formData.append("template", templateBlob, templateFileName);
       }
 
@@ -143,9 +150,7 @@ export default function ConsolidateLandProfilesTool() {
         );
       }
     } catch (error) {
-      toast.error(
-        getErrorMessage(error, "Failed to consolidate IFR files."),
-      );
+      toast.error(getErrorMessage(error, "Failed to consolidate IFR files."));
       setResult(null);
     } finally {
       setIsProcessing(false);
@@ -256,9 +261,7 @@ export default function ConsolidateLandProfilesTool() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Upload IFR Files
-            </h3>
+            <h3 className="text-lg font-medium text-white">Upload IFR Files</h3>
             <p className="mt-1 text-sm text-white/80">
               Upload one or more IFR Excel files to consolidate. Files will be
               processed and merged into the template.
@@ -345,8 +348,9 @@ export default function ConsolidateLandProfilesTool() {
                 {templateFile
                   ? templateFile.name
                   : selectedTemplateId
-                    ? consolidationTemplates.find((t) => t.id === selectedTemplateId)
-                        ?.name || "Selected"
+                    ? consolidationTemplates.find(
+                        (t) => t.id === selectedTemplateId,
+                      )?.name || "Selected"
                     : "Not selected"}
               </p>
               <p>
@@ -365,8 +369,8 @@ export default function ConsolidateLandProfilesTool() {
               <li className="flex gap-2">
                 <span className="text-white/60">•</span>
                 <span>
-                  The system extracts data from sheets &quot;00 ACC DETAILS 01&quot; and
-                  &quot;01 SOA 01&quot;
+                  The system extracts data from sheets &quot;00 ACC DETAILS
+                  01&quot; and &quot;01 SOA 01&quot;
                 </span>
               </li>
               <li className="flex gap-2">
