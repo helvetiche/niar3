@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const issues: Issue[] = [];
 
     // Process all IFR files and build expected data
-    const expectedData = new Map<string, any>();
+    const expectedData = new Map<string, Record<string, unknown>>();
     
     for (const ifrFile of ifrFiles) {
       const buffer = Buffer.from(await ifrFile.arrayBuffer());
@@ -50,7 +50,15 @@ export async function POST(request: NextRequest) {
     const consolidatedSheet = consolidatedWorkbook.Sheets[consolidatedWorkbook.SheetNames[0]];
     const consolidatedRange = XLSX.utils.decode_range(consolidatedSheet['!ref'] || 'A1');
 
-    const consolidatedData = new Map<string, any>();
+    const consolidatedData = new Map<string, {
+      lotCode: string;
+      principal: number;
+      penalty: number;
+      oldAccount: number;
+      total: number;
+      area: number;
+      row: number;
+    }>();
 
     // Parse consolidated file (starting from row 3)
     for (let row = 3; row <= consolidatedRange.e.r; row++) {
@@ -107,7 +115,8 @@ export async function POST(request: NextRequest) {
     // Compare values for matching lots
     const tolerance = 0.02; // Allow small rounding differences
 
-    for (const [lotCode, expected] of expectedData) {
+    for (const [lotCode, expectedRaw] of expectedData) {
+      const expected = expectedRaw as { principal: number; penalty: number; area: number; oldAccount: number };
       const consolidated = consolidatedData.get(lotCode);
       if (!consolidated) continue;
 

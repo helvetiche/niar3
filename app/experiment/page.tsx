@@ -5,7 +5,7 @@ import { IRRIGATION_RATE_TABLE, lookupIrrigationRate } from '@/lib/irrigation-ra
 
 export default function ExperimentPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchSeason, setSearchSeason] = useState('2012-D');
   
@@ -13,7 +13,7 @@ export default function ExperimentPage() {
   const [compareMode, setCompareMode] = useState(false);
   const [humanFile, setHumanFile] = useState<File | null>(null);
   const [systemFile, setSystemFile] = useState<File | null>(null);
-  const [compareResults, setCompareResults] = useState<any>(null);
+  const [compareResults, setCompareResults] = useState<Record<string, unknown> | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

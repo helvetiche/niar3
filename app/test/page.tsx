@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 export default function TestPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

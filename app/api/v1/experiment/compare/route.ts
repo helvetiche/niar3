@@ -20,7 +20,35 @@ export async function POST(request: NextRequest) {
     const humanSheet = humanWorkbook.Sheets[humanWorkbook.SheetNames[0]];
     const systemSheet = systemWorkbook.Sheets[systemWorkbook.SheetNames[0]];
 
-    const results: any = {
+    const results: {
+      humanFile: string;
+      systemFile: string;
+      differentLots: string[];
+      onlyInHuman: string[];
+      onlyInSystem: string[];
+      summary: {
+        totalDifferences: number;
+        matchingLots: number;
+        differentLots: number;
+        onlyInHumanCount: number;
+        onlyInSystemCount: number;
+      };
+      details: Array<{
+        lotCode: string;
+        humanRow: number;
+        systemRow: number;
+        differences: Array<{
+          column: string;
+          columnName: string;
+          humanCell: string;
+          systemCell: string;
+          humanValue: string | number;
+          systemValue: string | number;
+          difference: string;
+          isDifferent: boolean;
+        }>;
+      }>;
+    } = {
       humanFile: humanFile.name,
       systemFile: systemFile.name,
       differentLots: [] as string[],
@@ -33,7 +61,7 @@ export async function POST(request: NextRequest) {
         onlyInHumanCount: 0,
         onlyInSystemCount: 0,
       },
-      details: [] as any[], // Full details for those who want it
+      details: [],
     };
 
     // Build lot code maps for both files
@@ -60,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find lot codes only in human file
-    for (const [lotCode, row] of humanLots) {
+    for (const [lotCode] of humanLots) {
       if (!systemLots.has(lotCode)) {
         results.onlyInHuman.push(lotCode);
         results.summary.onlyInHumanCount++;
@@ -68,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find lot codes only in system file
-    for (const [lotCode, row] of systemLots) {
+    for (const [lotCode] of systemLots) {
       if (!humanLots.has(lotCode)) {
         results.onlyInSystem.push(lotCode);
         results.summary.onlyInSystemCount++;
@@ -93,12 +121,26 @@ export async function POST(request: NextRequest) {
       const systemRow = systemLots.get(lotCode);
       if (!systemRow) continue; // Skip if not in both files
 
-      const rowDifferences: any[] = [];
+      const rowDifferences: Array<{
+        column: string;
+        columnName: string;
+        humanCell: string;
+        systemCell: string;
+        humanValue: string | number;
+        systemValue: string | number;
+        difference: string;
+        isDifferent: boolean;
+      }> = [];
       const financialFields = ['J', 'K', 'L', 'M']; // Principal, Penalty, Old Account, Total
       let hasFinancialDifference = false;
 
       // First pass: check if there are any differences
-      const allComparisons: any[] = [];
+      const allComparisons: Array<{
+        col: string;
+        humanValue: string | number | undefined;
+        systemValue: string | number | undefined;
+        isDifferent: boolean;
+      }> = [];
 
       for (const col of columnsToCompare) {
         const humanCell = humanSheet[`${col}${humanRow}`];

@@ -46,13 +46,36 @@ async function testExcelJS(buffer: Buffer) {
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
 
-  const results: any = {
+  const results: {
+    method: string;
+    sheets: Array<{
+      name: string;
+      cells: Array<{
+        address: string;
+        value: unknown;
+        type: ExcelJS.ValueType;
+        formula: string | null;
+        result: unknown;
+        isFormula: boolean;
+      }>;
+    }>;
+  } = {
     method: 'ExcelJS',
     sheets: [],
   };
 
   workbook.eachSheet((worksheet) => {
-    const sheetData: any = {
+    const sheetData: {
+      name: string;
+      cells: Array<{
+        address: string;
+        value: unknown;
+        type: ExcelJS.ValueType;
+        formula: string | null;
+        result: unknown;
+        isFormula: boolean;
+      }>;
+    } = {
       name: worksheet.name,
       cells: [],
     };
@@ -89,14 +112,35 @@ async function testXLSX(buffer: Buffer) {
     cellStyles: true,
   });
 
-  const results: any = {
+  const results: {
+    method: string;
+    sheets: Array<{
+      name: string;
+      cells: Array<{
+        address: string;
+        value: unknown;
+        type: string;
+        formula: string | null;
+        isFormula: boolean;
+      }>;
+    }>;
+  } = {
     method: 'XLSX (SheetJS)',
     sheets: [],
   };
 
   workbook.SheetNames.forEach((sheetName) => {
     const worksheet = workbook.Sheets[sheetName];
-    const sheetData: any = {
+    const sheetData: {
+      name: string;
+      cells: Array<{
+        address: string;
+        value: unknown;
+        type: string;
+        formula: string | null;
+        isFormula: boolean;
+      }>;
+    } = {
       name: sheetName,
       cells: [],
     };
@@ -142,16 +186,16 @@ async function testHyperFormula(buffer: Buffer) {
     });
 
     // Build HyperFormula sheets data
-    const sheetsData: Record<string, any[][]> = {};
+    const sheetsData: Record<string, unknown[][]> = {};
     
     workbook.SheetNames.forEach((sheetName) => {
       const worksheet = workbook.Sheets[sheetName];
       const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
       
       // Create 2D array for HyperFormula
-      const sheetArray: any[][] = [];
+      const sheetArray: unknown[][] = [];
       for (let row = range.s.r; row <= range.e.r; row++) {
-        const rowData: any[] = [];
+        const rowData: unknown[] = [];
         for (let col = range.s.c; col <= range.e.c; col++) {
           const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
           const cell = worksheet[cellAddress];
@@ -179,7 +223,19 @@ async function testHyperFormula(buffer: Buffer) {
     });
 
     // Extract calculated results
-    const results: any = {
+    const results: {
+      method: string;
+      sheets: Array<{
+        name: string;
+        cells: Array<{
+          address: string;
+          originalValue: unknown;
+          calculatedValue: unknown;
+          formula: string | null;
+          isFormula: boolean;
+        }>;
+      }>;
+    } = {
       method: 'HyperFormula (Calculated)',
       sheets: [],
     };
@@ -188,7 +244,16 @@ async function testHyperFormula(buffer: Buffer) {
       const worksheet = workbook.Sheets[sheetName];
       const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
       
-      const sheetData: any = {
+      const sheetData: {
+        name: string;
+        cells: Array<{
+          address: string;
+          originalValue: unknown;
+          calculatedValue: unknown;
+          formula: string | null;
+          isFormula: boolean;
+        }>;
+      } = {
         name: sheetName,
         cells: [],
       };
@@ -253,14 +318,35 @@ async function testXLSXCalc(buffer: Buffer) {
       });
     }
 
-    const results: any = {
+    const results: {
+      method: string;
+      sheets: Array<{
+        name: string;
+        cells: Array<{
+          address: string;
+          value: unknown;
+          type: string;
+          formula: string | null;
+          isFormula: boolean;
+        }>;
+      }>;
+    } = {
       method: 'XLSX-CALC (Calculated)',
       sheets: [],
     };
 
     workbook.SheetNames.forEach((sheetName) => {
       const worksheet = workbook.Sheets[sheetName];
-      const sheetData: any = {
+      const sheetData: {
+        name: string;
+        cells: Array<{
+          address: string;
+          value: unknown;
+          type: string;
+          formula: string | null;
+          isFormula: boolean;
+        }>;
+      } = {
         name: sheetName,
         cells: [],
       };
@@ -311,7 +397,20 @@ async function testTargetedCells(buffer: Buffer) {
       cellStyles: true,
     });
 
-    const results: any = {
+    const results: {
+      method: string;
+      targetCells: Array<{
+        sheet: string;
+        address: string;
+        value: unknown;
+        type?: string;
+        formula?: string | null;
+        isFormula?: boolean;
+        hasCachedValue?: boolean;
+        note?: string;
+      }>;
+      error?: string;
+    } = {
       method: 'Targeted Cell Test',
       targetCells: [],
     };
@@ -364,7 +463,21 @@ async function testTargetedWithCalc(buffer: Buffer) {
       cellStyles: true,
     });
 
-    const results: any = {
+    const results: {
+      method: string;
+      beforeCalc: Array<{
+        address: string;
+        value: unknown;
+        formula: string | null;
+      }>;
+      afterCalc: Array<{
+        address: string;
+        value: unknown;
+        formula: string | null;
+      }>;
+      calcError: string | null;
+      note?: string;
+    } = {
       method: 'Targeted Cell Test with Calculation',
       beforeCalc: [],
       afterCalc: [],
@@ -431,7 +544,26 @@ async function inspectRange(buffer: Buffer) {
       cellStyles: true,
     });
 
-    const results: any = {
+    const results: {
+      method: string;
+      columnD: Array<{
+        address: string;
+        value: unknown;
+        type: string;
+        formula: string | null;
+        isFormula: boolean;
+        hasCachedValue: boolean;
+      }>;
+      columnF: Array<{
+        address: string;
+        value: unknown;
+        type: string;
+        formula: string | null;
+        isFormula: boolean;
+        hasCachedValue: boolean;
+      }>;
+      note?: string;
+    } = {
       method: 'Inspect D17:D99 and F17:F99',
       columnD: [],
       columnF: [],

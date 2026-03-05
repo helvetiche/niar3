@@ -365,8 +365,8 @@ export default function ConsolidateLandProfilesTool() {
               <li className="flex gap-2">
                 <span className="text-white/60">•</span>
                 <span>
-                  The system extracts data from sheets "00 ACC DETAILS 01" and
-                  "01 SOA 01"
+                  The system extracts data from sheets &quot;00 ACC DETAILS 01&quot; and
+                  &quot;01 SOA 01&quot;
                 </span>
               </li>
               <li className="flex gap-2">

@@ -18,7 +18,25 @@ export async function POST(request: NextRequest) {
       cellStyles: true,
     });
 
-    const results: any = {
+    const results: {
+      fileName: string;
+      sheets: string[];
+      sheetUsed: string;
+      lotSummaries: Array<{
+        lotCode: string;
+        numberOfSeasons: number;
+        duplicatesRemoved: number;
+        totalPrincipal: number;
+        totalPenalty: number;
+        oldAccount: number;
+        grandTotal: number;
+        details: Array<Record<string, unknown>>;
+      }>;
+      debug: {
+        sampleRows: Array<Record<string, unknown>>;
+        allCalculations: Array<Record<string, unknown>>;
+      };
+    } = {
       fileName: file.name,
       sheets: workbook.SheetNames,
       sheetUsed: '',

@@ -1,5 +1,4 @@
 import XlsxPopulate from 'xlsx-populate';
-import { HyperFormula } from 'hyperformula';
 
 export interface NuclearLandProfileData {
   lotNo: string;
