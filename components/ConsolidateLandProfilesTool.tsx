@@ -135,7 +135,7 @@ export default function ConsolidateLandProfilesTool() {
 
       if (errors.length === 0) {
         toast.success(
-          `Successfully consolidated ${processedCount} land profile(s)!`,
+          `Successfully consolidated ${processedCount} IFR file(s)!`,
         );
       } else {
         toast.success(
@@ -144,7 +144,7 @@ export default function ConsolidateLandProfilesTool() {
       }
     } catch (error) {
       toast.error(
-        getErrorMessage(error, "Failed to consolidate land profiles."),
+        getErrorMessage(error, "Failed to consolidate IFR files."),
       );
       setResult(null);
     } finally {
