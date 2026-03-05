@@ -83,7 +83,6 @@ export function TemplateManagerInline({
   // Only refresh on mount and when scope changes
   useEffect(() => {
     void refreshTemplates();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope]);
 
   useEffect(() => {
