@@ -20,17 +20,13 @@ export interface IFRLotData {
 
 /**
  * Extract and calculate data from a single IFR file
+ * Returns an array of lot data (one IFR can have multiple lots)
  */
 export async function extractIFRData(
   fileBuffer: Buffer,
   fileName: string
-): Promise<IFRLotData | null> {
+): Promise<IFRLotData[]> {
   try {
-    const rowNumber = parseInt(fileName.match(/^(\d+)\s/)?.[1] || '0', 10);
-    if (!rowNumber) {
-      throw new Error(`Cannot extract row number from filename: ${fileName}`);
-    }
-
     // Read with XLSX for data extraction
     const workbook = XLSX.read(fileBuffer, {
       type: 'buffer',
@@ -55,35 +51,72 @@ export async function extractIFRData(
     const COL_TILLER_FIRST = 'P';
     const COL_OLD_ACCOUNT = 'Q';
 
-    // Get lot code and names from first data row
-    const lotCode = sheet[`${COL_LOT_CODE}2`]?.v;
-    const ownerLastName = sheet[`${COL_OWNER_LAST}2`]?.v || '';
-    const ownerFirstName = sheet[`${COL_OWNER_FIRST}2`]?.v || '';
-    const tillerLastName = sheet[`${COL_TILLER_LAST}2`]?.v || '';
-    const tillerFirstName = sheet[`${COL_TILLER_FIRST}2`]?.v || '';
-    const oldAccount = parseFloat(String(sheet[`${COL_OLD_ACCOUNT}2`]?.v || 0));
-
-    if (!lotCode) {
-      throw new Error(`No lot code found in ${fileName}`);
-    }
-
-    // Calculate principal and penalty from all crop seasons
-    let totalPrincipal = 0;
-    let totalPenalty = 0;
-    let totalArea = 0;
-    let numberOfSeasons = 0;
-    const seenSeasons = new Set<string>();
-
     const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
 
+    // Group data by lot code
+    const lotGroups = new Map<string, {
+      lotCode: string;
+      ownerLastName: string;
+      ownerFirstName: string;
+      tillerLastName: string;
+      tillerFirstName: string;
+      oldAccount: number;
+      latestArea: number;
+      latestYear: number;
+      totalPrincipal: number;
+      totalPenalty: number;
+      numberOfSeasons: number;
+      seenSeasons: Set<string>;
+    }>();
+
     for (let row = 2; row <= range.e.r; row++) {
+      const lotCode = sheet[`${COL_LOT_CODE}${row}`]?.v;
       const cropSeason = sheet[`${COL_CROP_SEASON}${row}`]?.v;
       const cropYear = sheet[`${COL_CROP_YEAR}${row}`]?.v;
       const area = sheet[`${COL_PLANTED_AREA}${row}`]?.v;
+      const ownerLastName = sheet[`${COL_OWNER_LAST}${row}`]?.v || '';
+      const ownerFirstName = sheet[`${COL_OWNER_FIRST}${row}`]?.v || '';
+      const tillerLastName = sheet[`${COL_TILLER_LAST}${row}`]?.v || '';
+      const tillerFirstName = sheet[`${COL_TILLER_FIRST}${row}`]?.v || '';
+      const oldAccount = parseFloat(String(sheet[`${COL_OLD_ACCOUNT}${row}`]?.v || 0));
 
+      if (!lotCode) continue;
+
+      const lotKey = String(lotCode);
+
+      // Initialize lot group if not exists
+      if (!lotGroups.has(lotKey)) {
+        lotGroups.set(lotKey, {
+          lotCode: lotKey,
+          ownerLastName: String(ownerLastName),
+          ownerFirstName: String(ownerFirstName),
+          tillerLastName: String(tillerLastName),
+          tillerFirstName: String(tillerFirstName),
+          oldAccount: oldAccount,
+          latestArea: 0,
+          latestYear: 0,
+          totalPrincipal: 0,
+          totalPenalty: 0,
+          numberOfSeasons: 0,
+          seenSeasons: new Set(),
+        });
+      }
+
+      const group = lotGroups.get(lotKey)!;
+
+      // Update latest area (use the most recent year's area)
+      if (cropYear && area) {
+        const yearNum = parseInt(String(cropYear));
+        if (yearNum > group.latestYear) {
+          group.latestYear = yearNum;
+          group.latestArea = parseFloat(String(area));
+        }
+      }
+
+      // Calculate principal and penalty if we have season data
       if (!cropSeason || !cropYear || !area) continue;
 
-      // Skip years before 1976 (old accounts are prior to July 1, 1975)
+      // Skip years before 1976
       const yearNum = parseInt(String(cropYear));
       if (yearNum < 1976) continue;
 
@@ -93,44 +126,49 @@ export async function extractIFRData(
       const cropSeasonCode = `${yearCode}-${seasonCode}`;
 
       // Skip duplicates
-      if (seenSeasons.has(cropSeasonCode)) continue;
-      seenSeasons.add(cropSeasonCode);
+      if (group.seenSeasons.has(cropSeasonCode)) continue;
+      group.seenSeasons.add(cropSeasonCode);
 
       // Lookup rate and penalty
       const rateData = lookupIrrigationRate(cropSeasonCode);
       if (!rateData) continue;
 
-      // Calculate
+      // Calculate using the area from this row
       const areaNum = parseFloat(String(area));
       const principal = areaNum * rateData.rate;
       const penalty = principal * (rateData.penaltyMonths / 100);
 
-      totalPrincipal += principal;
-      totalPenalty += penalty;
-      totalArea += areaNum;
-      numberOfSeasons++;
+      group.totalPrincipal += principal;
+      group.totalPenalty += penalty;
+      group.numberOfSeasons++;
     }
 
-    const total = totalPrincipal + totalPenalty + oldAccount;
+    // Convert to array of results
+    const results: IFRLotData[] = [];
+    for (const group of lotGroups.values()) {
+      const total = group.totalPrincipal + group.totalPenalty + group.oldAccount;
 
-    return {
-      lotCode: String(lotCode),
-      ownerLastName: String(ownerLastName),
-      ownerFirstName: String(ownerFirstName),
-      tillerLastName: String(tillerLastName),
-      tillerFirstName: String(tillerFirstName),
-      area: parseFloat(totalArea.toFixed(4)),
-      principal: parseFloat(totalPrincipal.toFixed(2)),
-      penalty: parseFloat(totalPenalty.toFixed(2)),
-      oldAccount: parseFloat(oldAccount.toFixed(2)),
-      total: parseFloat(total.toFixed(2)),
-      rowNumber,
-      fileName,
-      numberOfSeasons,
-    };
+      results.push({
+        lotCode: group.lotCode,
+        ownerLastName: group.ownerLastName,
+        ownerFirstName: group.ownerFirstName,
+        tillerLastName: group.tillerLastName,
+        tillerFirstName: group.tillerFirstName,
+        area: parseFloat(group.latestArea.toFixed(4)),
+        principal: parseFloat(group.totalPrincipal.toFixed(2)),
+        penalty: parseFloat(group.totalPenalty.toFixed(2)),
+        oldAccount: parseFloat(group.oldAccount.toFixed(2)),
+        total: parseFloat(total.toFixed(2)),
+        rowNumber: 0, // Will be assigned during consolidation
+        fileName,
+        numberOfSeasons: group.numberOfSeasons,
+      });
+    }
+
+    return results;
   } catch (error) {
     console.error(`Error extracting from ${fileName}:`, error);
-    return null;
+    return [];
   }
 }
 
@@ -149,29 +187,32 @@ export async function consolidateIFR(
     const workbook = await XlsxPopulate.fromDataAsync(templateBuffer);
     const sheet = workbook.sheet(0);
 
+    let currentRow = 3; // Start from row 3 (row 1 is header, row 2 is first data)
+
     for (const file of ifrFiles) {
       try {
-        const data = await extractIFRData(file.buffer, file.fileName);
+        const lotsData = await extractIFRData(file.buffer, file.fileName);
 
-        if (!data) {
-          errors.push(`Failed to extract data from ${file.fileName}`);
+        if (lotsData.length === 0) {
+          errors.push(`No data extracted from ${file.fileName}`);
           continue;
         }
 
-        const templateRow = data.rowNumber + 2;
+        // Write each lot to a separate row
+        for (const data of lotsData) {
+          sheet.cell(`B${currentRow}`).value(data.lotCode);
+          sheet.cell(`C${currentRow}`).value(data.ownerLastName);
+          sheet.cell(`D${currentRow}`).value(data.ownerFirstName);
+          sheet.cell(`F${currentRow}`).value(data.tillerLastName);
+          sheet.cell(`G${currentRow}`).value(data.tillerFirstName);
+          sheet.cell(`I${currentRow}`).value(data.area);
+          sheet.cell(`J${currentRow}`).value(data.principal);
+          sheet.cell(`K${currentRow}`).value(data.penalty);
+          sheet.cell(`L${currentRow}`).value(data.oldAccount);
 
-        // Write all extracted data
-        sheet.cell(`B${templateRow}`).value(data.lotCode);
-        sheet.cell(`C${templateRow}`).value(data.ownerLastName);
-        sheet.cell(`D${templateRow}`).value(data.ownerFirstName);
-        sheet.cell(`F${templateRow}`).value(data.tillerLastName);
-        sheet.cell(`G${templateRow}`).value(data.tillerFirstName);
-        sheet.cell(`I${templateRow}`).value(data.area);
-        sheet.cell(`J${templateRow}`).value(data.principal);
-        sheet.cell(`K${templateRow}`).value(data.penalty);
-        sheet.cell(`L${templateRow}`).value(data.oldAccount);
-
-        processedCount++;
+          currentRow++;
+          processedCount++;
+        }
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
         errors.push(`Error processing ${file.fileName}: ${errorMsg}`);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { consolidateNuclear } from '@/lib/consolidate-land-profiles-nuclear';
+import { consolidateIFR } from '@/lib/consolidate-ifr';
 import { applySecurityHeaders, secureFileResponse } from '@/lib/security-headers';
 
 export const dynamic = 'force-dynamic';
@@ -20,8 +20,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Get all land profile files
-    const landProfileFiles: { buffer: Buffer; fileName: string }[] = [];
+    // Get all IFR files
+    const ifrFiles: { buffer: Buffer; fileName: string }[] = [];
     let fileIndex = 0;
     
     while (true) {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       if (!file) break;
       
       const arrayBuffer = await file.arrayBuffer();
-      landProfileFiles.push({
+      ifrFiles.push({
         buffer: Buffer.from(arrayBuffer),
         fileName: file.name,
       });
@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
       fileIndex++;
     }
     
-    if (landProfileFiles.length === 0) {
+    if (ifrFiles.length === 0) {
       return applySecurityHeaders(
         NextResponse.json(
-          { error: 'At least one land profile file is required' },
+          { error: 'At least one IFR file is required' },
           { status: 400 }
         )
       );
@@ -50,10 +50,10 @@ export async function POST(request: NextRequest) {
     const templateArrayBuffer = await templateFile.arrayBuffer();
     const templateBuffer = Buffer.from(templateArrayBuffer);
     
-    // Process consolidation
-    const { buffer, processedCount, errors, warnings } = await consolidateNuclear(
+    // Process consolidation with automatic calculation
+    const { buffer, processedCount, errors, warnings } = await consolidateIFR(
       templateBuffer,
-      landProfileFiles
+      ifrFiles
     );
     
     if (processedCount === 0) {
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     // Return the file with metadata in headers
     const response = secureFileResponse(buffer, {
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      filename: `consolidated-land-profiles-${Date.now()}.xlsx`,
+      filename: `consolidated-ifr-${Date.now()}.xlsx`,
     });
     
     // Add custom headers for metadata
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     
     return response;
   } catch (error) {
-    console.error('Error in consolidate-land-profiles API:', error);
+    console.error('Error in consolidate-ifr API:', error);
     return applySecurityHeaders(
       NextResponse.json(
         {
