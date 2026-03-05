@@ -97,7 +97,7 @@ export type StoredTemplate = {
 };
 
 const isTemplateScope = (value: unknown): value is TemplateScope =>
-  value === "ifr-scanner" || value === "swrft";
+  value === "ifr-scanner" || value === "swrft" || value === "consolidation";
 
 function templateCollection() {
   return getDb().collection("templates");
