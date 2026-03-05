@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { extractIFRData } from "@/lib/consolidate-ifr";
+import { logger } from "@/lib/logger";
 
 interface Issue {
   lotCode: string;

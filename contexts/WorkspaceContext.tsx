@@ -38,16 +38,15 @@ export function WorkspaceProvider({
   children: ReactNode;
 }) {
   const [selectedTab, setSelectedTab] = useState<WorkspaceTab>("hub");
-  const handleSetSelectedTab = useCallback(
-    (tab: WorkspaceTab) => {
-      if (tab === selectedTab) return;
-      setSelectedTab(tab);
+  const handleSetSelectedTab = useCallback((tab: WorkspaceTab) => {
+    setSelectedTab((current) => {
+      if (tab === current) return current;
       if (typeof window !== "undefined") {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
-    },
-    [selectedTab],
-  );
+      return tab;
+    });
+  }, []);
 
   return (
     <WorkspaceContext.Provider

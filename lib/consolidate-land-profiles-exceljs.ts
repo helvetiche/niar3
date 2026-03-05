@@ -25,7 +25,7 @@ export async function extractLandProfileData(
   fileName: string,
 ): Promise<LandProfileData | null> {
   try {
-    console.log(`\nExtracting from: ${fileName}`);
+    logger.debug(`Extracting from: ${fileName}`);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(fileBuffer as unknown as ArrayBuffer);
 
@@ -34,7 +34,7 @@ export async function extractLandProfileData(
       throw new Error(`Cannot extract row number from filename: ${fileName}`);
     }
 
-    console.log(`  Row number: ${rowNumber}`);
+    logger.debug(`Row number: ${rowNumber}`);
 
     const accDetailsSheet = workbook.getWorksheet("00 ACC DETAILS 01");
     if (!accDetailsSheet) {
@@ -84,10 +84,10 @@ export async function extractLandProfileData(
       fileName,
     };
 
-    console.log(`  ✓ Successfully extracted data`);
+    logger.debug(`Successfully extracted data from ${fileName}`);
     return data;
   } catch (error) {
-    console.error(`  ✗ Error extracting data from ${fileName}:`, error);
+    logger.error(`Error extracting data from ${fileName}:`, error);
     return null;
   }
 }

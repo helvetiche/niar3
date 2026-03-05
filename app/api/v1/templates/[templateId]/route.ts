@@ -82,7 +82,9 @@ export async function DELETE(
       httpStatus: 200,
       details: { templateId, scope: template.scope },
     });
-    return applySecurityHeaders(NextResponse.json({ ok: true }));
+    return applySecurityHeaders(
+      NextResponse.json({ ok: true, scope: template.scope }),
+    );
   } catch (error) {
     logger.error("[api/templates/:id DELETE]", error);
     await logAuditTrailEntry({

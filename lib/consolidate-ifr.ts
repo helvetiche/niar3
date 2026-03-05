@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import XlsxPopulate from "xlsx-populate";
 import { lookupIrrigationRate } from "./irrigation-rate-table";
+import { logger } from "@/lib/logger";
 
 /**
  * Round a number to specified decimal places using "round half up" method

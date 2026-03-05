@@ -90,8 +90,16 @@ export async function deleteTemplate(templateId: string): Promise<void> {
     );
   }
 
-  // Invalidate all caches since we don't know which scope this template belongs to
-  invalidateTemplateCache();
+  // Get scope from response for targeted cache invalidation
+  const data = (await response.json().catch(() => ({}))) as {
+    scope?: TemplateScope;
+  };
+  if (data.scope) {
+    invalidateTemplateCache(data.scope);
+  } else {
+    // Fallback: invalidate all if scope not returned
+    invalidateTemplateCache();
+  }
 }
 
 export async function updateTemplate(
