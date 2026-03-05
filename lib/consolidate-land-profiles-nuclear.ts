@@ -1,4 +1,5 @@
 import XlsxPopulate from 'xlsx-populate';
+import { HyperFormula } from 'hyperformula';
 
 export interface NuclearLandProfileData {
   lotNo: string;
@@ -6,14 +7,15 @@ export interface NuclearLandProfileData {
   ownerFirstName: string;
   tillerLastName: string;
   tillerFirstName: string;
-  oldAccount: string;
+  principal: number;
+  penalty: number;
+  oldAccount: number;
   rowNumber: number;
   fileName: string;
 }
 
 /**
- * NUCLEAR OPTION: Just extract what we CAN extract
- * Forget area, principal, penalty - user will fill manually
+ * Extract land profile data including financial values from cached formulas
  */
 export async function extractNuclearData(
   fileBuffer: Buffer,
@@ -46,13 +48,30 @@ export async function extractNuclearData(
       }
     };
     
+    const getNumericValue = (sheet: XlsxPopulate.Sheet, addr: string): number => {
+      try {
+        const val = sheet.cell(addr).value();
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') {
+          const parsed = parseFloat(val);
+          return isNaN(parsed) ? 0 : parsed;
+        }
+        return 0;
+      } catch {
+        return 0;
+      }
+    };
+    
     return {
       lotNo: getValue(accDetailsSheet, 'C3'),
       ownerFirstName: getValue(accDetailsSheet, 'C7'),
       ownerLastName: getValue(accDetailsSheet, 'C9'),
       tillerFirstName: getValue(accDetailsSheet, 'C11'),
       tillerLastName: getValue(accDetailsSheet, 'C13'),
-      oldAccount: getValue(soaSheet, 'G101'),
+      // Financial data from cached formulas in SOA sheet
+      principal: getNumericValue(soaSheet, 'D100'),
+      penalty: getNumericValue(soaSheet, 'F100'),
+      oldAccount: getNumericValue(soaSheet, 'G101'),
       rowNumber,
       fileName,
     };
@@ -88,16 +107,17 @@ export async function consolidateNuclear(
         
         const templateRow = data.rowNumber + 2;
         
-        // Write ONLY what we can extract
+        // Write extracted data including financial values
         sheet.cell(`B${templateRow}`).value(data.lotNo);
         sheet.cell(`C${templateRow}`).value(data.ownerLastName);
         sheet.cell(`D${templateRow}`).value(data.ownerFirstName);
         sheet.cell(`F${templateRow}`).value(data.tillerLastName);
         sheet.cell(`G${templateRow}`).value(data.tillerFirstName);
+        sheet.cell(`J${templateRow}`).value(data.principal);
+        sheet.cell(`K${templateRow}`).value(data.penalty);
         sheet.cell(`L${templateRow}`).value(data.oldAccount);
         
-        // Leave I (area), J (principal), K (penalty) BLANK
-        // User must fill these manually
+        // Leave I (area) BLANK - user must fill manually
         
         processedCount++;
       } catch (error) {
@@ -107,7 +127,7 @@ export async function consolidateNuclear(
     }
     
     if (processedCount > 0) {
-      warnings.push('Columns I (Area), J (Principal), and K (Penalty) are left blank. You can fill these manually by opening the consolidated file.');
+      warnings.push('Column I (Area) is left blank. You can fill this manually by opening the consolidated file.');
     }
     
     const output = await workbook.outputAsync();
