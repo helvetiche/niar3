@@ -78,7 +78,7 @@ export default function ConsolidateLandProfilesTool() {
 
   const handleConsolidate = async () => {
     if ((!templateFile && !selectedTemplateId) || landProfileFiles.length === 0) {
-      toast.error("Please select a template and upload land profile files.");
+      toast.error("Please select a template and upload IFR files.");
       return;
     }
 
@@ -251,13 +251,13 @@ export default function ConsolidateLandProfilesTool() {
       ),
     },
     {
-      title: "Upload Land Profiles",
+      title: "Upload IFR Files",
       description: "Select IFR files",
       content: (
         <div className="space-y-4">
           <div>
             <h3 className="text-lg font-medium text-white">
-              Upload Land Profile Files
+              Upload IFR Files
             </h3>
             <p className="mt-1 text-sm text-white/80">
               Upload one or more IFR Excel files to consolidate. Files will be
