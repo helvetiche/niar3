@@ -49,26 +49,6 @@ export function TemplateManagerInline({
     try {
       const items = await listTemplates(scope);
       setTemplates(items);
-      if (
-        selectedTemplateId &&
-        !items.some((t) => t.id === selectedTemplateId)
-      ) {
-        onSelectedTemplateIdChange("");
-        window.localStorage.removeItem(getTemplateStorageKey(scope));
-      }
-
-      const hasValidSelection =
-        selectedTemplateId && items.some((t) => t.id === selectedTemplateId);
-      if (!hasValidSelection && items.length > 0) {
-        const savedTemplateId = window.localStorage.getItem(
-          getTemplateStorageKey(scope),
-        );
-        const defaultId =
-          savedTemplateId && items.some((t) => t.id === savedTemplateId)
-            ? savedTemplateId
-            : items[0].id;
-        onSelectedTemplateIdChange(defaultId);
-      }
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to load templates.",
@@ -76,7 +56,32 @@ export function TemplateManagerInline({
     } finally {
       setIsLoading(false);
     }
-  }, [onSelectedTemplateIdChange, scope, selectedTemplateId]);
+  }, [scope]);
+
+  // Separate effect to validate selected template
+  useEffect(() => {
+    if (!selectedTemplateId || templates.length === 0) return;
+    
+    const isValid = templates.some((t) => t.id === selectedTemplateId);
+    if (!isValid) {
+      onSelectedTemplateIdChange("");
+      window.localStorage.removeItem(getTemplateStorageKey(scope));
+    }
+  }, [templates, selectedTemplateId, onSelectedTemplateIdChange, scope]);
+
+  // Separate effect to auto-select first template
+  useEffect(() => {
+    if (selectedTemplateId || templates.length === 0) return;
+    
+    const savedTemplateId = window.localStorage.getItem(
+      getTemplateStorageKey(scope),
+    );
+    const defaultId =
+      savedTemplateId && templates.some((t) => t.id === savedTemplateId)
+        ? savedTemplateId
+        : templates[0].id;
+    onSelectedTemplateIdChange(defaultId);
+  }, [templates, selectedTemplateId, onSelectedTemplateIdChange, scope]);
 
   useEffect(() => {
     void refreshTemplates();
