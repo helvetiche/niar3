@@ -352,11 +352,7 @@ export default function ConsolidateLandProfilesTool() {
       <WorkspaceStepper
         steps={steps}
         onComplete={() => void handleConsolidate()}
-        canProceed={(step) => {
-          if (step === 0) return !!(templateFile || selectedTemplateId);
-          if (step === 1) return landProfileFiles.length > 0;
-          return true;
-        }}
+        canProceed={canProceedToStep}
         completeButtonText={isProcessing ? "Processing..." : "Consolidate"}
       />
     </section>
