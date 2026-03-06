@@ -60,6 +60,22 @@ const geminiJsonSchema = z.object({
     .default([]),
 });
 
+const parseGeminiJsonResponse = (
+  rawText: string,
+): z.infer<typeof geminiJsonSchema> => {
+  const cleaned = rawText
+    .replace(/```json\n?/gi, "")
+    .replace(/```\n?/g, "")
+    .trim();
+
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (!jsonMatch)
+    throw new Error("AI response parsing failed: no JSON object found.");
+
+  const parsed = JSON.parse(jsonMatch[0]) as unknown;
+  return geminiJsonSchema.parse(parsed);
+};
+
 
 
 const generateContentWithQuotaGuard = async (

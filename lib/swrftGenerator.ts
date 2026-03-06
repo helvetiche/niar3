@@ -1,6 +1,5 @@
 import XlsxPopulate from "xlsx-populate";
 import {
-  MONTH_NAMES,
   getStartDay,
   getEndDay,
   formatPeriodLabel,

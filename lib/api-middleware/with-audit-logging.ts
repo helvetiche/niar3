@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
-import type { AuthResult } from "@/lib/auth";
+
+type AuthResult = { user: { uid: string } } | null;
 
 type AuditAction = string;
 

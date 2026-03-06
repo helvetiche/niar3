@@ -1,16 +1,14 @@
 import * as XLSX from "xlsx";
 import XlsxPopulate from "xlsx-populate";
-import { lookupIrrigationRate } from "./irrigation-rate-table";
 import { logger } from "@/lib/logger";
-
-/**
- * Round a number to specified decimal places using "round half up" method
- * This matches Excel's ROUND function behavior
- */
-function roundHalfUp(num: number, decimals: number): number {
-  const multiplier = Math.pow(10, decimals);
-  return Math.round(num * multiplier + Number.EPSILON) / multiplier;
-}
+import {
+  roundHalfUp,
+  shouldSkipSeason,
+  buildCropSeasonCode,
+  calculateSeasonCharges,
+  extractRowData,
+  type LotGroup,
+} from "./consolidate-ifr-helpers";
 
 export interface IFRLotData {
   lotCode: string;
@@ -50,64 +48,25 @@ export async function extractIFRData(
       throw new Error(`No sheet found in ${fileName}`);
     }
 
-    // Column mapping
-    const COL_LOT_CODE = "C";
-    const COL_CROP_SEASON = "D";
-    const COL_CROP_YEAR = "E";
-    const COL_PLANTED_AREA = "H";
-    const COL_OWNER_LAST = "M";
-    const COL_OWNER_FIRST = "N";
-    const COL_TILLER_LAST = "O";
-    const COL_TILLER_FIRST = "P";
-    const COL_OLD_ACCOUNT = "Q";
-
     const range = XLSX.utils.decode_range(sheet["!ref"] || "A1");
 
-    // Group data by lot code
-    const lotGroups = new Map<
-      string,
-      {
-        lotCode: string;
-        ownerLastName: string;
-        ownerFirstName: string;
-        tillerLastName: string;
-        tillerFirstName: string;
-        oldAccount: number;
-        latestArea: number;
-        latestYear: number;
-        totalPrincipal: number;
-        totalPenalty: number;
-        numberOfSeasons: number;
-        seenSeasons: Set<string>;
-      }
-    >();
+    const lotGroups = new Map<string, LotGroup>();
 
     for (let row = 2; row <= range.e.r; row++) {
-      const lotCode = sheet[`${COL_LOT_CODE}${row}`]?.v;
-      const cropSeason = sheet[`${COL_CROP_SEASON}${row}`]?.v;
-      const cropYear = sheet[`${COL_CROP_YEAR}${row}`]?.v;
-      const area = sheet[`${COL_PLANTED_AREA}${row}`]?.v;
-      const ownerLastName = sheet[`${COL_OWNER_LAST}${row}`]?.v || "";
-      const ownerFirstName = sheet[`${COL_OWNER_FIRST}${row}`]?.v || "";
-      const tillerLastName = sheet[`${COL_TILLER_LAST}${row}`]?.v || "";
-      const tillerFirstName = sheet[`${COL_TILLER_FIRST}${row}`]?.v || "";
-      const oldAccountValue = parseFloat(
-        String(sheet[`${COL_OLD_ACCOUNT}${row}`]?.v || 0),
-      );
+      const rowData = extractRowData(sheet, row);
 
-      if (!lotCode) continue;
+      if (!rowData.lotCode) continue;
 
-      const lotKey = String(lotCode);
+      const lotKey = String(rowData.lotCode);
 
-      // Initialize lot group if not exists
       if (!lotGroups.has(lotKey)) {
         lotGroups.set(lotKey, {
           lotCode: lotKey,
-          ownerLastName: String(ownerLastName),
-          ownerFirstName: String(ownerFirstName),
-          tillerLastName: String(tillerLastName),
-          tillerFirstName: String(tillerFirstName),
-          oldAccount: oldAccountValue, // Take old account from first occurrence only
+          ownerLastName: rowData.ownerLastName,
+          ownerFirstName: rowData.ownerFirstName,
+          tillerLastName: rowData.tillerLastName,
+          tillerFirstName: rowData.tillerFirstName,
+          oldAccount: rowData.oldAccount,
           latestArea: 0,
           latestYear: 0,
           totalPrincipal: 0,
@@ -119,45 +78,27 @@ export async function extractIFRData(
 
       const group = lotGroups.get(lotKey)!;
 
-      // Update latest area (use the most recent year's area)
-      if (cropYear && area) {
-        const yearNum = parseInt(String(cropYear));
-        if (yearNum > group.latestYear) {
-          group.latestYear = yearNum;
-          group.latestArea = parseFloat(String(area));
+      if (rowData.cropYear && rowData.area) {
+        if (rowData.cropYear > group.latestYear) {
+          group.latestYear = rowData.cropYear;
+          group.latestArea = rowData.area;
         }
       }
 
-      // Calculate principal and penalty if we have season data
-      if (!cropSeason || !cropYear || !area) continue;
+      if (!rowData.cropSeason || !rowData.cropYear || !rowData.area) continue;
 
-      // Skip years before 1975, and skip 75-D (before July 1, 1975)
-      const yearNum = parseInt(String(cropYear));
-      if (yearNum < 1975) continue;
-      if (yearNum === 1975 && String(cropSeason).toUpperCase() === "DRY")
-        continue;
+      if (shouldSkipSeason(rowData.cropYear, rowData.cropSeason)) continue;
 
-      // Build crop season code
-      const yearCode =
-        yearNum >= 2000 ? String(yearNum) : String(yearNum).slice(-2);
-      const seasonCode = String(cropSeason).toUpperCase() === "DRY" ? "D" : "W";
-      const cropSeasonCode = `${yearCode}-${seasonCode}`;
+      const cropSeasonCode = buildCropSeasonCode(rowData.cropYear, rowData.cropSeason);
 
-      // Skip duplicates
       if (group.seenSeasons.has(cropSeasonCode)) continue;
       group.seenSeasons.add(cropSeasonCode);
 
-      // Lookup rate and penalty
-      const rateData = lookupIrrigationRate(cropSeasonCode);
-      if (!rateData) continue;
+      const charges = calculateSeasonCharges(rowData.area, cropSeasonCode);
+      if (!charges) continue;
 
-      // Calculate using the area from THIS SPECIFIC ROW (not latest area)
-      const areaNum = parseFloat(String(area));
-      const principal = areaNum * rateData.rate;
-      const penalty = principal * (rateData.penaltyMonths / 100);
-
-      group.totalPrincipal += principal;
-      group.totalPenalty += penalty;
+      group.totalPrincipal += charges.principal;
+      group.totalPenalty += charges.penalty;
       group.numberOfSeasons++;
     }
 

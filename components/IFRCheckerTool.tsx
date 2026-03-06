@@ -15,8 +15,6 @@ import {
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { useIFRChecker } from "@/hooks/useIFRChecker";
 
-const ITEMS_PER_PAGE = 20;
-
 export default function IFRCheckerTool() {
   const {
     ifrFileInputRef,
