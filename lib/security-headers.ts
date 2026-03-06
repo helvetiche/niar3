@@ -28,12 +28,12 @@ export const SECURITY_RESPONSE_HEADERS: Record<string, string> = {
   "Content-Security-Policy":
     "default-src 'self'; " +
     (process.env.NODE_ENV === "development"
-      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; "
-      : "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com; ") +
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; "
+      : "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; ") +
     "style-src 'self' 'unsafe-inline'; " + // Note: unsafe-inline for styles is common, consider using nonces in future
     "img-src 'self' data: https:; " +
     "font-src 'self' data:; " +
-    "connect-src 'self' https://niatools.vercel.app https://*.firebaseio.com https://*.googleapis.com https://*.google.com; " +
+    "connect-src 'self' https://niatools.vercel.app https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://va.vercel-scripts.com https://vitals.vercel-insights.com; " +
     "frame-ancestors 'none'; " +
     "base-uri 'self'; " +
     "form-action 'self';",
