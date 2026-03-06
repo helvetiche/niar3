@@ -1,5 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PDFDocument } from "pdf-lib";
+import {
+  sanitizeAssociationName,
+  parseNumericArea,
+  parseRetryDelayMs,
+  isQuotaOrRateLimitError,
+} from "./lipa-helpers";
 import { z } from "zod";
 import type { LipaDivision, LipaReportData } from "@/lib/lipa-report-generator";
 
@@ -54,63 +60,7 @@ const geminiJsonSchema = z.object({
     .default([]),
 });
 
-const sanitizeAssociationName = (value: string): string =>
-  value
-    .replace(/\s+/g, " ")
-    .replace(/[\n\r\t]/g, " ")
-    .trim();
 
-const parseNumericArea = (value: number | string): number => {
-  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-  const parsed = Number(value.replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const parseGeminiJsonResponse = (
-  rawText: string,
-): z.infer<typeof geminiJsonSchema> => {
-  const cleaned = rawText
-    .replace(/```json\n?/gi, "")
-    .replace(/```\n?/g, "")
-    .trim();
-
-  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-  if (!jsonMatch)
-    throw new Error("AI response parsing failed: no JSON object found.");
-
-  const parsed = JSON.parse(jsonMatch[0]) as unknown;
-  return geminiJsonSchema.parse(parsed);
-};
-
-const parseRetryDelayMs = (message: string): number => {
-  const retryInMatch = message.match(/retry in ([0-9.]+)s/i);
-  if (retryInMatch?.[1]) {
-    const seconds = Number.parseFloat(retryInMatch[1]);
-    if (Number.isFinite(seconds) && seconds > 0) {
-      return Math.ceil(seconds * 1000);
-    }
-  }
-
-  const retryDelayMatch = message.match(/"retryDelay":"([0-9.]+)s"/i);
-  if (retryDelayMatch?.[1]) {
-    const seconds = Number.parseFloat(retryDelayMatch[1]);
-    if (Number.isFinite(seconds) && seconds > 0) {
-      return Math.ceil(seconds * 1000);
-    }
-  }
-
-  return 60_000;
-};
-
-const isQuotaOrRateLimitError = (message: string): boolean => {
-  const lower = message.toLowerCase();
-  return (
-    lower.includes("429") ||
-    lower.includes("too many requests") ||
-    lower.includes("quota exceeded") ||
-    lower.includes("rate limit")
-  );
-};
 
 const generateContentWithQuotaGuard = async (
   model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
