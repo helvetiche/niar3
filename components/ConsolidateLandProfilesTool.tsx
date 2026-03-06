@@ -1,7 +1,5 @@
 "use client";
 
-import { useRef, useState } from "react";
-import toast from "react-hot-toast";
 import {
   UploadSimpleIcon,
   FileIcon,
@@ -15,147 +13,26 @@ import {
 } from "@phosphor-icons/react";
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { TemplateManagerInline } from "@/components/TemplateManagerInline";
-import { useTemplates } from "@/hooks/useTemplates";
-import { getErrorMessage } from "@/lib/utils";
-
-interface UploadedFile {
-  file: File;
-  id: string;
-}
-
-interface ConsolidationResult {
-  count: number;
-  errors: string[];
-  warnings: string[];
-}
+import { useConsolidateLandProfiles } from "@/hooks/useConsolidateLandProfiles";
 
 export default function ConsolidateLandProfilesTool() {
-  const templateInputRef = useRef<HTMLInputElement | null>(null);
-  const landProfileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const [templateFile, setTemplateFile] = useState<File | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [landProfileFiles, setLandProfileFiles] = useState<UploadedFile[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<ConsolidationResult | null>(null);
-
-  const { data: consolidationTemplates = [] } = useTemplates("consolidation");
-
-  const handleTemplateSelection = (incoming: FileList | null) => {
-    const file = incoming?.[0];
-    if (file) {
-      setTemplateFile(file);
-      setSelectedTemplateId(""); // Clear template manager selection
-      setResult(null);
-    }
-  };
-
-  const handleLandProfileSelection = (incoming: FileList | null) => {
-    const files = Array.from(incoming ?? []);
-    const newFiles = files.map((file) => ({
-      file,
-      id: `${file.name}-${Date.now()}-${Math.random()}`,
-    }));
-
-    setLandProfileFiles((prev) => [...prev, ...newFiles]);
-    setResult(null);
-
-    if (landProfileInputRef.current) {
-      landProfileInputRef.current.value = "";
-    }
-  };
-
-  const removeLandProfileFile = (id: string) => {
-    setLandProfileFiles((prev) => prev.filter((f) => f.id !== id));
-  };
-
-  const removeTemplateFile = () => {
-    setTemplateFile(null);
-    if (templateInputRef.current) {
-      templateInputRef.current.value = "";
-    }
-  };
-
-  const handleConsolidate = async () => {
-    if (
-      (!templateFile && !selectedTemplateId) ||
-      landProfileFiles.length === 0
-    ) {
-      toast.error("Please select a template and upload IFR files.");
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      const formData = new FormData();
-
-      // Use uploaded template file or fetch from template manager
-      if (templateFile) {
-        formData.append("template", templateFile);
-      } else if (selectedTemplateId) {
-        // Fetch the template from the server
-        const templateResponse = await fetch(
-          `/api/v1/templates/${selectedTemplateId}`,
-        );
-        if (!templateResponse.ok) {
-          throw new Error("Failed to fetch template");
-        }
-        const templateBlob = await templateResponse.blob();
-        const templateFileName =
-          consolidationTemplates.find((t) => t.id === selectedTemplateId)
-            ?.name || "template.xlsx";
-        formData.append("template", templateBlob, templateFileName);
-      }
-
-      landProfileFiles.forEach((item, index) => {
-        formData.append(`landProfile_${index}`, item.file);
-      });
-
-      const response = await fetch("/api/v1/consolidate-land-profiles", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to consolidate files");
-      }
-
-      const processedCount = parseInt(
-        response.headers.get("X-Processed-Count") || "0",
-      );
-      const errors = JSON.parse(response.headers.get("X-Errors") || "[]");
-      const warnings = JSON.parse(response.headers.get("X-Warnings") || "[]");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `consolidated-land-profiles-${Date.now()}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      setResult({ count: processedCount, errors, warnings });
-
-      if (errors.length === 0) {
-        toast.success(
-          `Successfully consolidated ${processedCount} IFR file(s)!`,
-        );
-      } else {
-        toast.success(
-          `Consolidated with ${errors.length} error(s). Check results for details.`,
-        );
-      }
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to consolidate IFR files."));
-      setResult(null);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  const {
+    templateInputRef,
+    landProfileInputRef,
+    templateFile,
+    selectedTemplateId,
+    landProfileFiles,
+    isProcessing,
+    result,
+    consolidationTemplates,
+    handleTemplateSelection,
+    handleLandProfileSelection,
+    removeLandProfileFile,
+    removeTemplateFile,
+    handleTemplateIdChange,
+    handleConsolidate,
+    canProceedToStep,
+  } = useConsolidateLandProfiles();
 
   const steps = [
     {
