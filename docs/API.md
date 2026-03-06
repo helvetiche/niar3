@@ -27,6 +27,7 @@ Content-Type: multipart/form-data (for file uploads)
 - **Heavy operations**: 5 requests/minute per IP
 
 Rate limit headers:
+
 ```http
 X-RateLimit-Limit: 10
 X-RateLimit-Remaining: 9
@@ -43,6 +44,7 @@ Retry-After: 60 (on 429 response)
 Check API health status.
 
 **Response:**
+
 ```json
 {
   "status": "ok",
@@ -59,6 +61,7 @@ Check API health status.
 Create session cookie from Firebase ID token.
 
 **Request:**
+
 ```json
 {
   "idToken": "firebase-id-token"
@@ -66,6 +69,7 @@ Create session cookie from Firebase ID token.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -78,6 +82,7 @@ Create session cookie from Firebase ID token.
 Refresh session cookie.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -90,6 +95,7 @@ Refresh session cookie.
 Get current session information.
 
 **Response:**
+
 ```json
 {
   "user": {
@@ -113,9 +119,11 @@ Get current session information.
 List templates for a specific scope.
 
 **Query Parameters:**
+
 - `scope` (required): `ifr-scanner` | `swrft` | `consolidation`
 
 **Response:**
+
 ```json
 {
   "templates": [
@@ -139,6 +147,7 @@ List templates for a specific scope.
 Upload a new template.
 
 **Request (multipart/form-data):**
+
 ```
 scope: ifr-scanner
 file: <file>
@@ -146,6 +155,7 @@ name: Template Name (optional)
 ```
 
 **Response:**
+
 ```json
 {
   "id": "template-id",
@@ -164,12 +174,14 @@ name: Template Name (optional)
 Update template name and/or file.
 
 **Request (multipart/form-data):**
+
 ```
 name: New Name (optional)
 file: <file> (optional)
 ```
 
 **Response:**
+
 ```json
 {
   "id": "template-id",
@@ -189,6 +201,7 @@ file: <file> (optional)
 Delete a template.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -207,6 +220,7 @@ List all user accounts (admin only).
 **Required Permission:** `users:read`
 
 **Response:**
+
 ```json
 {
   "accounts": [
@@ -230,6 +244,7 @@ Create a new user account (admin only).
 **Required Permission:** `users:write`
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -241,6 +256,7 @@ Create a new user account (admin only).
 ```
 
 **Response:**
+
 ```json
 {
   "uid": "user-id",
@@ -260,6 +276,7 @@ Update user account (admin only).
 **Required Permission:** `users:write`
 
 **Request:**
+
 ```json
 {
   "displayName": "New Name",
@@ -270,6 +287,7 @@ Update user account (admin only).
 ```
 
 **Response:**
+
 ```json
 {
   "uid": "user-id",
@@ -289,6 +307,7 @@ Delete user account (admin only).
 **Required Permission:** `users:delete`
 
 **Response:**
+
 ```json
 {
   "success": true
@@ -304,6 +323,7 @@ Delete user account (admin only).
 Consolidate multiple land profile Excel files.
 
 **Request (multipart/form-data):**
+
 ```
 template: <template-file>
 landProfile_0: <file>
@@ -313,6 +333,7 @@ landProfile_1: <file>
 
 **Response:**
 Binary Excel file with headers:
+
 ```http
 Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 Content-Disposition: attachment; filename="consolidated-ifr-{timestamp}.xlsx"
@@ -332,6 +353,7 @@ X-Warnings: ["Column I (Area) is left blank..."]
 Validate consolidated file against source IFR data.
 
 **Request (multipart/form-data):**
+
 ```
 consolidatedFile: <file>
 sourceFile_0: <file>
@@ -340,15 +362,16 @@ sourceFile_1: <file>
 ```
 
 **Response:**
+
 ```json
 {
   "discrepancies": [
     {
       "lotCode": "LOT-001",
       "field": "principal",
-      "consolidated": 1000.00,
-      "source": 1050.00,
-      "difference": -50.00
+      "consolidated": 1000.0,
+      "source": 1050.0,
+      "difference": -50.0
     }
   ],
   "summary": {
@@ -369,6 +392,7 @@ sourceFile_1: <file>
 Merge PDF or Excel files.
 
 **Request (multipart/form-data):**
+
 ```
 mode: pdf | excel
 file_0: <file>
@@ -379,6 +403,7 @@ fileName: output-name (optional)
 
 **Response:**
 Binary file (PDF or Excel) with headers:
+
 ```http
 Content-Type: application/pdf (or Excel MIME type)
 Content-Disposition: attachment; filename="merged-{timestamp}.pdf"
@@ -393,6 +418,7 @@ Content-Disposition: attachment; filename="merged-{timestamp}.pdf"
 Scan LIPA files and extract data.
 
 **Request (multipart/form-data):**
+
 ```
 file_0: <file>
 file_1: <file>
@@ -400,6 +426,7 @@ file_1: <file>
 ```
 
 **Response:**
+
 ```json
 {
   "scannedData": [
@@ -416,6 +443,7 @@ file_1: <file>
 Generate LIPA summary report.
 
 **Request:**
+
 ```json
 {
   "scannedData": [ ... ],
@@ -435,6 +463,7 @@ Binary Excel file
 Get accomplishment tasks.
 
 **Response:**
+
 ```json
 {
   "tasks": [
@@ -453,6 +482,7 @@ Get accomplishment tasks.
 Create accomplishment task.
 
 **Request:**
+
 ```json
 {
   "title": "Task Title",
@@ -462,6 +492,7 @@ Create accomplishment task.
 ```
 
 **Response:**
+
 ```json
 {
   "id": "task-id",
@@ -519,6 +550,7 @@ Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
 ## Audit Trail
 
 All API requests are logged to the audit trail with:
+
 - User ID and email
 - Action performed
 - Request route and method

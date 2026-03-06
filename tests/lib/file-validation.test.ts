@@ -10,7 +10,7 @@ describe("validateFileBeforeUpload", () => {
   it("should validate PDF files", () => {
     const file = new File(["content"], "test.pdf", { type: "application/pdf" });
     const result = validateFileBeforeUpload(file, "pdf");
-    
+
     expect(result.isValid).toBe(true);
     expect(result.error).toBeUndefined();
   });
@@ -20,7 +20,7 @@ describe("validateFileBeforeUpload", () => {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
     const result = validateFileBeforeUpload(file, "excel");
-    
+
     expect(result.isValid).toBe(true);
     expect(result.error).toBeUndefined();
   });
@@ -28,7 +28,7 @@ describe("validateFileBeforeUpload", () => {
   it("should reject files with wrong extension", () => {
     const file = new File(["content"], "test.txt", { type: "text/plain" });
     const result = validateFileBeforeUpload(file, "pdf");
-    
+
     expect(result.isValid).toBe(false);
     expect(result.error).toContain("Only .pdf files are allowed");
   });
@@ -36,7 +36,7 @@ describe("validateFileBeforeUpload", () => {
   it("should reject empty files", () => {
     const file = new File([], "test.pdf", { type: "application/pdf" });
     const result = validateFileBeforeUpload(file);
-    
+
     expect(result.isValid).toBe(false);
     expect(result.error).toBe("File is empty");
   });
@@ -47,9 +47,9 @@ describe("validateFileBeforeUpload", () => {
       type: "application/pdf",
     });
     Object.defineProperty(file, "size", { value: largeSize });
-    
+
     const result = validateFileBeforeUpload(file);
-    
+
     expect(result.isValid).toBe(false);
     expect(result.error).toContain("exceeds 2GB limit");
   });
@@ -60,9 +60,9 @@ describe("validateFileBeforeUpload", () => {
       type: "application/pdf",
     });
     Object.defineProperty(file, "size", { value: largeSize });
-    
+
     const result = validateFileBeforeUpload(file);
-    
+
     expect(result.isValid).toBe(true);
     expect(result.needsProgress).toBe(true);
   });
@@ -73,9 +73,9 @@ describe("validateFileBeforeUpload", () => {
       type: "application/pdf",
     });
     Object.defineProperty(file, "size", { value: veryLargeSize });
-    
+
     const result = validateFileBeforeUpload(file);
-    
+
     expect(result.isValid).toBe(true);
     expect(result.needsResumable).toBe(true);
     expect(result.estimatedTime).toBeGreaterThan(0);
@@ -88,9 +88,9 @@ describe("validateMultipleFiles", () => {
       new File(["content1"], "test1.pdf", { type: "application/pdf" }),
       new File(["content2"], "test2.pdf", { type: "application/pdf" }),
     ];
-    
+
     const result = validateMultipleFiles(files, "pdf");
-    
+
     expect(result.valid).toHaveLength(2);
     expect(result.invalid).toHaveLength(0);
     expect(result.totalSize).toBeGreaterThan(0);
@@ -102,9 +102,9 @@ describe("validateMultipleFiles", () => {
       new File(["content2"], "test2.txt", { type: "text/plain" }),
       new File([], "test3.pdf", { type: "application/pdf" }),
     ];
-    
+
     const result = validateMultipleFiles(files, "pdf");
-    
+
     expect(result.valid).toHaveLength(1);
     expect(result.invalid).toHaveLength(2);
   });
@@ -112,19 +112,19 @@ describe("validateMultipleFiles", () => {
   it("should calculate total size correctly", () => {
     const size1 = 1024 * 1024; // 1MB
     const size2 = 2 * 1024 * 1024; // 2MB
-    
+
     const file1 = new File(["x".repeat(1000)], "test1.pdf", {
       type: "application/pdf",
     });
     const file2 = new File(["x".repeat(1000)], "test2.pdf", {
       type: "application/pdf",
     });
-    
+
     Object.defineProperty(file1, "size", { value: size1 });
     Object.defineProperty(file2, "size", { value: size2 });
-    
+
     const result = validateMultipleFiles([file1, file2], "pdf");
-    
+
     expect(result.totalSize).toBe(size1 + size2);
   });
 });
@@ -148,19 +148,19 @@ describe("estimateUploadTime", () => {
   it("should estimate upload time correctly", () => {
     const bytes = 10 * 1024 * 1024; // 10MB
     const speedMbps = 10;
-    
+
     const time = estimateUploadTime(bytes, speedMbps);
-    
+
     expect(time).toBeGreaterThan(0);
     expect(time).toBeLessThan(100); // Should be reasonable
   });
 
   it("should handle different speeds", () => {
     const bytes = 10 * 1024 * 1024; // 10MB
-    
+
     const slowTime = estimateUploadTime(bytes, 1);
     const fastTime = estimateUploadTime(bytes, 100);
-    
+
     expect(slowTime).toBeGreaterThan(fastTime);
   });
 });

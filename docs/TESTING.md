@@ -91,16 +91,16 @@ import { MyFeature } from "@/components/MyFeature";
 describe("MyFeature Integration", () => {
   it("should complete full workflow", async () => {
     render(<MyFeature />);
-    
+
     // Step 1
     await user.click(screen.getByText("Start"));
-    
+
     // Step 2
     await user.type(screen.getByLabelText("Input"), "test");
-    
+
     // Step 3
     await user.click(screen.getByText("Submit"));
-    
+
     // Verify result
     await waitFor(() => {
       expect(screen.getByText("Success")).toBeInTheDocument();
@@ -146,6 +146,7 @@ Next.js modules are automatically mocked in `tests/setup.ts`:
 ### Coverage Thresholds
 
 Minimum coverage requirements:
+
 - Lines: 80%
 - Functions: 80%
 - Branches: 80%
@@ -164,6 +165,7 @@ open coverage/index.html
 ### Coverage Exclusions
 
 The following are excluded from coverage:
+
 - `node_modules/`
 - `tests/`
 - `**/*.d.ts`
@@ -176,6 +178,7 @@ The following are excluded from coverage:
 ### 1. Test Behavior, Not Implementation
 
 ❌ Bad:
+
 ```typescript
 it("should call setState", () => {
   const component = render(<MyComponent />);
@@ -184,6 +187,7 @@ it("should call setState", () => {
 ```
 
 ✅ Good:
+
 ```typescript
 it("should display updated value", async () => {
   render(<MyComponent />);
@@ -195,11 +199,13 @@ it("should display updated value", async () => {
 ### 2. Use Descriptive Test Names
 
 ❌ Bad:
+
 ```typescript
 it("works", () => { ... });
 ```
 
 ✅ Good:
+
 ```typescript
 it("should validate email format and show error for invalid input", () => { ... });
 ```
@@ -210,10 +216,10 @@ it("should validate email format and show error for invalid input", () => { ... 
 it("should calculate total correctly", () => {
   // Arrange
   const items = [{ price: 10 }, { price: 20 }];
-  
+
   // Act
   const total = calculateTotal(items);
-  
+
   // Assert
   expect(total).toBe(30);
 });
@@ -272,11 +278,13 @@ describe("UserList", () => {
 ## Continuous Integration
 
 Tests run automatically on:
+
 - Every push to main/develop branches
 - Every pull request
 - Before deployment
 
 CI pipeline includes:
+
 1. Linting
 2. Type checking
 3. Unit tests

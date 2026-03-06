@@ -51,10 +51,22 @@ export async function extractNuclearData(
 
     return {
       lotNo: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE),
-      ownerFirstName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME),
-      ownerLastName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME),
-      tillerFirstName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME),
-      tillerLastName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME),
+      ownerFirstName: getCellValue(
+        accDetailsSheet,
+        EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME,
+      ),
+      ownerLastName: getCellValue(
+        accDetailsSheet,
+        EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME,
+      ),
+      tillerFirstName: getCellValue(
+        accDetailsSheet,
+        EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME,
+      ),
+      tillerLastName: getCellValue(
+        accDetailsSheet,
+        EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME,
+      ),
       // Financial data from cached formulas in SOA sheet
       principal: getNumericCellValue(soaSheet, EXCEL_CELLS.SOA.PRINCIPAL),
       penalty: getNumericCellValue(soaSheet, EXCEL_CELLS.SOA.PENALTY),

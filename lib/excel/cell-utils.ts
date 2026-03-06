@@ -81,7 +81,9 @@ export function roundHalfUp(num: number, decimals: number): number {
  * Check if a name value is valid (not empty or "N")
  */
 export function isValidName(value: string): boolean {
-  return Boolean(value && value.trim() !== "" && value.trim().toUpperCase() !== "N");
+  return Boolean(
+    value && value.trim() !== "" && value.trim().toUpperCase() !== "N",
+  );
 }
 
 /**

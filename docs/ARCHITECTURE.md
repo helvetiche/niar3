@@ -7,6 +7,7 @@ NIA Productivity Tools is built with Next.js 16 (App Router) and follows a moder
 ## Technology Stack
 
 ### Frontend
+
 - **Framework**: Next.js 16.1.6 with React 19.2.3
 - **Language**: TypeScript 5 (strict mode)
 - **Styling**: Tailwind CSS 4
@@ -15,6 +16,7 @@ NIA Productivity Tools is built with Next.js 16 (App Router) and follows a moder
 - **State Management**: React Context API, SWR
 
 ### Backend
+
 - **Runtime**: Node.js 20+
 - **API**: Next.js API Routes (App Router)
 - **Authentication**: Firebase Admin SDK
@@ -23,6 +25,7 @@ NIA Productivity Tools is built with Next.js 16 (App Router) and follows a moder
 - **Rate Limiting**: Upstash Redis
 
 ### DevOps
+
 - **Deployment**: Vercel
 - **Monitoring**: Sentry
 - **Analytics**: Vercel Speed Insights
@@ -88,17 +91,20 @@ Secure File Response
 ## Directory Structure
 
 ### `/app` - Next.js App Router
+
 - **Pages**: Route-based file structure
 - **API Routes**: `/api/v1/*` for versioned endpoints
 - **Layouts**: Shared layouts with metadata
 - **Error Boundaries**: Global error handling
 
 ### `/components` - React Components
+
 - **Feature Components**: Domain-specific components
 - **UI Components**: Reusable UI elements
 - **Layout Components**: Page structure components
 
 ### `/lib` - Core Business Logic
+
 - **`/auth`**: Authentication and authorization
 - **`/firebase-admin`**: Firebase Admin SDK wrappers
 - **`/api`**: Client-side API functions
@@ -107,11 +113,13 @@ Secure File Response
 - **`/rate-limit`**: Rate limiting logic
 
 ### `/types` - TypeScript Definitions
+
 - Shared type definitions
 - API request/response types
 - Domain models
 
 ### `/constants` - Application Constants
+
 - Permission definitions
 - Error messages
 - Configuration values
@@ -119,32 +127,38 @@ Secure File Response
 ## Key Design Decisions
 
 ### 1. Server-Side Session Management
+
 - Session cookies verified server-side for security
 - Firebase Admin SDK for token verification
 - Custom claims for role-based access control
 
 ### 2. Permission-Based Authorization
+
 - Resource:action format (e.g., "workspace:read")
 - Three-tier role system (super-admin, admin, user)
 - Base permissions for authenticated users
 
 ### 3. Comprehensive Audit Logging
+
 - All actions logged to Firebase Realtime DB
 - Sanitized data to prevent sensitive info leakage
 - Structured logging for compliance
 
 ### 4. Distributed Rate Limiting
+
 - Upstash Redis for production
 - Three-tier limits (public, API, auth)
 - IP-based identification
 
 ### 5. Security-First Headers
+
 - Strict CSP with allowlists
 - HSTS for HTTPS enforcement
 - X-Frame-Options to prevent clickjacking
 - CORS restricted to same-origin
 
 ### 6. Graceful Degradation
+
 - Optional services (Sentry, Redis) fail gracefully
 - Environment-aware configuration
 - Fallback mechanisms for non-critical features
@@ -152,6 +166,7 @@ Secure File Response
 ## Data Flow
 
 ### Authentication
+
 1. User logs in via Firebase Auth (client)
 2. Client receives ID token
 3. Server exchanges token for session cookie
@@ -159,6 +174,7 @@ Secure File Response
 5. Subsequent requests verified server-side
 
 ### File Processing
+
 1. Client uploads file via FormData
 2. Server validates file (size, type)
 3. Buffer extracted and processed
@@ -167,6 +183,7 @@ Secure File Response
 6. Audit trail logged
 
 ### Template Management
+
 1. Templates stored in Firebase Storage
 2. Metadata stored in Firestore
 3. Client-side caching for performance
@@ -175,12 +192,14 @@ Secure File Response
 ## Security Architecture
 
 ### Defense in Depth
+
 1. **Network Layer**: Rate limiting, CORS
 2. **Application Layer**: Authentication, authorization
 3. **Data Layer**: Input validation, sanitization
 4. **Monitoring Layer**: Audit logging, error tracking
 
 ### Security Headers
+
 - Content-Security-Policy
 - Strict-Transport-Security
 - X-Frame-Options: DENY

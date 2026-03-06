@@ -82,12 +82,30 @@ export const generateProfileBuffer = async (
   // Set account details
   setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE, lotCode);
   setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.DIVISION, division);
-  accDetailsSheet.cell(EXCEL_CELLS.ACC_DETAILS.DIVISION).style("horizontalAlignment", "left");
+  accDetailsSheet
+    .cell(EXCEL_CELLS.ACC_DETAILS.DIVISION)
+    .style("horizontalAlignment", "left");
   setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.NAME_OF_IA, nameOfIA);
-  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME, landOwnerFirst);
-  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME, landOwnerLast);
-  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME, farmerFirst);
-  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME, farmerLast);
+  setCellValue(
+    accDetailsSheet,
+    EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME,
+    landOwnerFirst,
+  );
+  setCellValue(
+    accDetailsSheet,
+    EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME,
+    landOwnerLast,
+  );
+  setCellValue(
+    accDetailsSheet,
+    EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME,
+    farmerFirst,
+  );
+  setCellValue(
+    accDetailsSheet,
+    EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME,
+    farmerLast,
+  );
 
   // Set crop data (starting at row 30)
   const CROP_DATA_START_ROW = 30;

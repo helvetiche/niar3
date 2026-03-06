@@ -19,7 +19,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ## Development Setup
 
-See [README.md](./README.md) for detailed setup instructions.
+See [README.md](../README.md) for detailed setup instructions.
 
 ## Code Style
 
@@ -105,7 +105,7 @@ Use GitHub Issues with the feature template:
 
 ## Security Issues
 
-Do NOT open public issues for security vulnerabilities. Email security concerns to: [security-email]
+Do NOT open public issues for security vulnerabilities. Email security concerns to: security@niaregion3.gov.ph
 
 ## Questions?
 

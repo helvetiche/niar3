@@ -37,10 +37,10 @@ vi.mock("next/headers", () => ({
 }));
 
 // Mock environment variables
-Object.defineProperty(process.env, "NODE_ENV", { value: "test", writable: true });
-Object.defineProperty(process.env, "NEXT_PUBLIC_FIREBASE_API_KEY", { value: "test-api-key", writable: true });
-Object.defineProperty(process.env, "NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", { value: "test.firebaseapp.com", writable: true });
-Object.defineProperty(process.env, "NEXT_PUBLIC_FIREBASE_PROJECT_ID", { value: "test-project", writable: true });
-Object.defineProperty(process.env, "FIREBASE_ADMIN_PROJECT_ID", { value: "test-project", writable: true });
-Object.defineProperty(process.env, "FIREBASE_ADMIN_CLIENT_EMAIL", { value: "test@test.iam.gserviceaccount.com", writable: true });
-Object.defineProperty(process.env, "FIREBASE_ADMIN_PRIVATE_KEY", { value: "test-private-key", writable: true });
+vi.stubEnv("NODE_ENV", "test");
+vi.stubEnv("NEXT_PUBLIC_FIREBASE_API_KEY", "test-api-key");
+vi.stubEnv("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN", "test.firebaseapp.com");
+vi.stubEnv("NEXT_PUBLIC_FIREBASE_PROJECT_ID", "test-project");
+vi.stubEnv("FIREBASE_ADMIN_PROJECT_ID", "test-project");
+vi.stubEnv("FIREBASE_ADMIN_CLIENT_EMAIL", "test@test.iam.gserviceaccount.com");
+vi.stubEnv("FIREBASE_ADMIN_PRIVATE_KEY", "test-private-key");

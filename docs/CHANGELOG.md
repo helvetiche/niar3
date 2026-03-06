@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Comprehensive documentation (README, CONTRIBUTING, ARCHITECTURE, API, DEPLOYMENT)
 - Test infrastructure with Vitest
-- Unit tests for authentication and file validation
+- Unit tests for authentication and file validation (51 tests)
 - CI/CD pipeline with GitHub Actions
 - Security.txt file for vulnerability disclosure
 - Excel utility functions for code reuse

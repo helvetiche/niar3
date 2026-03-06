@@ -58,16 +58,19 @@ NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ### Manual Deployment
 
 1. Install Vercel CLI:
+
 ```bash
 npm install -g vercel
 ```
 
 2. Login to Vercel:
+
 ```bash
 vercel login
 ```
 
 3. Deploy to production:
+
 ```bash
 vercel --prod
 ```
@@ -94,11 +97,13 @@ The project includes `vercel.json` for optimal configuration:
 ### Docker Deployment
 
 1. Build Docker image:
+
 ```bash
 docker build -t niatools .
 ```
 
 2. Run container:
+
 ```bash
 docker run -p 3000:3000 \
   -e FIREBASE_ADMIN_PROJECT_ID=your-project-id \
@@ -110,16 +115,19 @@ docker run -p 3000:3000 \
 ### Traditional Server Deployment
 
 1. Build the application:
+
 ```bash
 npm run build
 ```
 
 2. Start the production server:
+
 ```bash
 npm start
 ```
 
 3. Use a process manager like PM2:
+
 ```bash
 pm2 start npm --name "niatools" -- start
 ```
@@ -149,12 +157,14 @@ pm2 start npm --name "niatools" -- start
 ### Manual Rollback
 
 1. Revert to previous commit:
+
 ```bash
 git revert HEAD
 git push origin main
 ```
 
 2. Or checkout previous version:
+
 ```bash
 git checkout <previous-commit-hash>
 git push origin main --force
@@ -169,6 +179,7 @@ curl https://your-domain.com/api/v1/health
 ```
 
 Expected response:
+
 ```json
 {
   "status": "ok",
@@ -185,6 +196,7 @@ Expected response:
 ### Logs
 
 View logs in:
+
 - Vercel Dashboard: Real-time logs
 - Sentry: Error logs with context
 - Firebase Console: Audit trail logs
@@ -248,6 +260,7 @@ View logs in:
 ## Support
 
 For deployment issues:
+
 - Check [Vercel Documentation](https://vercel.com/docs)
 - Review [Next.js Deployment Guide](https://nextjs.org/docs/deployment)
 - Contact support: your-support-email@example.com

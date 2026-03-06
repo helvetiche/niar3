@@ -80,7 +80,7 @@ describe("sanitizeFilePart", () => {
     expect(sanitizeFilePart("file/name")).toBe("file-name");
     expect(sanitizeFilePart("file\\name")).toBe("file-name");
     expect(sanitizeFilePart("file:name")).toBe("file-name");
-    expect(sanitizeFilePart('file*name?"<>|')).toBe("file-name------");
+    expect(sanitizeFilePart('file*name?"<>|')).toBe("file-name-----");
   });
 
   it("should trim whitespace", () => {

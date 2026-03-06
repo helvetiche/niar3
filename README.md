@@ -27,12 +27,14 @@
 ## 🛠️ Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd niatools
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 # or
@@ -42,11 +44,13 @@ pnpm install
 ```
 
 3. Set up environment variables:
+
 ```bash
 cp .env.example .env.local
 ```
 
 4. Configure your `.env.local` file with required credentials:
+
 ```env
 # Firebase Admin SDK
 FIREBASE_ADMIN_PROJECT_ID=your-project-id
@@ -74,6 +78,7 @@ GEMINI_API_KEY=your-gemini-api-key
 ```
 
 5. Run the development server:
+
 ```bash
 npm run dev
 # or
@@ -154,6 +159,7 @@ This application is optimized for deployment on Vercel:
 4. Deploy
 
 For other platforms, ensure:
+
 - Node.js 20.x runtime
 - Environment variables are set
 - Build command: `npm run build`

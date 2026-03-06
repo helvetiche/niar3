@@ -38,7 +38,9 @@ export async function extractLandProfileData(
 
     const accDetailsSheet = workbook.getWorksheet(EXCEL_SHEETS.ACC_DETAILS);
     if (!accDetailsSheet) {
-      logger.error(`Sheet "${EXCEL_SHEETS.ACC_DETAILS}" not found in ${fileName}`);
+      logger.error(
+        `Sheet "${EXCEL_SHEETS.ACC_DETAILS}" not found in ${fileName}`,
+      );
       throw new Error(`Sheet "${EXCEL_SHEETS.ACC_DETAILS}" not found`);
     }
 
@@ -72,10 +74,22 @@ export async function extractLandProfileData(
 
     const data: LandProfileData = {
       lotNo: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE),
-      ownerFirstName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME),
-      ownerLastName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME),
-      tillerFirstName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME),
-      tillerLastName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME),
+      ownerFirstName: getCellValue(
+        accDetailsSheet,
+        EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME,
+      ),
+      ownerLastName: getCellValue(
+        accDetailsSheet,
+        EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME,
+      ),
+      tillerFirstName: getCellValue(
+        accDetailsSheet,
+        EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME,
+      ),
+      tillerLastName: getCellValue(
+        accDetailsSheet,
+        EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME,
+      ),
       oldAccount: getCellValue(soaSheet, EXCEL_CELLS.SOA.OLD_ACCOUNT),
       area,
       principal,
