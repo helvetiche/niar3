@@ -43,7 +43,9 @@ export async function extractNuclearData(
     const getValue = (sheet: XlsxPopulate.Sheet, addr: string): string => {
       try {
         const val = sheet.cell(addr).value();
-        return val ? String(val).trim() : "";
+        const strVal = val ? String(val).trim() : "";
+        // Remove "N" values that indicate empty data
+        return strVal === "N" ? "" : strVal;
       } catch {
         return "";
       }
