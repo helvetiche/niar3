@@ -1,6 +1,11 @@
 "use client";
 
-import { getClientAuth } from "@/lib/firebase/config";
+import {
+  fetchWithSessionRefresh,
+  getFileNameFromContentDisposition,
+  FormDataBuilder,
+  handleApiError,
+} from "@/lib/api/api-client-utils";
 
 export type LipaSummaryFileMapping = {
   fileIndex: number;
@@ -47,78 +52,27 @@ export type GenerateLipaSummaryResult = {
   extractedAssociations: number;
 };
 
-const refreshSessionCookie = async (): Promise<void> => {
-  const auth = getClientAuth();
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error("Your session expired. Please sign in again.");
-  }
-
-  const token = await user.getIdToken(true);
-  const response = await fetch("/api/v1/auth/session", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Unable to refresh session. Please sign in again.");
-  }
-};
-
-const getFileNameFromContentDisposition = (
-  value: string | null,
-  fallback: string,
-): string => {
-  if (!value) return fallback;
-
-  const utf8Match = value.match(/filename\*=UTF-8''([^;]+)/i);
-  if (utf8Match?.[1]) {
-    return decodeURIComponent(utf8Match[1]).trim() || fallback;
-  }
-
-  const simpleMatch = value.match(/filename="([^"]+)"/i);
-  if (simpleMatch?.[1]) return simpleMatch[1].trim() || fallback;
-
-  return fallback;
-};
-
 export const generateLipaSummary = async (
   payload: GenerateLipaSummaryPayload,
 ): Promise<GenerateLipaSummaryResult> => {
-  const formData = new FormData();
+  const formData = new FormDataBuilder()
+    .appendFiles("files", payload.files)
+    .appendJSON("mappings", payload.mappings)
+    .appendOptional("title", payload.title)
+    .appendOptional("season", payload.season)
+    .appendOptional("outputFileName", payload.outputFileName)
+    .build();
 
-  payload.files.forEach((file) => {
-    formData.append("files", file);
-  });
-  formData.append("mappings", JSON.stringify(payload.mappings));
-
-  if (payload.title?.trim()) formData.append("title", payload.title.trim());
-  if (payload.season?.trim()) formData.append("season", payload.season.trim());
-  if (payload.outputFileName?.trim()) {
-    formData.append("outputFileName", payload.outputFileName.trim());
-  }
-
-  const executeRequest = () =>
+  const response = await fetchWithSessionRefresh(() =>
     fetch("/api/v1/lipa-summary", {
       method: "POST",
       credentials: "include",
       body: formData,
-    });
-
-  let response = await executeRequest();
-  if (response.status === 401) {
-    await refreshSessionCookie();
-    response = await executeRequest();
-  }
+    }),
+  );
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ??
-        "Failed to generate LIPA summary report",
-    );
+    await handleApiError(response, "Failed to generate LIPA summary report");
   }
 
   const blob = await response.blob();
@@ -137,34 +91,24 @@ export const generateLipaSummary = async (
 export const scanLipaFile = async (
   payload: ScanLipaFilePayload,
 ): Promise<LipaScannedFileResult> => {
-  const formData = new FormData();
-  formData.append("file", payload.file);
-  formData.append(
-    "payload",
-    JSON.stringify({
+  const formData = new FormDataBuilder()
+    .append("file", payload.file)
+    .appendJSON("payload", {
       divisionName: payload.mapping.divisionName,
       pageNumber: payload.mapping.pageNumber,
-    }),
-  );
+    })
+    .build();
 
-  const executeRequest = () =>
+  const response = await fetchWithSessionRefresh(() =>
     fetch("/api/v1/lipa-summary/scan", {
       method: "POST",
       credentials: "include",
       body: formData,
-    });
-
-  let response = await executeRequest();
-  if (response.status === 401) {
-    await refreshSessionCookie();
-    response = await executeRequest();
-  }
+    }),
+  );
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ?? "Failed to scan LIPA PDF",
-    );
+    await handleApiError(response, "Failed to scan LIPA PDF");
   }
 
   const data = (await response.json()) as { scanned: LipaScannedFileResult };
@@ -174,26 +118,17 @@ export const scanLipaFile = async (
 export const buildLipaSummaryReport = async (
   payload: BuildLipaSummaryReportPayload,
 ): Promise<GenerateLipaSummaryResult> => {
-  const executeRequest = () =>
+  const response = await fetchWithSessionRefresh(() =>
     fetch("/api/v1/lipa-summary/report", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    });
-
-  let response = await executeRequest();
-  if (response.status === 401) {
-    await refreshSessionCookie();
-    response = await executeRequest();
-  }
+    }),
+  );
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ??
-        "Failed to generate LIPA summary report",
-    );
+    await handleApiError(response, "Failed to generate LIPA summary report");
   }
 
   const blob = await response.blob();

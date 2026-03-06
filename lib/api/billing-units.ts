@@ -1,5 +1,7 @@
 "use client";
 
+import { FormDataBuilder, handleApiError } from "@/lib/api/api-client-utils";
+
 export type GenerateBillingUnitsOptions = {
   templateId: string;
   billingUnitFolderName?: string;
@@ -14,19 +16,12 @@ export const generateBillingUnitsZip = async (
     throw new Error("Please upload at least one source Excel file.");
   }
 
-  const formData = new FormData();
-  sourceFiles.forEach((file) => {
-    formData.append("files", file);
-  });
-  if (options.templateId?.trim()) {
-    formData.append("templateId", options.templateId.trim());
-  }
-  if (options.billingUnitFolderName?.trim()) {
-    formData.append(
-      "billingUnitFolderName",
-      options.billingUnitFolderName.trim(),
-    );
-  }
+  const formData = new FormDataBuilder()
+    .appendFiles("files", sourceFiles)
+    .appendOptional("templateId", options.templateId)
+    .appendOptional("billingUnitFolderName", options.billingUnitFolderName)
+    .build();
+
   if (options.sourceFolderNames) {
     formData.append(
       "sourceFolderNames",
@@ -41,11 +36,7 @@ export const generateBillingUnitsZip = async (
   });
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ??
-        "Failed to generate billing unit files",
-    );
+    await handleApiError(response, "Failed to generate billing unit files");
   }
 
   return response.blob();

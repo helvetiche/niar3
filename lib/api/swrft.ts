@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  getFileNameFromContentDisposition,
+  FormDataBuilder,
+  handleApiError,
+} from "@/lib/api/api-client-utils";
+
 export type GenerateSwrftPayload = {
   templateId: string;
   firstName?: string;
@@ -19,25 +25,17 @@ export type GenerateSwrftResult = {
 export const generateSwrft = async (
   payload: GenerateSwrftPayload,
 ): Promise<GenerateSwrftResult> => {
-  const formData = new FormData();
-  formData.append("templateId", payload.templateId.trim());
-  if (payload.firstName?.trim()) {
-    formData.append("firstName", payload.firstName.trim());
-  }
-  if (payload.lastName?.trim()) {
-    formData.append("lastName", payload.lastName.trim());
-  }
-  if (payload.designation?.trim()) {
-    formData.append("designation", payload.designation.trim());
-  }
+  const formData = new FormDataBuilder()
+    .append("templateId", payload.templateId.trim())
+    .appendOptional("firstName", payload.firstName)
+    .appendOptional("lastName", payload.lastName)
+    .appendOptional("designation", payload.designation)
+    .appendBoolean("includeFirstHalf", payload.includeFirstHalf)
+    .appendBoolean("includeSecondHalf", payload.includeSecondHalf)
+    .build();
+
   if (payload.months && payload.months.length > 0) {
     formData.append("months", JSON.stringify(payload.months));
-  }
-  if (payload.includeFirstHalf !== undefined) {
-    formData.append("includeFirstHalf", String(payload.includeFirstHalf));
-  }
-  if (payload.includeSecondHalf !== undefined) {
-    formData.append("includeSecondHalf", String(payload.includeSecondHalf));
   }
   if (payload.customTasks && payload.customTasks.length > 0) {
     formData.append("customTasks", JSON.stringify(payload.customTasks));
@@ -50,25 +48,14 @@ export const generateSwrft = async (
   });
 
   if (!response.ok) {
-    const data = (await response.json().catch(() => ({}))) as {
-      error?: string;
-    };
-    throw new Error(data.error ?? "Failed to generate accomplishment report");
+    await handleApiError(response, "Failed to generate accomplishment report");
   }
 
   const blob = await response.blob();
-  const contentDisposition = response.headers.get("Content-Disposition");
-  let fileName = "Accomplishment Report.xlsx";
-  if (contentDisposition) {
-    const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-    if (utf8Match?.[1]) {
-      fileName = decodeURIComponent(utf8Match[1]).trim() || fileName;
-    } else {
-      const simpleMatch = contentDisposition.match(/filename="([^"]+)"/i);
-      if (simpleMatch?.[1]) {
-        fileName = simpleMatch[1].trim() || fileName;
-      }
-    }
-  }
+  const fileName = getFileNameFromContentDisposition(
+    response.headers.get("Content-Disposition"),
+    "Accomplishment Report.xlsx",
+  );
+
   return { blob, fileName };
 };
