@@ -1,7 +1,5 @@
 "use client";
 
-import { useRef, useState, useMemo } from "react";
-import toast from "react-hot-toast";
 import {
   CheckCircleIcon,
   WarningIcon,
@@ -15,164 +13,35 @@ import {
   CaretRightIcon,
 } from "@phosphor-icons/react";
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
-import { getErrorMessage } from "@/lib/utils";
-
-interface Issue {
-  lotCode: string;
-  issueType: string;
-  field: string;
-  ifrValue: string | number;
-  consolidatedValue: string | number;
-  difference?: number;
-  severity: "error" | "warning";
-  reason: string;
-}
-
-interface CheckResult {
-  success: boolean;
-  summary: {
-    totalLots: number;
-    consolidatedLots: number;
-    matchingLots: number;
-    totalIssues: number;
-    errors: number;
-    warnings: number;
-  };
-  issues: Issue[];
-}
+import { useIFRChecker } from "@/hooks/useIFRChecker";
 
 const ITEMS_PER_PAGE = 20;
 
 export default function IFRCheckerTool() {
-  const ifrFileInputRef = useRef<HTMLInputElement | null>(null);
-  const consolidatedFileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const [ifrFiles, setIfrFiles] = useState<File[]>([]);
-  const [consolidatedFile, setConsolidatedFile] = useState<File | null>(null);
-  const [isChecking, setIsChecking] = useState(false);
-  const [result, setResult] = useState<CheckResult | null>(null);
-
-  // Pagination, search, and filter states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [severityFilter, setSeverityFilter] = useState<
-    "all" | "error" | "warning"
-  >("all");
-  const [fieldFilter, setFieldFilter] = useState<string>("all");
-
-  const handleIFRFilesSelection = (incoming: FileList | null) => {
-    setIfrFiles(Array.from(incoming ?? []));
-    setResult(null);
-  };
-
-  const handleConsolidatedFileSelection = (incoming: FileList | null) => {
-    const file = incoming?.[0];
-    if (file) {
-      setConsolidatedFile(file);
-      setResult(null);
-    }
-  };
-
-  const runValidation = async () => {
-    if (ifrFiles.length === 0 || !consolidatedFile) {
-      toast.error("Please upload both IFR files and consolidated file.");
-      return;
-    }
-
-    setIsChecking(true);
-
-    try {
-      const formData = new FormData();
-
-      for (const file of ifrFiles) {
-        formData.append("ifrFiles", file);
-      }
-      formData.append("consolidatedFile", consolidatedFile);
-
-      const res = await fetch("/api/v1/ifr-checker", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        throw new Error("Validation failed");
-      }
-
-      const data = await res.json();
-      setResult(data);
-      setCurrentPage(1); // Reset to first page
-      setSearchQuery(""); // Reset search
-      setSeverityFilter("all"); // Reset filters
-      setFieldFilter("all");
-
-      if (data.issues.length === 0) {
-        toast.success("Perfect match! No issues found.");
-      } else {
-        toast.success(
-          `Validation complete. Found ${data.issues.length} issue(s).`,
-        );
-      }
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to validate files."));
-      setResult(null);
-    } finally {
-      setIsChecking(false);
-    }
-  };
-
-  // Get unique fields for filter dropdown
-  const uniqueFields = useMemo(() => {
-    if (!result) return [];
-    const fields = new Set(result.issues.map((issue) => issue.field));
-    return Array.from(fields).sort();
-  }, [result]);
-
-  // Filter and search issues
-  const filteredIssues = useMemo(() => {
-    if (!result) return [];
-
-    let filtered = result.issues;
-
-    // Apply severity filter
-    if (severityFilter !== "all") {
-      filtered = filtered.filter((issue) => issue.severity === severityFilter);
-    }
-
-    // Apply field filter
-    if (fieldFilter !== "all") {
-      filtered = filtered.filter((issue) => issue.field === fieldFilter);
-    }
-
-    // Apply search
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (issue) =>
-          issue.lotCode.toLowerCase().includes(query) ||
-          issue.field.toLowerCase().includes(query) ||
-          issue.reason.toLowerCase().includes(query) ||
-          String(issue.ifrValue).toLowerCase().includes(query) ||
-          String(issue.consolidatedValue).toLowerCase().includes(query),
-      );
-    }
-
-    return filtered;
-  }, [result, severityFilter, fieldFilter, searchQuery]);
-
-  // Paginate filtered issues
-  const paginatedIssues = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return filteredIssues.slice(startIndex, endIndex);
-  }, [filteredIssues, currentPage]);
-
-  const totalPages = Math.ceil(filteredIssues.length / ITEMS_PER_PAGE);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    // Scroll to top of results
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  const {
+    ifrFileInputRef,
+    consolidatedFileInputRef,
+    ifrFiles,
+    consolidatedFile,
+    isChecking,
+    result,
+    currentPage,
+    searchQuery,
+    severityFilter,
+    fieldFilter,
+    uniqueFields,
+    filteredIssues,
+    paginatedIssues,
+    totalPages,
+    handleIFRFilesSelection,
+    handleConsolidatedFileSelection,
+    runValidation,
+    handlePageChange,
+    handleSearchChange,
+    handleSeverityFilterChange,
+    handleFieldFilterChange,
+    canProceedToStep,
+  } = useIFRChecker();
 
   const steps = [
     {
@@ -381,10 +250,7 @@ export default function IFRCheckerTool() {
                           type="search"
                           placeholder="Search by lot code, field, or reason..."
                           value={searchQuery}
-                          onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setCurrentPage(1);
-                          }}
+                          onChange={(e) => handleSearchChange(e.target.value)}
                           className="w-full bg-transparent text-sm text-white placeholder:text-white/60 focus:outline-none"
                         />
                       </div>
@@ -393,12 +259,11 @@ export default function IFRCheckerTool() {
                           <FunnelIcon size={16} className="text-white/70" />
                           <select
                             value={severityFilter}
-                            onChange={(e) => {
-                              setSeverityFilter(
+                            onChange={(e) =>
+                              handleSeverityFilterChange(
                                 e.target.value as "all" | "error" | "warning",
-                              );
-                              setCurrentPage(1);
-                            }}
+                              )
+                            }
                             className="bg-transparent text-sm text-white focus:outline-none"
                           >
                             <option value="all">All Severity</option>
@@ -410,10 +275,9 @@ export default function IFRCheckerTool() {
                           <FunnelIcon size={16} className="text-white/70" />
                           <select
                             value={fieldFilter}
-                            onChange={(e) => {
-                              setFieldFilter(e.target.value);
-                              setCurrentPage(1);
-                            }}
+                            onChange={(e) =>
+                              handleFieldFilterChange(e.target.value)
+                            }
                             className="bg-transparent text-sm text-white focus:outline-none"
                           >
                             <option value="all">All Fields</option>
@@ -603,11 +467,7 @@ export default function IFRCheckerTool() {
       <WorkspaceStepper
         steps={steps}
         onComplete={() => void runValidation()}
-        canProceed={(step) => {
-          if (step === 0) return ifrFiles.length > 0;
-          if (step === 1) return !!consolidatedFile;
-          return true;
-        }}
+        canProceed={canProceedToStep}
         completeButtonText={isChecking ? "Validating..." : "Run Validation"}
       />
     </section>
