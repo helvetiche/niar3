@@ -1,26 +1,12 @@
 import XlsxPopulate from "xlsx-populate";
-
-const MONTH_NAMES = [
-  "JANUARY",
-  "FEBRUARY",
-  "MARCH",
-  "APRIL",
-  "MAY",
-  "JUNE",
-  "JULY",
-  "AUGUST",
-  "SEPTEMBER",
-  "OCTOBER",
-  "NOVEMBER",
-  "DECEMBER",
-] as const;
-
-const WEEKDAY_TASK =
-  "SUPERVISED WRFOB, WATER DISTRIBUTION, AREA MONITORING, FIELD INSPECTION ATTEND IA MEETING and OTHER O&M ACTIVITIES";
-
-const WRFO_B_TASK_LINE_1 =
-  "FIELD INSPECTION , ASSIST SWRFT IN AREA MONITORING,";
-const WRFO_B_TASK_LINE_2 = "REMOVING OF DEBRIS AND OTHER O&M ACTIVITIES";
+import {
+  MONTH_NAMES,
+  getStartDay,
+  getEndDay,
+  formatPeriodLabel,
+  getTaskForDay,
+  getSheetNameForPeriod,
+} from "./swrft-helpers";
 
 export type SwrftPeriod = {
   year: number;

@@ -11,22 +11,13 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { useWorkspaceUser } from "@/contexts/WorkspaceContext";
-import {
-  fetchCalendarNotes,
-  saveCalendarNotesForDate,
-} from "@/lib/api/calendar-notes";
 import { MasonryModal } from "@/components/MasonryModal";
 import { AddNoteTooltip } from "@/components/AddNoteTooltip";
 import { NotePopover } from "@/components/NotePopover";
 import { ScheduleOnlyToggleButton } from "@/components/ScheduleOnlyToggleButton";
 import { ScheduleOnlyView } from "@/components/ScheduleOnlyView";
 import { NOTE_COLORS, getNoteBg } from "@/lib/note-colors";
-
-export type NoteItem = { text: string; color: string };
-
-function dateKey(year: number, month: number, day: number) {
-  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
+import { useWorkspaceCalendar } from "@/hooks/useWorkspaceCalendar";
 
 const MONTHS = [
   "January",
@@ -46,8 +37,26 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function WorkspaceCalendar() {
   const user = useWorkspaceUser();
-  const [viewDate, setViewDate] = useState(() => new Date());
-  const [notes, setNotes] = useState<Record<string, NoteItem[]>>({});
+  const {
+    year,
+    month,
+    today,
+    scheduleOnly,
+    setScheduleOnly,
+    getNotesFor,
+    addNote,
+    removeNote,
+    prevMonth,
+    nextMonth,
+    goToToday,
+    getDaysUntil,
+    getProgress,
+    monthNotesByBucket,
+    totalSchedules,
+    scheduleOnlyItems,
+    calendarDates,
+  } = useWorkspaceCalendar(user.uid);
+
   const [addModalDate, setAddModalDate] = useState<{
     year: number;
     month: number;
@@ -55,56 +64,6 @@ export function WorkspaceCalendar() {
   } | null>(null);
   const [newNoteText, setNewNoteText] = useState("");
   const [selectedColor, setSelectedColor] = useState("emerald");
-  const [scheduleOnly, setScheduleOnly] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchCalendarNotes()
-      .then((data) => {
-        if (!cancelled) setNotes(data);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          toast.error(
-            err instanceof Error ? err.message : "Failed to load notes",
-          );
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user.uid]);
-
-  const getNotesFor = (year: number, month: number, day: number) => {
-    const key = dateKey(year, month, day);
-    return notes[key] ?? [];
-  };
-
-  const addNote = async (
-    year: number,
-    month: number,
-    day: number,
-    text: string,
-    color: string,
-    onSuccess?: () => void,
-  ) => {
-    const key = dateKey(year, month, day);
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    const items = [...getNotesFor(year, month, day), { text: trimmed, color }];
-    const updated = { ...notes, [key]: items };
-    setNotes(updated);
-    try {
-      await saveCalendarNotesForDate(key, items);
-      setNewNoteText("");
-      if (onSuccess) onSuccess();
-      else setAddModalDate(null);
-      toast.success("Note saved");
-    } catch {
-      setNotes(notes);
-      toast.error("Failed to save note");
-    }
-  };
 
   const openAddModal = (year: number, month: number, day: number) => {
     setAddModalDate({ year, month, day });
@@ -112,121 +71,26 @@ export function WorkspaceCalendar() {
     setSelectedColor("emerald");
   };
 
-  const removeNote = async (
-    year: number,
-    month: number,
-    day: number,
-    index: number,
-  ) => {
-    const key = dateKey(year, month, day);
-    const items = getNotesFor(year, month, day).filter((_, i) => i !== index);
-    const updated = { ...notes, [key]: items };
-    setNotes(updated);
-    try {
-      await saveCalendarNotesForDate(key, items);
-      toast.success("Note removed");
-    } catch {
-      setNotes(notes);
-      toast.error("Failed to remove note");
-    }
+  const handleAddNote = () => {
+    if (!addModalDate) return;
+    addNote(
+      addModalDate.year,
+      addModalDate.month,
+      addModalDate.day,
+      newNoteText,
+      selectedColor,
+      () => {
+        setAddModalDate(null);
+        setNewNoteText("");
+      },
+    );
   };
 
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
-  const startPad = firstDay.getDay();
-  const daysInMonth = lastDay.getDate();
-  const today = new Date();
+  const isToday = (day: number) =>
+    today.getDate() === day &&
+    today.getMonth() === month &&
+    today.getFullYear() === year;
 
-  const prevMonth = () =>
-    setViewDate((d) => new Date(d.getFullYear(), d.getMonth() - 1));
-  const nextMonth = () =>
-    setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + 1));
-
-  const prevMonthLastDay = new Date(year, month, 0).getDate();
-  const dates: { day: number; isCurrentMonth: boolean }[] = [];
-  const totalCells = 42;
-  for (let i = 0; i < totalCells; i++) {
-    if (i < startPad) {
-      dates.push({
-        day: prevMonthLastDay - startPad + 1 + i,
-        isCurrentMonth: false,
-      });
-    } else if (i < startPad + daysInMonth) {
-      dates.push({ day: i - startPad + 1, isCurrentMonth: true });
-    } else {
-      dates.push({
-        day: i - startPad - daysInMonth + 1,
-        isCurrentMonth: false,
-      });
-    }
-  }
-
-  const todayDay = today.getDate();
-  const isViewingCurrentMonth =
-    viewDate.getFullYear() === today.getFullYear() &&
-    viewDate.getMonth() === today.getMonth();
-
-  const getDaysUntil = (day: number) => {
-    if (!isViewingCurrentMonth) {
-      const noteDate = new Date(year, month, day);
-      const diff = Math.ceil(
-        (noteDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
-      );
-      return diff;
-    }
-    return day - todayDay;
-  };
-
-  const getProgress = (day: number) => {
-    const daysUntil = getDaysUntil(day);
-    if (daysUntil <= 0) return 0;
-    const maxDays = 60;
-    return Math.max(0, Math.min(100, Math.round(100 * (daysUntil / maxDays))));
-  };
-
-  type TrayBucket = "nearest" | "normal" | "farthest";
-  const getBucket = (day: number): TrayBucket => {
-    const daysUntil = getDaysUntil(day);
-    if (daysUntil <= 3) return "nearest";
-    if (daysUntil <= 14) return "normal";
-    return "farthest";
-  };
-
-  const monthNotesByBucket = (() => {
-    const nearest: { day: number; items: NoteItem[] }[] = [];
-    const normal: { day: number; items: NoteItem[] }[] = [];
-    const farthest: { day: number; items: NoteItem[] }[] = [];
-    for (let d = 1; d <= daysInMonth; d++) {
-      const items = getNotesFor(year, month, d);
-      if (items.length > 0) {
-        const entry = { day: d, items };
-        const bucket = getBucket(d);
-        if (bucket === "nearest") nearest.push(entry);
-        else if (bucket === "normal") normal.push(entry);
-        else farthest.push(entry);
-      }
-    }
-    return { nearest, normal, farthest };
-  })();
-
-  const totalSchedules =
-    monthNotesByBucket.nearest.reduce((s, { items }) => s + items.length, 0) +
-    monthNotesByBucket.normal.reduce((s, { items }) => s + items.length, 0) +
-    monthNotesByBucket.farthest.reduce((s, { items }) => s + items.length, 0);
-
-  const scheduleOnlyItems = Array.from({ length: daysInMonth }, (_, i) => i + 1)
-    .flatMap((day) =>
-      getNotesFor(year, month, day).map((note, index) => ({
-        id: `${day}-${index}`,
-        day,
-        note,
-        daysUntil: getDaysUntil(day),
-        progress: getProgress(day),
-      })),
-    )
-    .sort((a, b) => a.daysUntil - b.daysUntil || a.day - b.day);
   const MAX_VISIBLE_NOTES = 3;
 
   return (
@@ -262,7 +126,7 @@ export function WorkspaceCalendar() {
           </span>
           <button
             type="button"
-            onClick={() => setViewDate(new Date())}
+            onClick={goToToday}
             className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
           >
             Today
@@ -285,12 +149,7 @@ export function WorkspaceCalendar() {
               {d}
             </div>
           ))}
-          {dates.map(({ day: d, isCurrentMonth }, i) => {
-            const isToday =
-              isCurrentMonth &&
-              today.getDate() === d &&
-              today.getMonth() === month &&
-              today.getFullYear() === year;
+          {calendarDates.map(({ day: d, isCurrentMonth }, i) => {
             const cellNotes = isCurrentMonth ? getNotesFor(year, month, d) : [];
             const visibleNotes = cellNotes.slice(0, MAX_VISIBLE_NOTES);
             const overflowCount = cellNotes.length - MAX_VISIBLE_NOTES;
@@ -301,13 +160,13 @@ export function WorkspaceCalendar() {
                 className={`relative flex min-h-[80px] flex-col overflow-hidden rounded-md p-2 text-sm ${
                   !isCurrentMonth
                     ? "border border-dashed border-zinc-100 bg-zinc-50/50 text-red-400"
-                    : isToday
+                    : isToday(d)
                       ? "border-2 border-dashed border-emerald-600 bg-emerald-50"
                       : "border border-dashed border-zinc-200 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
                 }`}
               >
                 <div className="flex justify-end">
-                  {isToday ? (
+                  {isToday(d) ? (
                     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
                       {d}
                     </span>
@@ -555,16 +414,7 @@ export function WorkspaceCalendar() {
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    addNote(
-                      addModalDate.year,
-                      addModalDate.month,
-                      addModalDate.day,
-                      newNoteText,
-                      selectedColor,
-                      close,
-                    )
-                  }
+                  onClick={handleAddNote}
                   disabled={!newNoteText.trim()}
                   className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
                 >
