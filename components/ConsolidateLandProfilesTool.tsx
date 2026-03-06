@@ -58,13 +58,7 @@ export default function ConsolidateLandProfilesTool() {
             <TemplateManagerInline
               scope="consolidation"
               selectedTemplateId={selectedTemplateId}
-              onSelectedTemplateIdChange={(id) => {
-                setSelectedTemplateId(id);
-                setTemplateFile(null); // Clear uploaded file
-                if (templateInputRef.current) {
-                  templateInputRef.current.value = "";
-                }
-              }}
+              onSelectedTemplateIdChange={handleTemplateIdChange}
             />
           </div>
 
