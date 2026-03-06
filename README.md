@@ -195,7 +195,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-For support, email your-support-email@example.com or open an issue in the repository.
+For support, email helvetiche@example.com or open an issue in the repository.
 
 ## 🔗 Links
 
