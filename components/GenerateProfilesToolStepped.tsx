@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import toast from "react-hot-toast";
 import {
   DownloadSimpleIcon,
   FileXlsIcon,
@@ -11,145 +9,36 @@ import {
   CheckCircleIcon,
 } from "@phosphor-icons/react";
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
-import { generateBillingUnitsZip } from "@/lib/api/billing-units";
 import { TemplateManagerInline } from "@/components/TemplateManagerInline";
-import { useTemplates } from "@/hooks/useTemplates";
-import { getBaseName, getFileKey, sanitizeFolderName } from "@/lib/file-utils";
-import { downloadBlob, getErrorMessage } from "@/lib/utils";
-import { ERROR_MESSAGES } from "@/constants/error-messages";
 import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
+import { useGenerateProfiles } from "@/hooks/useGenerateProfiles";
+import { getFileKey } from "@/lib/file-utils";
+import { sanitizeFolderName } from "@/lib/file-utils";
 
-const defaultZipName = "BILLING UNITS";
 const defaultBillingUnitFolderName = "billing unit";
-const OVERLAY_OPAQUE_MS = 280;
-const OVERLAY_FADE_MS = 320;
-const OVERLAY_ERROR_FADE_MS = 240;
-
-const wait = async (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    window.setTimeout(resolve, ms);
-  });
 
 export function GenerateProfilesToolStepped() {
-  const [sourceFiles, setSourceFiles] = useState<File[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [zipName, setZipName] = useState(defaultZipName);
-  const [billingUnitFolderName, setBillingUnitFolderName] = useState(
-    defaultBillingUnitFolderName,
-  );
-  const [sourceFolderNames, setSourceFolderNames] = useState<
-    Record<string, string>
-  >({});
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
-  const [isOverlayOpaque, setIsOverlayOpaque] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [isFinalizing, setIsFinalizing] = useState(false);
-
-  const elapsedIntervalRef = useRef<number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const { data: ifrTemplates = [] } = useTemplates("ifr-scanner");
-
-  useEffect(() => {
-    if (sourceFiles.length === 0) {
-      setSourceFolderNames({});
-      return;
-    }
-
-    setSourceFolderNames((previous) => {
-      const next: Record<string, string> = {};
-      sourceFiles.forEach((file) => {
-        const fileKey = getFileKey(file);
-        const existingName = previous[fileKey];
-        next[fileKey] = existingName ? existingName : getBaseName(file.name);
-      });
-      return next;
-    });
-  }, [sourceFiles]);
-
-  const handleFileSelection = (incoming: FileList | null) => {
-    setSourceFiles(Array.from(incoming ?? []));
-  };
-
-  const generateBillingUnits = async () => {
-    if (sourceFiles.length === 0) {
-      toast.error("Please upload one or more source Excel files first.");
-      return;
-    }
-    if (!selectedTemplateId) {
-      toast.error("Please select a template from Template Manager.");
-      return;
-    }
-
-    setIsGenerating(true);
-    setIsFinalizing(false);
-    setElapsedSeconds(0);
-    setIsOverlayVisible(true);
-    setIsOverlayOpaque(false);
-    window.requestAnimationFrame(() => {
-      setIsOverlayOpaque(true);
-    });
-    if (elapsedIntervalRef.current !== null) {
-      window.clearInterval(elapsedIntervalRef.current);
-    }
-    elapsedIntervalRef.current = window.setInterval(() => {
-      setElapsedSeconds((previous) => previous + 1);
-    }, 1000);
-
-    try {
-      const blob = await generateBillingUnitsZip(sourceFiles, {
-        templateId: selectedTemplateId,
-        billingUnitFolderName,
-        sourceFolderNames,
-      });
-      const outputName = zipName.trim() || defaultZipName;
-      const filename = outputName.endsWith(".zip")
-        ? outputName
-        : `${outputName}.zip`;
-      downloadBlob(blob, filename);
-
-      toast.success("Billing Unit ZIP has been downloaded.");
-      setIsFinalizing(true);
-      if (elapsedIntervalRef.current !== null) {
-        window.clearInterval(elapsedIntervalRef.current);
-        elapsedIntervalRef.current = null;
-      }
-      await wait(OVERLAY_OPAQUE_MS);
-      setIsOverlayOpaque(false);
-      await wait(OVERLAY_FADE_MS);
-      setIsOverlayVisible(false);
-    } catch (error) {
-      toast.error(
-        getErrorMessage(error, ERROR_MESSAGES.FAILED_GENERATE_BILLING_UNITS),
-      );
-      if (elapsedIntervalRef.current !== null) {
-        window.clearInterval(elapsedIntervalRef.current);
-        elapsedIntervalRef.current = null;
-      }
-      setIsOverlayOpaque(false);
-      await wait(OVERLAY_ERROR_FADE_MS);
-      setIsOverlayVisible(false);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const updateFolderName = (fileKey: string, value: string) => {
-    const sanitized = sanitizeFolderName(value);
-    setSourceFolderNames((previous) => ({
-      ...previous,
-      [fileKey]: sanitized,
-    }));
-  };
-
-  useEffect(() => {
-    return () => {
-      if (elapsedIntervalRef.current !== null) {
-        window.clearInterval(elapsedIntervalRef.current);
-      }
-    };
-  }, []);
+  const {
+    fileInputRef,
+    sourceFiles,
+    selectedTemplateId,
+    zipName,
+    billingUnitFolderName,
+    sourceFolderNames,
+    isGenerating,
+    isOverlayVisible,
+    isOverlayOpaque,
+    elapsedSeconds,
+    isFinalizing,
+    ifrTemplates,
+    handleFileSelection,
+    setSelectedTemplateId,
+    setZipName,
+    setBillingUnitFolderName,
+    updateFolderName,
+    generateBillingUnits,
+    canProceedToStep,
+  } = useGenerateProfiles();
 
   const steps = [
     {
@@ -385,11 +274,7 @@ export function GenerateProfilesToolStepped() {
       <WorkspaceStepper
         steps={steps}
         onComplete={() => void generateBillingUnits()}
-        canProceed={(step) => {
-          if (step === 0) return sourceFiles.length > 0;
-          if (step === 2) return !!selectedTemplateId;
-          return true;
-        }}
+        canProceed={canProceedToStep}
         completeButtonText={isGenerating ? "Generating..." : "Generate"}
       />
 
