@@ -1,6 +1,7 @@
 import XlsxPopulate from "xlsx-populate";
 import { logger } from "@/lib/logger";
 import { EXCEL_SHEETS, EXCEL_CELLS } from "@/constants/excel-sheets";
+import { getCellValue, getNumericCellValue } from "@/lib/excel/cell-utils";
 
 export interface NuclearLandProfileData {
   lotNo: string;
@@ -16,6 +17,14 @@ export interface NuclearLandProfileData {
 }
 
 /**
+ * Extract row number from filename (format: "123 LOT-CODE Name.xlsx")
+ */
+function extractRowNumber(fileName: string): number {
+  const match = fileName.match(/^(\d+)\s/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+/**
  * Extract land profile data including financial values from cached formulas
  */
 export async function extractNuclearData(
@@ -25,7 +34,7 @@ export async function extractNuclearData(
   try {
     const workbook = await XlsxPopulate.fromDataAsync(fileBuffer);
 
-    const rowNumber = parseInt(fileName.match(/^(\d+)\s/)?.[1] || "0", 10);
+    const rowNumber = extractRowNumber(fileName);
     if (!rowNumber) {
       throw new Error(`Cannot extract row number from filename: ${fileName}`);
     }
@@ -40,44 +49,16 @@ export async function extractNuclearData(
       throw new Error(`Sheet "${EXCEL_SHEETS.SOA}" not found`);
     }
 
-    const getValue = (sheet: XlsxPopulate.Sheet, addr: string): string => {
-      try {
-        const val = sheet.cell(addr).value();
-        const strVal = val ? String(val).trim() : "";
-        // Remove "N" values that indicate empty data
-        return strVal === "N" ? "" : strVal;
-      } catch {
-        return "";
-      }
-    };
-
-    const getNumericValue = (
-      sheet: XlsxPopulate.Sheet,
-      addr: string,
-    ): number => {
-      try {
-        const val = sheet.cell(addr).value();
-        if (typeof val === "number") return val;
-        if (typeof val === "string") {
-          const parsed = parseFloat(val);
-          return isNaN(parsed) ? 0 : parsed;
-        }
-        return 0;
-      } catch {
-        return 0;
-      }
-    };
-
     return {
-      lotNo: getValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE),
-      ownerFirstName: getValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME),
-      ownerLastName: getValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME),
-      tillerFirstName: getValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME),
-      tillerLastName: getValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME),
+      lotNo: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE),
+      ownerFirstName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME),
+      ownerLastName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME),
+      tillerFirstName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME),
+      tillerLastName: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME),
       // Financial data from cached formulas in SOA sheet
-      principal: getNumericValue(soaSheet, EXCEL_CELLS.SOA.PRINCIPAL),
-      penalty: getNumericValue(soaSheet, EXCEL_CELLS.SOA.PENALTY),
-      oldAccount: getNumericValue(soaSheet, EXCEL_CELLS.SOA.OLD_ACCOUNT),
+      principal: getNumericCellValue(soaSheet, EXCEL_CELLS.SOA.PRINCIPAL),
+      penalty: getNumericCellValue(soaSheet, EXCEL_CELLS.SOA.PENALTY),
+      oldAccount: getNumericCellValue(soaSheet, EXCEL_CELLS.SOA.OLD_ACCOUNT),
       rowNumber,
       fileName,
     };

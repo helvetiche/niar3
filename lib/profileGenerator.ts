@@ -3,12 +3,21 @@ import path from "node:path";
 import XlsxPopulate from "xlsx-populate";
 import type { LotGroup } from "@/lib/mastersListProcessor";
 import { EXCEL_SHEETS, EXCEL_CELLS } from "@/constants/excel-sheets";
+import {
+  formatQueueNumber,
+  isValidName,
+  sanitizeFilePart,
+  setCellValue,
+} from "@/lib/excel/cell-utils";
 
 const TEMPLATE_CANDIDATES = [
   path.join(process.cwd(), "data", "template.xlsx"),
   path.join(process.cwd(), "public", "template.xlsx"),
 ];
 
+/**
+ * Get template file path from predefined locations
+ */
 const getTemplatePath = (): string => {
   for (const candidate of TEMPLATE_CANDIDATES) {
     if (existsSync(candidate)) return candidate;
@@ -18,15 +27,10 @@ const getTemplatePath = (): string => {
   );
 };
 
-const formatQueueNumber = (value: number): string =>
-  String(value).padStart(2, "0");
-
-const isValidName = (value: string): boolean =>
-  Boolean(value && value.trim() !== "" && value.trim().toUpperCase() !== "N");
-
-const sanitizeFilePart = (value: string): string =>
-  value.replace(/[/\\]/g, "-").trim();
-
+/**
+ * Format filename for land profile
+ * Format: "{queue} {lotCode} {name}.xlsx"
+ */
 const formatFilename = (
   queue: number,
   lotCode: string,
@@ -44,28 +48,6 @@ const formatFilename = (
     `${formatQueueNumber(queue)} ${sanitizeFilePart(lotCode)}`.trim();
   const name = sanitizeFilePart(chosenName);
   return name ? `${base} ${name}.xlsx` : `${base}.xlsx`;
-};
-
-const toExcelValue = (value: string | number): string | number => {
-  if (typeof value === "string" && value.trim().toUpperCase() === "N")
-    return "";
-  if (typeof value === "number") return value;
-
-  const asString = String(value).trim();
-  if (!asString) return "";
-
-  const parsed = Number(asString.replace(/,/g, ""));
-  if (!Number.isNaN(parsed)) return parsed;
-  return asString;
-};
-
-const setCell = (
-  workbook: XlsxPopulate.Workbook,
-  sheetName: string,
-  reference: string,
-  value: string | number,
-): void => {
-  workbook.sheet(sheetName).cell(reference).value(toExcelValue(value));
 };
 
 type GenerateProfileOptions = {
@@ -94,25 +76,32 @@ export const generateProfileBuffer = async (
   const division = options?.division ?? "";
   const nameOfIA = options?.nameOfIA ?? "";
 
-  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.LOT_CODE, lotCode);
-  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.DIVISION, division);
-  workbook.sheet(EXCEL_SHEETS.ACC_DETAILS).cell(EXCEL_CELLS.ACC_DETAILS.DIVISION).style("horizontalAlignment", "left");
-  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.NAME_OF_IA, nameOfIA);
-  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME, landOwnerFirst);
-  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME, landOwnerLast);
-  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME, farmerFirst);
-  setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME, farmerLast);
+  const accDetailsSheet = workbook.sheet(EXCEL_SHEETS.ACC_DETAILS);
+  const soaSheet = workbook.sheet(EXCEL_SHEETS.SOA);
 
+  // Set account details
+  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE, lotCode);
+  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.DIVISION, division);
+  accDetailsSheet.cell(EXCEL_CELLS.ACC_DETAILS.DIVISION).style("horizontalAlignment", "left");
+  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.NAME_OF_IA, nameOfIA);
+  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME, landOwnerFirst);
+  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME, landOwnerLast);
+  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME, farmerFirst);
+  setCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME, farmerLast);
+
+  // Set crop data (starting at row 30)
+  const CROP_DATA_START_ROW = 30;
   for (let i = 0; i < lotGroup.rows.length; i += 1) {
     const row = lotGroup.rows[i];
-    const rowNumber = 30 + i;
+    const rowNumber = CROP_DATA_START_ROW + i;
 
-    setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, `B${String(rowNumber)}`, row.cropSeason);
-    setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, `C${String(rowNumber)}`, row.cropYear);
-    setCell(workbook, EXCEL_SHEETS.ACC_DETAILS, `D${String(rowNumber)}`, row.plantedArea);
+    setCellValue(accDetailsSheet, `B${rowNumber}`, row.cropSeason);
+    setCellValue(accDetailsSheet, `C${rowNumber}`, row.cropYear);
+    setCellValue(accDetailsSheet, `D${rowNumber}`, row.plantedArea);
   }
 
-  setCell(workbook, EXCEL_SHEETS.SOA, EXCEL_CELLS.SOA.OLD_ACCOUNT, oldAccount);
+  // Set old account in SOA sheet
+  setCellValue(soaSheet, EXCEL_CELLS.SOA.OLD_ACCOUNT, oldAccount);
 
   const output = await workbook.outputAsync();
   const buffer = Buffer.isBuffer(output)

@@ -1,0 +1,47 @@
+Contact: mailto:security@niaregion3.gov.ph
+Expires: 2025-12-31T23:59:59.000Z
+Preferred-Languages: en, fil
+Canonical: https://niatools.vercel.app/.well-known/security.txt
+
+# Security Policy
+
+If you discover a security vulnerability in this application, please report it responsibly.
+
+## Reporting a Vulnerability
+
+Please DO NOT open a public GitHub issue for security vulnerabilities.
+
+Instead, email us at: security@niaregion3.gov.ph
+
+Include the following information:
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+
+We will acknowledge your email within 48 hours and provide a detailed response within 7 days.
+
+## Scope
+
+This security policy applies to:
+- Web application (https://niatools.vercel.app)
+- API endpoints (/api/v1/*)
+- Authentication system
+- File processing features
+
+## Out of Scope
+
+- Third-party services (Firebase, Vercel, Upstash)
+- Social engineering attacks
+- Physical security
+- Denial of service attacks
+
+## Safe Harbor
+
+We support responsible disclosure and will not take legal action against researchers who:
+- Make a good faith effort to avoid privacy violations
+- Do not exploit the vulnerability beyond what is necessary to demonstrate it
+- Do not access or modify data belonging to others
+- Report the vulnerability promptly
+
+Thank you for helping keep NIA Productivity Tools secure!
