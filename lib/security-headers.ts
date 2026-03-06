@@ -27,7 +27,9 @@ export const SECURITY_RESPONSE_HEADERS: Record<string, string> = {
   // Content Security Policy - Strict configuration
   "Content-Security-Policy":
     "default-src 'self'; " +
-    "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com; " +
+    (process.env.NODE_ENV === "development"
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; "
+      : "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com; ") +
     "style-src 'self' 'unsafe-inline'; " + // Note: unsafe-inline for styles is common, consider using nonces in future
     "img-src 'self' data: https:; " +
     "font-src 'self' data:; " +
