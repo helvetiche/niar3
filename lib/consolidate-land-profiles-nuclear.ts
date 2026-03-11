@@ -74,10 +74,19 @@ function getRequiredSheets(workbook: XlsxPopulate.Workbook) {
 function extractAccountDetails(sheet: XlsxPopulate.Sheet) {
   return {
     lotNo: getCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE),
-    ownerFirstName: getCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME),
+    ownerFirstName: getCellValue(
+      sheet,
+      EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME,
+    ),
     ownerLastName: getCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME),
-    tillerFirstName: getCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME),
-    tillerLastName: getCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME),
+    tillerFirstName: getCellValue(
+      sheet,
+      EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME,
+    ),
+    tillerLastName: getCellValue(
+      sheet,
+      EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME,
+    ),
   };
 }
 
@@ -133,10 +142,18 @@ function writeDataToTemplate(
   const row = data.rowNumber + TEMPLATE_ROW_OFFSET;
 
   sheet.cell(`${TEMPLATE_COLUMNS.LOT_NO}${row}`).value(data.lotNo);
-  sheet.cell(`${TEMPLATE_COLUMNS.OWNER_LAST_NAME}${row}`).value(data.ownerLastName);
-  sheet.cell(`${TEMPLATE_COLUMNS.OWNER_FIRST_NAME}${row}`).value(data.ownerFirstName);
-  sheet.cell(`${TEMPLATE_COLUMNS.TILLER_LAST_NAME}${row}`).value(data.tillerLastName);
-  sheet.cell(`${TEMPLATE_COLUMNS.TILLER_FIRST_NAME}${row}`).value(data.tillerFirstName);
+  sheet
+    .cell(`${TEMPLATE_COLUMNS.OWNER_LAST_NAME}${row}`)
+    .value(data.ownerLastName);
+  sheet
+    .cell(`${TEMPLATE_COLUMNS.OWNER_FIRST_NAME}${row}`)
+    .value(data.ownerFirstName);
+  sheet
+    .cell(`${TEMPLATE_COLUMNS.TILLER_LAST_NAME}${row}`)
+    .value(data.tillerLastName);
+  sheet
+    .cell(`${TEMPLATE_COLUMNS.TILLER_FIRST_NAME}${row}`)
+    .value(data.tillerFirstName);
   sheet.cell(`${TEMPLATE_COLUMNS.PRINCIPAL}${row}`).value(data.principal);
   sheet.cell(`${TEMPLATE_COLUMNS.PENALTY}${row}`).value(data.penalty);
   sheet.cell(`${TEMPLATE_COLUMNS.OLD_ACCOUNT}${row}`).value(data.oldAccount);

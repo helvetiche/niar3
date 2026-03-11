@@ -76,8 +76,6 @@ const parseGeminiJsonResponse = (
   return geminiJsonSchema.parse(parsed);
 };
 
-
-
 const generateContentWithQuotaGuard = async (
   model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
   parts: Array<

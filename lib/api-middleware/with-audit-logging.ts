@@ -23,7 +23,7 @@ export async function withAuditLogging<T>(
 
   try {
     const result = await handler();
-    
+
     // Log success
     await logAuditTrailEntry({
       uid,
@@ -40,7 +40,7 @@ export async function withAuditLogging<T>(
     // Log error
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    
+
     await logAuditTrailEntry({
       uid,
       action: context.action,

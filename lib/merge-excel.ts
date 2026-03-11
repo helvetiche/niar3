@@ -101,8 +101,7 @@ const copyWorksheet = (
   targetSheet.pageSetup =
     cloneValueOrUndefined(sourceSheet.pageSetup) ?? targetSheet.pageSetup;
   targetSheet.headerFooter =
-    cloneValueOrUndefined(sourceSheet.headerFooter) ??
-    targetSheet.headerFooter;
+    cloneValueOrUndefined(sourceSheet.headerFooter) ?? targetSheet.headerFooter;
   targetSheet.views = cloneValueOrUndefined(sourceSheet.views) ?? [];
   targetSheet.autoFilter = cloneValueOrUndefined(sourceSheet.autoFilter) as
     | ExcelJS.AutoFilter

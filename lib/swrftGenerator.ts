@@ -21,8 +21,6 @@ export type SwrftGeneratorInput = {
   period: SwrftPeriod;
 };
 
-
-
 interface SheetLike {
   cell: (ref: string) => {
     value: (v: string | number) => unknown;
@@ -126,8 +124,6 @@ export const getFilteredSwrftPeriods = (
     return true;
   });
 };
-
-
 
 /**
  * Generates a merged SWRFT workbook with selected periods as sheets.

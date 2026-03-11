@@ -33,7 +33,10 @@ export const COLUMN_MAPPING = {
   OLD_ACCOUNT: "Q",
 } as const;
 
-export function shouldSkipSeason(cropYear: number, cropSeason: string): boolean {
+export function shouldSkipSeason(
+  cropYear: number,
+  cropSeason: string,
+): boolean {
   if (cropYear < 1975) return true;
   if (cropYear === 1975 && cropSeason.toUpperCase() === "DRY") return true;
   return false;
@@ -72,13 +75,27 @@ export function extractRowData(
   tillerFirstName: string;
   oldAccount: number;
 } {
-  const { LOT_CODE, CROP_SEASON, CROP_YEAR, PLANTED_AREA, OWNER_LAST, OWNER_FIRST, TILLER_LAST, TILLER_FIRST, OLD_ACCOUNT } = COLUMN_MAPPING;
+  const {
+    LOT_CODE,
+    CROP_SEASON,
+    CROP_YEAR,
+    PLANTED_AREA,
+    OWNER_LAST,
+    OWNER_FIRST,
+    TILLER_LAST,
+    TILLER_FIRST,
+    OLD_ACCOUNT,
+  } = COLUMN_MAPPING;
 
   return {
     lotCode: sheet[`${LOT_CODE}${row}`]?.v || null,
     cropSeason: sheet[`${CROP_SEASON}${row}`]?.v || null,
-    cropYear: sheet[`${CROP_YEAR}${row}`]?.v ? parseInt(String(sheet[`${CROP_YEAR}${row}`].v)) : null,
-    area: sheet[`${PLANTED_AREA}${row}`]?.v ? parseFloat(String(sheet[`${PLANTED_AREA}${row}`].v)) : null,
+    cropYear: sheet[`${CROP_YEAR}${row}`]?.v
+      ? parseInt(String(sheet[`${CROP_YEAR}${row}`].v))
+      : null,
+    area: sheet[`${PLANTED_AREA}${row}`]?.v
+      ? parseFloat(String(sheet[`${PLANTED_AREA}${row}`].v))
+      : null,
     ownerLastName: String(sheet[`${OWNER_LAST}${row}`]?.v || ""),
     ownerFirstName: String(sheet[`${OWNER_FIRST}${row}`]?.v || ""),
     tillerLastName: String(sheet[`${TILLER_LAST}${row}`]?.v || ""),

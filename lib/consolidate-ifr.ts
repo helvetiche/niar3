@@ -89,7 +89,10 @@ export async function extractIFRData(
 
       if (shouldSkipSeason(rowData.cropYear, rowData.cropSeason)) continue;
 
-      const cropSeasonCode = buildCropSeasonCode(rowData.cropYear, rowData.cropSeason);
+      const cropSeasonCode = buildCropSeasonCode(
+        rowData.cropYear,
+        rowData.cropSeason,
+      );
 
       if (group.seenSeasons.has(cropSeasonCode)) continue;
       group.seenSeasons.add(cropSeasonCode);

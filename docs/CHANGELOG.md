@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Comprehensive documentation (README, CONTRIBUTING, ARCHITECTURE, API, DEPLOYMENT)
 - Test infrastructure with Vitest
 - Unit tests for authentication and file validation (51 tests)
@@ -20,12 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Security scanning with Trivy
 
 ### Changed
+
 - Refactored Excel processing logic to use shared utilities
 - Improved code organization with extracted helper functions
 - Enhanced error handling in file processing
 - Updated package.json with test scripts
 
 ### Fixed
+
 - Magic numbers replaced with named constants
 - Code duplication in Excel cell operations
 - Improved type safety in utility functions
@@ -33,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2024-03-06
 
 ### Added
+
 - Initial release
 - IFR Scanner tool
 - LIPA Summary tool
@@ -51,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PWA support
 
 ### Security
+
 - Implemented comprehensive security headers
 - Added rate limiting for API endpoints
 - Configured CORS policies

@@ -34,12 +34,12 @@ export const fetchWithSessionRefresh = async (
   requestFn: () => Promise<Response>,
 ): Promise<Response> => {
   let response = await requestFn();
-  
+
   if (response.status === 401) {
     await refreshSessionCookie();
     response = await requestFn();
   }
-  
+
   return response;
 };
 
@@ -117,7 +117,5 @@ export const handleApiError = async (
   defaultMessage: string,
 ): Promise<never> => {
   const data = await response.json().catch(() => ({}));
-  throw new Error(
-    (data as { error?: string }).error ?? defaultMessage,
-  );
+  throw new Error((data as { error?: string }).error ?? defaultMessage);
 };

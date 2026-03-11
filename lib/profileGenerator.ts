@@ -148,10 +148,7 @@ function populateAccountDetails(
 /**
  * Populate crop data in the workbook
  */
-function populateCropData(
-  sheet: XlsxPopulate.Sheet,
-  lotGroup: LotGroup,
-): void {
+function populateCropData(sheet: XlsxPopulate.Sheet, lotGroup: LotGroup): void {
   for (let i = 0; i < lotGroup.rows.length; i++) {
     const row = lotGroup.rows[i];
     const rowNumber = CROP_DATA_START_ROW + i;

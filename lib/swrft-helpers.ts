@@ -40,8 +40,11 @@ export const formatPeriodLabel = (period: SwrftPeriod): string => {
   return `PERIOD COVERED ${monthName} ${start}-${end}, ${period.year}`;
 };
 
-export const getDayOfWeek = (year: number, month: number, day: number): number =>
-  new Date(year, month - 1, day).getDay();
+export const getDayOfWeek = (
+  year: number,
+  month: number,
+  day: number,
+): number => new Date(year, month - 1, day).getDay();
 
 export type TaskForDayResult =
   | { type: "single"; value: string }
