@@ -10,7 +10,12 @@ import {
   PencilSimpleIcon,
 } from "@phosphor-icons/react";
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
-import { useLipaSummary } from "@/hooks/useLipaSummary";
+import {
+  defaultOutputFileName,
+  defaultReportTitle,
+  defaultSeason,
+  useLipaSummary,
+} from "@/hooks/useLipaSummary";
 
 export function LipaSummaryToolStepped() {
   const {

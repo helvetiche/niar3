@@ -14,9 +14,9 @@ type LipaUploadItem = {
   pageNumber: string;
 };
 
-const defaultReportTitle = "LIST OF IRRIGATED AND PLANTED AREA (LIPA)";
-const defaultSeason = "DRY CROPPING SEASON 2025";
-const defaultOutputFileName = "LIPA Summary Report";
+export const defaultReportTitle = "LIST OF IRRIGATED AND PLANTED AREA (LIPA)";
+export const defaultSeason = "DRY CROPPING SEASON 2025";
+export const defaultOutputFileName = "LIPA Summary Report";
 
 const normalizeDivisionFromFileName = (fileName: string): string =>
   fileName
