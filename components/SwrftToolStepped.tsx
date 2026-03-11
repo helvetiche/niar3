@@ -20,6 +20,7 @@ import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { TemplateManagerInline } from "@/components/TemplateManagerInline";
 import { MasonryModal } from "@/components/MasonryModal";
 import { useSwrftTool } from "@/hooks/useSwrftTool";
+import type { AccomplishmentTaskDesignation } from "@/lib/api/accomplishment-tasks";
 
 const DESIGNATION_OPTIONS = [
   "SWRFT",
