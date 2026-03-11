@@ -11,11 +11,13 @@ import {
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { TemplateManagerInline } from "@/components/TemplateManagerInline";
 import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
-import { useGenerateProfiles } from "@/hooks/useGenerateProfiles";
+import {
+  defaultBillingUnitFolderName,
+  defaultZipName,
+  useGenerateProfiles,
+} from "@/hooks/useGenerateProfiles";
 import { getFileKey } from "@/lib/file-utils";
 import { sanitizeFolderName } from "@/lib/file-utils";
-
-const defaultBillingUnitFolderName = "billing unit";
 
 export function GenerateProfilesToolStepped() {
   const {

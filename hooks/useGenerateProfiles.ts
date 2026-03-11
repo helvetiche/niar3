@@ -6,8 +6,8 @@ import { getBaseName, getFileKey, sanitizeFolderName } from "@/lib/file-utils";
 import { downloadBlob, getErrorMessage } from "@/lib/utils";
 import { ERROR_MESSAGES } from "@/constants/error-messages";
 
-const defaultZipName = "BILLING UNITS";
-const defaultBillingUnitFolderName = "billing unit";
+export const defaultZipName = "BILLING UNITS";
+export const defaultBillingUnitFolderName = "billing unit";
 const OVERLAY_OPAQUE_MS = 280;
 const OVERLAY_FADE_MS = 320;
 const OVERLAY_ERROR_FADE_MS = 240;
