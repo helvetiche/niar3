@@ -32,6 +32,7 @@ export function Hero() {
           </div>
           <button
             type="button"
+            onClick={() => setIsLoginModalOpen(true)}
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-white/90 sm:gap-3 sm:rounded-full sm:pl-2 sm:pr-4"
           >
             <span className="hidden sm:flex sm:h-8 sm:w-8 sm:shrink-0 sm:items-center sm:justify-center sm:overflow-hidden sm:rounded-full sm:bg-emerald-900">

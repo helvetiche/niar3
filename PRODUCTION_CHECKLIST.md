@@ -10,6 +10,12 @@
   - `components/BannerWithLoginClient.tsx` - New component handling search params
   - `components/BannerWithLoginWrapper.tsx` - New wrapper component without search params
 
+### 2. Content Security Policy (CSP) Inline Script Violations ✅
+- **Root Cause**: Next.js generates inline scripts for hydration, but production CSP blocked them
+- **Fix**: Added `'unsafe-inline'` to script-src directive in production CSP
+- **Files Changed**:
+  - `lib/security-headers.ts` - Updated CSP to allow inline scripts in production
+
 ## Pre-Deployment Verification
 
 ### Environment Variables (Production)
@@ -33,9 +39,9 @@ Ensure these are set in your production environment:
 - Verify SSL certificate is valid
 
 ### Content Security Policy
-- The CSP is stricter in production
-- Verify all required scripts and resources are whitelisted
-- Check browser console for CSP violations
+- ✅ Updated CSP to allow inline scripts required by Next.js
+- Verify no CSP violations in browser console
+- Check that all required scripts and resources are whitelisted
 
 ## Testing Steps
 
