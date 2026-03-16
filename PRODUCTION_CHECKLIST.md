@@ -28,6 +28,14 @@
 - **Files Changed**:
   - `app/api/v1/templates/[templateId]/route.ts` - Added GET method handler
 
+### 5. Consolidate Land Profiles Template Error ✅
+- **Root Cause**: Frontend was trying to fetch template file as JSON instead of binary blob
+- **Fix**: Created dedicated download endpoint for template files and updated frontend to use it
+- **Files Changed**:
+  - `app/api/v1/templates/[templateId]/download/route.ts` - New download endpoint
+  - `hooks/useConsolidateLandProfiles.ts` - Updated to use download endpoint
+  - `app/api/v1/consolidate-land-profiles/route.ts` - Added debugging logs
+
 ## Pre-Deployment Verification
 
 ### Environment Variables (Production)

@@ -97,6 +97,14 @@ export async function POST(request: NextRequest) {
     const templateArrayBuffer = await templateFile.arrayBuffer();
     const templateBuffer = Buffer.from(templateArrayBuffer);
 
+    // Add debugging info
+    logger.info(`Template file: ${templateFile.name}, size: ${templateFile.size}, type: ${templateFile.type}`);
+    logger.info(`Template buffer size: ${templateBuffer.length}`);
+    
+    // Log first few bytes for debugging
+    const firstBytes = templateBuffer.subarray(0, 8);
+    logger.info(`Template first bytes: ${Array.from(firstBytes).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+
     // Process consolidation with automatic calculation
     const { buffer, processedCount, errors, warnings } = await consolidateIFR(
       templateBuffer,

@@ -70,7 +70,7 @@ export function useConsolidateLandProfiles() {
   };
 
   const fetchTemplateBlob = async (templateId: string): Promise<Blob> => {
-    const response = await fetch(`/api/v1/templates/${templateId}`);
+    const response = await fetch(`/api/v1/templates/${templateId}/download`);
     if (!response.ok) {
       throw new Error("Failed to fetch template");
     }
