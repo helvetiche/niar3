@@ -10,7 +10,7 @@ import { BannerWithLogin } from "@/components/BannerWithLogin";
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen w-screen overflow-hidden">
+    <section className="relative min-h-screen w-screen">
       <Suspense fallback={null}>
         <BannerWithLogin />
       </Suspense>
