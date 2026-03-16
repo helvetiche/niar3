@@ -13,6 +13,81 @@ import {
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 import { logger } from "@/lib/logger";
 
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ templateId: string }> },
+) {
+  const result = await getSession();
+  if (!result.user) {
+    await logAuditTrailEntry({
+      action: "templates.template-id.get",
+      status: "rejected",
+      route: "/api/v1/templates/[templateId]",
+      method: "GET",
+      request,
+      httpStatus: 401,
+      details: { reason: "unauthorized" },
+    });
+    return applySecurityHeaders(
+      NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    );
+  }
+
+  const params = await context.params;
+  const templateId = params.templateId;
+
+  try {
+    const template = await getTemplateRecord(templateId);
+    if (!template) {
+      await logAuditTrailEntry({
+        uid: result.user.uid,
+        action: "templates.template-id.get",
+        status: "rejected",
+        route: "/api/v1/templates/[templateId]",
+        method: "GET",
+        request,
+        httpStatus: 404,
+        details: { reason: "template-not-found", templateId },
+      });
+      return applySecurityHeaders(
+        NextResponse.json({ error: "Template not found" }, { status: 404 }),
+      );
+    }
+
+    await logAuditTrailEntry({
+      uid: result.user.uid,
+      action: "templates.template-id.get",
+      status: "success",
+      route: "/api/v1/templates/[templateId]",
+      method: "GET",
+      request,
+      httpStatus: 200,
+      details: { templateId, scope: template.scope },
+    });
+
+    return applySecurityHeaders(NextResponse.json(template));
+  } catch (error) {
+    logger.error("[api/templates/:id GET]", error);
+    await logAuditTrailEntry({
+      uid: result.user.uid,
+      action: "templates.template-id.get",
+      status: "error",
+      route: "/api/v1/templates/[templateId]",
+      method: "GET",
+      request,
+      httpStatus: 500,
+      errorMessage: "Failed to get template",
+      details: { templateId },
+    });
+    return applySecurityHeaders(
+      NextResponse.json(
+        { error: "Failed to get template" },
+        { status: 500 },
+      ),
+    );
+  }
+}
+
 export async function DELETE(
   request: Request,
   context: { params: Promise<{ templateId: string }> },

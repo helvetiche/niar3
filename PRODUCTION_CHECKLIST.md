@@ -16,6 +16,18 @@
 - **Files Changed**:
   - `lib/security-headers.ts` - Updated CSP to allow inline scripts in production
 
+### 3. Login Button Not Functional ✅
+- **Root Cause**: Suspense fallback button had no click handler, users were clicking non-functional button
+- **Fix**: Added click handler to fallback login button to open modal
+- **Files Changed**:
+  - `components/layout/hero.tsx` - Added onClick handler to fallback button
+
+### 4. Templates API 405 Method Not Allowed ✅
+- **Root Cause**: Individual template route missing GET method handler
+- **Fix**: Added GET method to retrieve individual templates
+- **Files Changed**:
+  - `app/api/v1/templates/[templateId]/route.ts` - Added GET method handler
+
 ## Pre-Deployment Verification
 
 ### Environment Variables (Production)
