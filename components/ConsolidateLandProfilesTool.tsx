@@ -231,38 +231,7 @@ export default function ConsolidateLandProfilesTool() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-white/30 bg-white/5 p-4">
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
-              <InfoIcon size={16} className="text-white/60" />
-              Processing Notes
-            </div>
-            <ul className="space-y-1 text-sm text-white/80">
-              <li className="flex gap-2">
-                <span className="text-white/60">•</span>
-                <span>
-                  The system extracts data from sheets &quot;00 ACC DETAILS
-                  01&quot; and &quot;01 SOA 01&quot;
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-white/60">•</span>
-                <span>
-                  IFR calculations are performed automatically using the
-                  irrigation rate table
-                </span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-white/60">•</span>
-                <span>Duplicate crop seasons per lot are removed</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-white/60">•</span>
-                <span>
-                  Years before 1975 and 75-D are skipped, but 75-W is included
-                </span>
-              </li>
-            </ul>
-          </div>
+       
 
           {result && (
             <div className="space-y-4">
