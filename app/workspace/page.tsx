@@ -12,6 +12,7 @@ import { WorkspaceToolPlaceholder } from "@/components/WorkspaceToolPlaceholder"
 import { AccountManagement } from "@/components/AccountManagement";
 import ConsolidateLandProfilesTool from "@/components/ConsolidateLandProfilesTool";
 import IFRCheckerTool from "@/components/IFRCheckerTool";
+import { Inventory } from "@/components/Inventory/Inventory";
 import {
   useWorkspaceTab,
   type WorkspaceTab,
@@ -58,6 +59,10 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
     name: "IFR CHECKER",
     description:
       "Validate consolidated files against source IFR data and identify discrepancies.",
+  },
+  inventory: {
+    name: "INVENTORY",
+    description: "Track and manage inventory items with quarterly data.",
   },
 };
 
@@ -115,6 +120,8 @@ export default function WorkspacePage() {
             <ConsolidateLandProfilesTool />
           ) : selectedTab === "ifr-checker" ? (
             <IFRCheckerTool />
+          ) : selectedTab === "inventory" ? (
+            <Inventory />
           ) : (
             TOOL_CONTENT[selectedTab] && (
               <WorkspaceToolPlaceholder

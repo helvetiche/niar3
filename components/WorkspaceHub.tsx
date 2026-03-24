@@ -20,6 +20,8 @@ import {
   SparkleIcon,
   SquaresFourIcon,
   WarningCircleIcon,
+  PackageIcon,
+  CubeIcon,
 } from "@phosphor-icons/react";
 import {
   useWorkspaceTab,
@@ -131,6 +133,18 @@ const HUB_TOOLS: HubTool[] = [
       { id: "validate", label: "Validate Data", icon: CheckCircleIcon },
       { id: "find-errors", label: "Find Errors", icon: WarningCircleIcon },
       { id: "compare", label: "Compare Files", icon: MagnifyingGlassIcon },
+    ],
+  },
+  {
+    id: "inventory",
+    name: "INVENTORY",
+    description:
+      "Track and manage inventory items with quarterly requested and received quantities. Monitor stock levels and remaining items across quarters.",
+    icon: PackageIcon,
+    tags: [
+      { id: "track-stock", label: "Track Stock", icon: CubeIcon },
+      { id: "quarterly", label: "Quarterly Data", icon: DatabaseIcon },
+      { id: "manage", label: "Manage Items", icon: CheckCircleIcon },
     ],
   },
 ];

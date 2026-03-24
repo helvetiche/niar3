@@ -1,3 +1,4 @@
+import "server-only";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import XlsxPopulate from "xlsx-populate";
@@ -10,10 +11,23 @@ import {
   setCellValue,
 } from "@/lib/excel/cell-utils";
 
-const TEMPLATE_CANDIDATES = [
-  path.join(process.cwd(), "data", "template.xlsx"),
-  path.join(process.cwd(), "public", "template.xlsx"),
-];
+/**
+ * Get template file path from predefined locations
+ */
+const getTemplatePath = (): string => {
+  const candidates = [
+    path.join(process.cwd(), /*turbopackIgnore: true*/ "data", "template.xlsx"),
+    path.join(process.cwd(), /*turbopackIgnore: true*/ "public", "template.xlsx"),
+  ];
+  
+  for (const candidate of candidates) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    if (existsSync(/*turbopackIgnore: true*/ candidate)) return candidate;
+  }
+  throw new Error(
+    `Template not found. Add template.xlsx in data/ or public/, or upload a template file.`,
+  );
+};
 
 const CROP_DATA_START_ROW = 30;
 
@@ -33,18 +47,6 @@ interface ProfileData {
   farmerLast: string;
   oldAccount: string;
 }
-
-/**
- * Get template file path from predefined locations
- */
-const getTemplatePath = (): string => {
-  for (const candidate of TEMPLATE_CANDIDATES) {
-    if (existsSync(candidate)) return candidate;
-  }
-  throw new Error(
-    `Template not found. Add template.xlsx in data/ or public/, or upload a template file. Tried: ${TEMPLATE_CANDIDATES.join(", ")}`,
-  );
-};
 
 /**
  * Build full name from name parts
