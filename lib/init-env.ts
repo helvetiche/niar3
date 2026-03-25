@@ -11,7 +11,7 @@ if (typeof window === "undefined") {
   // Only validate on server-side
   try {
     validateEnv();
-  } catch (error) {
+  } catch {
     // Error is already logged in validateEnv
     // Exit the process to prevent running with invalid config
     process.exit(1);

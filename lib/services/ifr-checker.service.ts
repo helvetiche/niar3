@@ -97,7 +97,6 @@ export function parseConsolidatedFile(
     const principal = sheet[`J${row}`]?.v || 0;
     const penalty = sheet[`K${row}`]?.v || 0;
     const oldAccount = sheet[`L${row}`]?.v || 0;
-    const total = sheet[`M${row}`]?.v || 0;
     const area = sheet[`I${row}`]?.v || 0;
 
     consolidatedData.set(String(lotCode), {

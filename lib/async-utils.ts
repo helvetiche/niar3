@@ -24,7 +24,7 @@ export function createAsyncEffect<T>(
         if (onError) {
           onError(error);
         } else if (process.env.NODE_ENV === "development") {
-          // eslint-disable-next-line no-console
+           
           console.error("Async effect error:", error);
         }
       }
@@ -49,7 +49,7 @@ export async function handleAsync(
     if (onError) {
       onError(error);
     } else if (process.env.NODE_ENV === "development") {
-      // eslint-disable-next-line no-console
+       
       console.error("Async handler error:", error);
     }
   }
@@ -62,7 +62,7 @@ export async function handleAsync(
 export function fireAndForget(fn: () => Promise<void>, context?: string): void {
   fn().catch((error) => {
     if (process.env.NODE_ENV === "development") {
-      // eslint-disable-next-line no-console
+       
       console.error(`[${context || "fire-and-forget"}] Error:`, error);
     }
   });

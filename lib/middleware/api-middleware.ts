@@ -53,7 +53,7 @@ export async function withApiMiddleware(
     return applySecurityHeaders(response);
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
-      // eslint-disable-next-line no-console
+       
       console.error("[API Middleware] Error:", error);
     }
     const { error: errorResponse, statusCode } = createErrorResponse(

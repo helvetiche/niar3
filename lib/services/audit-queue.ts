@@ -36,7 +36,7 @@ class AuditQueue {
       await Promise.all(batch.map((entry) => logAuditTrailEntry(entry)));
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
-        // eslint-disable-next-line no-console
+         
         console.error("Audit queue flush failed:", error);
       }
       this.queue.unshift(...batch);

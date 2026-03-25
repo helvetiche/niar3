@@ -47,7 +47,7 @@ function sendToExternalLogger(entry: LogEntry): void {
       }
     } else {
       // Fallback to structured console logging
-      // eslint-disable-next-line no-console
+       
       console[entry.level](JSON.stringify(entry));
     }
   }
@@ -66,7 +66,7 @@ declare global {
 export const logger = {
   debug: (...args: unknown[]) => {
     if (isDevelopment) {
-      // eslint-disable-next-line no-console
+       
       console.debug("[debug]", ...args);
     }
   },
@@ -74,7 +74,7 @@ export const logger = {
   info: (...args: unknown[]) => {
     const entry = formatLogEntry("info", args);
     if (isDevelopment) {
-      // eslint-disable-next-line no-console
+       
       console.info("[info]", ...args);
     } else {
       sendToExternalLogger(entry);
@@ -84,7 +84,7 @@ export const logger = {
   warn: (...args: unknown[]) => {
     const entry = formatLogEntry("warn", args);
     if (isDevelopment) {
-      // eslint-disable-next-line no-console
+       
       console.warn("[warn]", ...args);
     }
     sendToExternalLogger(entry);
@@ -93,7 +93,7 @@ export const logger = {
   error: (...args: unknown[]) => {
     const entry = formatLogEntry("error", args);
     if (isDevelopment) {
-      // eslint-disable-next-line no-console
+       
       console.error("[error]", ...args);
     }
     sendToExternalLogger(entry);

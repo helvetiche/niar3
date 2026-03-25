@@ -58,19 +58,24 @@ describe("useAsyncOperation", () => {
   it("should set loading state during execution", async () => {
     const { result } = renderHook(() => useAsyncOperation());
 
-    let isLoadingDuringExecution = false;
+    expect(result.current.isLoading).toBe(false);
 
-    act(() => {
-      result.current.execute(async () => {
-        isLoadingDuringExecution = result.current.isLoading;
-        await new Promise((resolve) => setTimeout(resolve, 10));
-      });
+    // Start execution without awaiting
+    const executePromise = result.current.execute(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
     });
 
+    // Check that loading is true immediately after starting
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
+      expect(result.current.isLoading).toBe(true);
     });
 
-    expect(isLoadingDuringExecution).toBe(true);
+    // Wait for execution to complete
+    await act(async () => {
+      await executePromise;
+    });
+
+    // Loading should be false after completion
+    expect(result.current.isLoading).toBe(false);
   });
 });

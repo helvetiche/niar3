@@ -71,7 +71,7 @@ export function validateEnv(): Env {
         .map((err: z.ZodIssue) => `${err.path.join(".")}: ${err.message}`)
         .join("\n");
 
-      // eslint-disable-next-line no-console
+       
       console.error("❌ Environment validation failed:\n", errorMessage);
       throw new Error(
         `Invalid environment variables. Please check your .env file.\n${errorMessage}`,

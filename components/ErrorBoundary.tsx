@@ -141,10 +141,8 @@ export function withErrorBoundary<P extends object>(
 declare global {
   interface Window {
     Sentry?: {
-      captureException: (
-        error: Error,
-        context?: { contexts?: { react?: { componentStack?: string } } },
-      ) => void;
+      captureException: (error: Error, context?: unknown) => void;
+      captureMessage: (message: string, context?: unknown) => void;
     };
   }
 }

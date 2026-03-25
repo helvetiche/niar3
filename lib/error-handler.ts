@@ -24,7 +24,7 @@ export function safeAsync(
   fn().catch((error) => {
     // Use a proper logger instead of console.error
     if (process.env.NODE_ENV === "development") {
-      // eslint-disable-next-line no-console
+       
       console.error(`[${context}] Unhandled error:`, error);
     }
     // In production, this should send to external logging service
@@ -42,8 +42,11 @@ export function sanitizeErrorForClient(error: unknown): string {
 
   if (error instanceof Error) {
     const message = error.message;
-    // Generic message for unknown errors
-    if (message.includes("ENOENT") || message.includes("not found")) {
+    // Check for specific error patterns
+    if (message.includes("ENOENT")) {
+      return "Resource not found";
+    }
+    if (message.includes("not found")) {
       return "Resource not found";
     }
     if (message.includes("EACCES") || message.includes("permission")) {
@@ -70,7 +73,7 @@ export function createErrorResponse(
   return {
     error: {
       code,
-      message: sanitizeErrorForClient(new AppError(code, message, statusCode)),
+      message: sanitizeErrorForClient(new Error(message)),
     },
     statusCode,
   };

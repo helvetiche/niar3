@@ -69,9 +69,10 @@ describe("Error Handler", () => {
     });
 
     it("should sanitize error message", () => {
+      const error = new Error("ENOENT: /secret/path");
       const response = createErrorResponse(
         "FILE_ERROR",
-        "ENOENT: /secret/path",
+        error.message,
         404
       );
 

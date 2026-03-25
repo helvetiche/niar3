@@ -11,10 +11,10 @@ export async function register() {
 
     try {
       validateEnv();
-      // eslint-disable-next-line no-console
+       
       console.log("✅ Environment variables validated successfully");
-    } catch (error) {
-      // eslint-disable-next-line no-console
+    } catch {
+       
       console.error("❌ Failed to start: Invalid environment configuration");
       process.exit(1);
     }
