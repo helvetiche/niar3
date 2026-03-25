@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -39,6 +40,7 @@ export function WorkspaceProvider({
   children: ReactNode;
 }) {
   const [selectedTab, setSelectedTab] = useState<WorkspaceTab>("hub");
+  
   const handleSetSelectedTab = useCallback((tab: WorkspaceTab) => {
     setSelectedTab((current) => {
       if (tab === current) return current;
@@ -49,10 +51,14 @@ export function WorkspaceProvider({
     });
   }, []);
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(
+    () => ({ user, selectedTab, setSelectedTab: handleSetSelectedTab }),
+    [user, selectedTab, handleSetSelectedTab]
+  );
+
   return (
-    <WorkspaceContext.Provider
-      value={{ user, selectedTab, setSelectedTab: handleSetSelectedTab }}
-    >
+    <WorkspaceContext.Provider value={contextValue}>
       {children}
     </WorkspaceContext.Provider>
   );

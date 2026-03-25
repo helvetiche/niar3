@@ -2,260 +2,428 @@
 
 ## Overview
 
-NIA Productivity Tools is built with Next.js 16 (App Router) and follows a modern, scalable architecture with clear separation of concerns.
+NIA Tools is a Next.js 16 application built with TypeScript, React 19, and Firebase. It follows a modern server-first architecture with strong security principles.
 
 ## Technology Stack
 
-### Frontend
+### Core
+- **Next.js 16**: App Router with React Server Components
+- **React 19**: Latest React with concurrent features
+- **TypeScript 5**: Strict mode enabled
+- **Firebase**: Authentication and Realtime Database
 
-- **Framework**: Next.js 16.1.6 with React 19.2.3
-- **Language**: TypeScript 5 (strict mode)
-- **Styling**: Tailwind CSS 4
-- **UI Components**: Radix UI, Phosphor Icons
-- **Animations**: GSAP, Motion
-- **State Management**: React Context API, SWR
+### State Management
+- **React Context**: Global workspace state
+- **SWR**: Server state management and caching
+- **Custom Hooks**: Encapsulated business logic
 
-### Backend
+### Styling
+- **Tailwind CSS 4**: Utility-first CSS
+- **Radix UI**: Accessible component primitives
+- **GSAP + Motion**: Animations
 
-- **Runtime**: Node.js 20+
-- **API**: Next.js API Routes (App Router)
-- **Authentication**: Firebase Admin SDK
-- **Database**: Firebase Firestore, Realtime Database
-- **Storage**: Firebase Cloud Storage
-- **Rate Limiting**: Upstash Redis
-
-### DevOps
-
-- **Deployment**: Vercel
-- **Monitoring**: Sentry
-- **Analytics**: Vercel Speed Insights
+### Data Processing
+- **ExcelJS**: Excel file manipulation
+- **PDF-Lib**: PDF generation and merging
+- **JSZip**: File compression
 
 ## Architecture Patterns
 
-### 1. Layered Architecture
+### 1. Server-First Architecture
 
 ```
-┌─────────────────────────────────────┐
-│         Presentation Layer          │
-│    (Components, Pages, Hooks)       │
-├─────────────────────────────────────┤
-│         Application Layer           │
-│      (API Routes, Contexts)         │
-├─────────────────────────────────────┤
-│          Business Layer             │
-│   (Services, Utilities, Logic)      │
-├─────────────────────────────────────┤
-│           Data Layer                │
-│  (Firebase, Storage, Database)      │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│           Client (Browser)              │
+│  ┌─────────────────────────────────┐   │
+│  │   React Components (RSC + CSR)  │   │
+│  └─────────────────────────────────┘   │
+└─────────────────┬───────────────────────┘
+                  │
+                  │ HTTP/Fetch
+                  │
+┌─────────────────▼───────────────────────┐
+│         Next.js Server (Edge)           │
+│  ┌─────────────────────────────────┐   │
+│  │      proxy.ts (Middleware)      │   │
+│  │  - Rate Limiting                │   │
+│  │  - Security Headers             │   │
+│  └─────────────────────────────────┘   │
+│  ┌─────────────────────────────────┐   │
+│  │      App Router                 │   │
+│  │  - Server Components            │   │
+│  │  - API Routes (/api/v1/*)       │   │
+│  │  - Server Actions               │   │
+│  └─────────────────────────────────┘   │
+└─────────────────┬───────────────────────┘
+                  │
+                  │
+┌─────────────────▼───────────────────────┐
+│         External Services               │
+│  - Firebase Auth                        │
+│  - Firebase Realtime DB                 │
+│  - Upstash Redis                        │
+│  - Sentry                               │
+└─────────────────────────────────────────┘
 ```
 
-### 2. Authentication Flow
+### 2. Directory Structure
 
 ```
-Client Request
-    ↓
-Proxy Middleware (rate limiting)
-    ↓
-API Route Handler
-    ↓
-withAuth() → getSession() → verifySessionCookie()
-    ↓
-hasPermission() check
-    ↓
-Business Logic
-    ↓
-Audit Trail Logging
-    ↓
-Response with Security Headers
+niatools/
+├── app/                    # Next.js App Router
+│   ├── (auth)/            # Auth layout group
+│   ├── (dashboard)/       # Dashboard layout group
+│   ├── (public)/          # Public layout group
+│   ├── api/v1/            # Versioned API routes
+│   ├── workspace/         # Main application
+│   └── layout.tsx         # Root layout
+│
+├── components/            # React components
+│   ├── [Feature]/         # Feature-based modules
+│   │   ├── index.tsx
+│   │   ├── types.ts
+│   │   ├── utils.ts
+│   │   └── hooks/
+│   └── ui/                # Shared UI components
+│
+├── contexts/              # React Context providers
+├── hooks/                 # Shared custom hooks
+│
+├── lib/                   # Core business logic
+│   ├── api/              # Client-side API functions
+│   ├── auth/             # Authentication utilities
+│   ├── firebase-admin/   # Firebase Admin SDK
+│   ├── rate-limit/       # Rate limiting
+│   ├── services/         # Business services
+│   ├── utils/            # Utility functions
+│   └── validations/      # Zod schemas
+│
+├── types/                 # TypeScript definitions
+├── constants/             # Application constants
+├── tests/                 # Test files
+└── docs/                  # Documentation
 ```
 
-### 3. File Processing Pipeline
+### 3. Request Flow
 
+#### API Request Flow
 ```
-File Upload (Client)
-    ↓
-FormData Validation
-    ↓
-File Size/Type Check
-    ↓
-Buffer Extraction
-    ↓
-Business Logic Processing
-    ↓
-Result Generation
-    ↓
-Secure File Response
+1. Client Request
+   ↓
+2. proxy.ts
+   - Rate limiting check
+   - Apply security headers
+   ↓
+3. API Route Handler
+   - Authentication check (requireAuth)
+   - Permission check (requirePermission)
+   - Input validation (Zod)
+   ↓
+4. Business Logic (lib/services)
+   - Process request
+   - Database operations
+   ↓
+5. Audit Trail
+   - Log action (fire-and-forget)
+   ↓
+6. Response
+   - Apply security headers
+   - Return JSON/File
 ```
 
-## Directory Structure
-
-### `/app` - Next.js App Router
-
-- **Pages**: Route-based file structure
-- **API Routes**: `/api/v1/*` for versioned endpoints
-- **Layouts**: Shared layouts with metadata
-- **Error Boundaries**: Global error handling
-
-### `/components` - React Components
-
-- **Feature Components**: Domain-specific components
-- **UI Components**: Reusable UI elements
-- **Layout Components**: Page structure components
-
-### `/lib` - Core Business Logic
-
-- **`/auth`**: Authentication and authorization
-- **`/firebase-admin`**: Firebase Admin SDK wrappers
-- **`/api`**: Client-side API functions
-- **`/services`**: Business services
-- **`/monitoring`**: Logging and error tracking
-- **`/rate-limit`**: Rate limiting logic
-
-### `/types` - TypeScript Definitions
-
-- Shared type definitions
-- API request/response types
-- Domain models
-
-### `/constants` - Application Constants
-
-- Permission definitions
-- Error messages
-- Configuration values
+#### Page Request Flow
+```
+1. Client Request
+   ↓
+2. proxy.ts
+   - Rate limiting
+   - Security headers
+   ↓
+3. Layout (Server Component)
+   - requireAuth()
+   - Fetch user data
+   ↓
+4. Page (Server Component)
+   - Fetch initial data
+   - Render RSC
+   ↓
+5. Client Components
+   - Hydrate
+   - Interactive features
+```
 
 ## Key Design Decisions
 
-### 1. Server-Side Session Management
+### 1. Authentication Strategy
 
-- Session cookies verified server-side for security
-- Firebase Admin SDK for token verification
-- Custom claims for role-based access control
+**Session Cookies over JWT**
+- Firebase session cookies (5-day expiry)
+- HttpOnly, Secure, SameSite=Strict
+- Server-side verification on every request
+- No client-side token storage
 
-### 2. Permission-Based Authorization
+**Why?**
+- More secure (XSS protection)
+- Automatic CSRF protection
+- Simpler client code
+- Firebase Admin SDK integration
 
-- Resource:action format (e.g., "workspace:read")
-- Three-tier role system (super-admin, admin, user)
-- Base permissions for authenticated users
+### 2. Rate Limiting
 
-### 3. Comprehensive Audit Logging
+**Distributed Rate Limiting with Upstash Redis**
+- Different limits per endpoint type
+- Sliding window algorithm
+- Client identification via IP
+- Graceful degradation (disabled in dev)
 
-- All actions logged to Firebase Realtime DB
-- Sanitized data to prevent sensitive info leakage
-- Structured logging for compliance
+**Limits:**
+- Auth: 5 req/60s
+- API: 10 req/10s
+- Heavy: 5 req/60s
+- Public: 30 req/60s
 
-### 4. Distributed Rate Limiting
+### 3. File Processing
 
-- Upstash Redis for production
-- Three-tier limits (public, API, auth)
-- IP-based identification
+**Server-Side Processing**
+- All file operations on server
+- Streaming for large files
+- Memory-efficient buffers
+- 2GB upload limit
 
-### 5. Security-First Headers
+**Why?**
+- Security (no client-side code execution)
+- Consistent processing
+- Better error handling
+- Audit trail
 
-- Strict CSP with allowlists
-- HSTS for HTTPS enforcement
-- X-Frame-Options to prevent clickjacking
-- CORS restricted to same-origin
+### 4. State Management
 
-### 6. Graceful Degradation
+**Hybrid Approach**
+- Server state: SWR (caching, revalidation)
+- Global UI state: React Context
+- Local state: useState
+- Form state: Controlled components
 
-- Optional services (Sentry, Redis) fail gracefully
-- Environment-aware configuration
-- Fallback mechanisms for non-critical features
-
-## Data Flow
-
-### Authentication
-
-1. User logs in via Firebase Auth (client)
-2. Client receives ID token
-3. Server exchanges token for session cookie
-4. Session cookie stored in httpOnly cookie
-5. Subsequent requests verified server-side
-
-### File Processing
-
-1. Client uploads file via FormData
-2. Server validates file (size, type)
-3. Buffer extracted and processed
-4. Business logic applied (Excel manipulation, PDF merge)
-5. Result returned as secure file response
-6. Audit trail logged
-
-### Template Management
-
-1. Templates stored in Firebase Storage
-2. Metadata stored in Firestore
-3. Client-side caching for performance
-4. Scoped by tool (ifr-scanner, swrft, consolidation)
+**Why?**
+- Simple and maintainable
+- No over-engineering
+- Leverages React 19 features
+- Good performance
 
 ## Security Architecture
 
 ### Defense in Depth
 
-1. **Network Layer**: Rate limiting, CORS
-2. **Application Layer**: Authentication, authorization
-3. **Data Layer**: Input validation, sanitization
-4. **Monitoring Layer**: Audit logging, error tracking
+```
+Layer 1: Network (Vercel Edge)
+  - DDoS protection
+  - TLS 1.3
+  
+Layer 2: proxy.ts
+  - Rate limiting
+  - Security headers
+  
+Layer 3: Authentication
+  - Session verification
+  - Role-based access
+  
+Layer 4: Authorization
+  - Permission checks
+  - Resource ownership
+  
+Layer 5: Input Validation
+  - Zod schemas
+  - File validation
+  - Sanitization
+  
+Layer 6: Output Encoding
+  - JSON serialization
+  - File headers
+  - Error sanitization
+  
+Layer 7: Audit Trail
+  - All actions logged
+  - Immutable records
+```
 
 ### Security Headers
 
+All responses include:
 - Content-Security-Policy
-- Strict-Transport-Security
 - X-Frame-Options: DENY
 - X-Content-Type-Options: nosniff
-- Referrer-Policy: strict-origin-when-cross-origin
+- Strict-Transport-Security (production)
+- Referrer-Policy
+- Permissions-Policy
+
+### CSRF Protection
+
+- Token in cookie (__csrf-token)
+- Header validation (x-csrf-token)
+- SameSite=Strict cookies
+- Origin validation
 
 ## Performance Optimizations
 
-1. **Client-Side Caching**: SWR for data fetching
-2. **Template Caching**: In-memory cache for templates
-3. **Code Splitting**: Next.js automatic code splitting
-4. **Image Optimization**: Next.js Image component
-5. **Bundle Optimization**: Tree shaking, minification
+### 1. Caching Strategy
 
-## Scalability Considerations
+```typescript
+// Template cache (5 min TTL)
+const cache = new Map<string, CachedTemplate>();
 
-1. **Stateless API**: No server-side session state
-2. **Firebase Auto-Scaling**: Managed infrastructure
-3. **CDN Distribution**: Vercel Edge Network
-4. **Rate Limiting**: Prevents abuse and DoS
-5. **Async Processing**: Ready for background jobs
+// SWR configuration
+const swrConfig = {
+  revalidateOnFocus: false,
+  revalidateOnReconnect: true,
+  dedupingInterval: 5000,
+};
+```
 
-## Future Enhancements
+### 2. Code Splitting
 
-1. **Background Job Queue**: BullMQ for async processing
-2. **Multi-Region Deployment**: Global distribution
-3. **GraphQL API**: Alternative to REST
-4. **WebSocket Support**: Real-time updates
-5. **Microservices**: Service decomposition for scale
+- Automatic route-based splitting (Next.js)
+- Dynamic imports for heavy components
+- Lazy loading for modals
 
-## Monitoring and Observability
+### 3. Asset Optimization
 
-1. **Error Tracking**: Sentry for exceptions
-2. **Performance Monitoring**: Vercel Speed Insights
-3. **Audit Logging**: Firebase Realtime DB
-4. **Rate Limit Analytics**: Upstash Analytics
+- Next.js Image optimization
+- Font optimization (next/font)
+- Static asset caching
+
+## Data Flow Patterns
+
+### 1. Server Component Pattern
+
+```typescript
+// app/workspace/layout.tsx
+export default async function Layout() {
+  const user = await requireAuth(); // Server-side
+  return <WorkspaceProvider user={user}>...</WorkspaceProvider>;
+}
+```
+
+### 2. Client Component Pattern
+
+```typescript
+// components/Feature/index.tsx
+"use client";
+export function Feature() {
+  const { data } = useSWR("/api/v1/data");
+  return <div>{data}</div>;
+}
+```
+
+### 3. API Route Pattern
+
+```typescript
+// app/api/v1/resource/route.ts
+export async function GET(request: NextRequest) {
+  const user = await requireAuth();
+  await requirePermission(user, "resource.read");
+  const data = await fetchData();
+  return secureJsonResponse(data);
+}
+```
 
 ## Testing Strategy
 
-1. **Unit Tests**: Business logic and utilities
-2. **Integration Tests**: API endpoints
-3. **E2E Tests**: Critical user workflows
-4. **Security Tests**: OWASP ZAP scanning
+### Test Pyramid
 
-## Deployment Pipeline
+```
+        ┌─────────┐
+        │   E2E   │  (Few)
+        └─────────┘
+      ┌─────────────┐
+      │ Integration │  (Some)
+      └─────────────┘
+    ┌─────────────────┐
+    │      Unit       │  (Many)
+    └─────────────────┘
+```
 
-1. **Development**: Local development with hot reload
-2. **Staging**: Preview deployments on Vercel
-3. **Production**: Main branch auto-deploys
-4. **Rollback**: Instant rollback via Vercel
+### Test Coverage Goals
 
-## Best Practices
+- Unit tests: 80%+
+- Integration tests: 60%+
+- E2E tests: Critical paths
 
-1. **Type Safety**: Strict TypeScript everywhere
-2. **Error Handling**: Structured error responses
-3. **Logging**: Comprehensive audit trail
-4. **Security**: Defense in depth
-5. **Performance**: Optimize for speed
-6. **Maintainability**: Clean, documented code
+### Test Files
+
+```
+tests/
+├── components/        # Component tests
+├── hooks/            # Hook tests
+├── lib/              # Utility tests
+├── api/              # API route tests
+└── e2e/              # End-to-end tests
+```
+
+## Deployment
+
+### Vercel Platform
+
+- Edge runtime for proxy.ts
+- Node.js runtime for API routes
+- Automatic HTTPS
+- Global CDN
+- Environment variables
+
+### Environment Variables
+
+```env
+# Firebase
+FIREBASE_ADMIN_PROJECT_ID
+FIREBASE_ADMIN_CLIENT_EMAIL
+FIREBASE_ADMIN_PRIVATE_KEY
+
+# Upstash Redis
+UPSTASH_REDIS_REST_URL
+UPSTASH_REDIS_REST_TOKEN
+
+# Sentry
+NEXT_PUBLIC_SENTRY_DSN
+```
+
+## Monitoring & Observability
+
+### Logging
+
+- Structured logging (JSON)
+- Log levels: debug, info, warn, error
+- External service integration (Sentry)
+
+### Metrics
+
+- Vercel Analytics
+- Speed Insights
+- Custom audit trail
+
+### Error Tracking
+
+- Sentry integration
+- Error boundaries
+- Graceful degradation
+
+## Future Considerations
+
+### Scalability
+
+- Database migration (Firebase → PostgreSQL)
+- Microservices for heavy processing
+- Queue system for async jobs
+- CDN for file storage
+
+### Features
+
+- Real-time collaboration
+- Offline support (PWA)
+- Mobile app (React Native)
+- API versioning (v2)
+
+### Technical Debt
+
+- Consolidate Excel libraries
+- Implement CSP nonces
+- Add E2E tests
+- Improve error messages

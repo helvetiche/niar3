@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Poppins } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Providers } from "@/components/ToastProvider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -122,7 +123,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${poppins.variable} ${jetbrainsMono.variable}`}>
       <body className="antialiased font-sans">
-        <Providers>{children}</Providers>
+        <ErrorBoundary>
+          <Providers>{children}</Providers>
+        </ErrorBoundary>
         <SpeedInsights />
       </body>
     </html>

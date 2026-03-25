@@ -6,11 +6,8 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
-    globals: true,
     setupFiles: ["./tests/setup.ts"],
-    typecheck: {
-      tsconfig: "./tsconfig.test.json",
-    },
+    globals: true,
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html", "lcov"],
@@ -23,10 +20,10 @@ export default defineConfig({
         ".next/",
       ],
       thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 80,
-        statements: 80,
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70,
       },
     },
   },

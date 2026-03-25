@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { updateInventoryQuarterlyData } from "@/lib/firebase-admin/inventory";
+import { logger } from "@/lib/logger";
 
 const updateQuarterlyBodySchema = z.object({
   year: z.number().int().min(2000).max(9999),
@@ -41,7 +42,7 @@ export async function PATCH(
 
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
-    console.error("Error updating quarterly data:", error);
+    logger.error("Error updating quarterly data:", error);
     return NextResponse.json(
       { error: "Failed to update quarterly data" },
       { status: 500 },

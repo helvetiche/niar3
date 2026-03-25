@@ -1,54 +1,51 @@
-# API Reference
+# API Documentation
 
 ## Base URL
 
 ```
-Development: http://localhost:3000/api/v1
 Production: https://niatools.vercel.app/api/v1
+Development: http://localhost:3000/api/v1
 ```
 
 ## Authentication
 
-All API endpoints require authentication via session cookie (`__session`). The cookie is set after successful login via Firebase Auth.
+All API endpoints (except health check) require authentication via Firebase session cookies.
 
 ### Headers
 
-```http
-Cookie: __session=<session-token>
-Content-Type: application/json (for JSON requests)
-Content-Type: multipart/form-data (for file uploads)
+```
+Cookie: __session=<firebase-session-token>
+x-csrf-token: <csrf-token>
 ```
 
 ## Rate Limiting
 
-- **Public endpoints**: 30 requests/minute per IP
-- **API endpoints**: 10 requests/10 seconds per IP
-- **Auth endpoints**: 5 requests/minute per IP
-- **Heavy operations**: 5 requests/minute per IP
+- **Auth endpoints**: 5 requests per 60 seconds
+- **API endpoints**: 10 requests per 10 seconds
+- **Heavy operations**: 5 requests per 60 seconds
+- **Public pages**: 30 requests per 60 seconds
 
 Rate limit headers:
-
-```http
+```
 X-RateLimit-Limit: 10
 X-RateLimit-Remaining: 9
 X-RateLimit-Reset: 1234567890
-Retry-After: 60 (on 429 response)
+Retry-After: 60 (on 429 responses)
 ```
 
 ## Endpoints
 
 ### Health Check
 
-#### GET `/health`
+```http
+GET /api/v1/health
+```
 
-Check API health status.
-
-**Response:**
-
+**Response**
 ```json
 {
   "status": "ok",
-  "timestamp": "2024-03-06T12:00:00.000Z"
+  "timestamp": "2024-03-25T10:00:00.000Z"
 }
 ```
 
@@ -56,46 +53,13 @@ Check API health status.
 
 ### Authentication
 
-#### POST `/auth/session`
+#### Get Session
 
-Create session cookie from Firebase ID token.
-
-**Request:**
-
-```json
-{
-  "idToken": "firebase-id-token"
-}
+```http
+GET /api/v1/auth/session
 ```
 
-**Response:**
-
-```json
-{
-  "success": true,
-  "expiresIn": 1209600000
-}
-```
-
-#### POST `/auth/refresh`
-
-Refresh session cookie.
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "expiresIn": 1209600000
-}
-```
-
-#### GET `/auth/session`
-
-Get current session information.
-
-**Response:**
-
+**Response**
 ```json
 {
   "user": {
@@ -103,10 +67,180 @@ Get current session information.
     "email": "user@example.com",
     "emailVerified": true,
     "customClaims": {
-      "role": "admin",
-      "permissions": ["workspace:read", "workspace:write"]
+      "role": "user"
     }
   }
+}
+```
+
+#### Refresh Token
+
+```http
+POST /api/v1/auth/refresh-token
+```
+
+**Request Body**
+```json
+{
+  "refreshToken": "firebase-refresh-token"
+}
+```
+
+**Response**
+```json
+{
+  "sessionCookie": "new-session-cookie",
+  "expiresIn": 432000000
+}
+```
+
+---
+
+### Accounts Management
+
+#### List Accounts
+
+```http
+GET /api/v1/accounts
+```
+
+**Query Parameters**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 20, max: 100)
+
+**Response**
+```json
+{
+  "accounts": [
+    {
+      "uid": "user-id",
+      "email": "user@example.com",
+      "emailVerified": true,
+      "disabled": false,
+      "customClaims": {
+        "role": "user"
+      },
+      "metadata": {
+        "creationTime": "2024-01-01T00:00:00.000Z",
+        "lastSignInTime": "2024-03-25T10:00:00.000Z"
+      }
+    }
+  ],
+  "total": 100,
+  "page": 1,
+  "limit": 20
+}
+```
+
+#### Get Account
+
+```http
+GET /api/v1/accounts/:uid
+```
+
+**Response**
+```json
+{
+  "uid": "user-id",
+  "email": "user@example.com",
+  "emailVerified": true,
+  "disabled": false,
+  "customClaims": {
+    "role": "user"
+  }
+}
+```
+
+#### Create Account
+
+```http
+POST /api/v1/accounts
+```
+
+**Request Body**
+```json
+{
+  "email": "newuser@example.com",
+  "password": "SecurePassword123!",
+  "role": "user"
+}
+```
+
+**Response**
+```json
+{
+  "uid": "new-user-id",
+  "email": "newuser@example.com"
+}
+```
+
+#### Update Account
+
+```http
+PUT /api/v1/accounts/:uid
+```
+
+**Request Body**
+```json
+{
+  "email": "updated@example.com",
+  "role": "admin",
+  "disabled": false
+}
+```
+
+#### Delete Account
+
+```http
+DELETE /api/v1/accounts/:uid
+```
+
+**Response**
+```json
+{
+  "success": true,
+  "message": "Account deleted successfully"
+}
+```
+
+---
+
+### IFR Checker
+
+Validate consolidated files against source IFR data.
+
+```http
+POST /api/v1/ifr-checker
+```
+
+**Request Body** (multipart/form-data)
+- `ifrFiles`: File[] - Source IFR files
+- `consolidatedFile`: File - Consolidated file to validate
+
+**Response**
+```json
+{
+  "success": true,
+  "summary": {
+    "totalLots": 100,
+    "consolidatedLots": 98,
+    "matchingLots": 95,
+    "totalIssues": 5,
+    "errors": 2,
+    "warnings": 3
+  },
+  "issues": [
+    {
+      "lotCode": "LOT-001",
+      "issueType": "principal_mismatch",
+      "field": "Principal",
+      "ifrValue": "1000.00",
+      "consolidatedValue": "1050.00",
+      "difference": 50,
+      "severity": "warning",
+      "reason": "Principal mismatch: Expected 1000.00 from IFR, found 1050.00 in consolidated (difference: 50.00)"
+    }
+  ]
 }
 ```
 
@@ -114,392 +248,148 @@ Get current session information.
 
 ### Templates
 
-#### GET `/templates?scope={scope}`
+#### List Templates
 
-List templates for a specific scope.
+```http
+GET /api/v1/templates
+```
 
-**Query Parameters:**
-
-- `scope` (required): `ifr-scanner` | `swrft` | `consolidation`
-
-**Response:**
-
+**Response**
 ```json
 {
   "templates": [
     {
       "id": "template-id",
-      "name": "Template Name",
-      "scope": "ifr-scanner",
-      "storagePath": "templates/ifr-scanner/file.xlsx",
-      "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "sizeBytes": 12345,
-      "createdAt": 1234567890,
-      "updatedAt": 1234567890,
-      "uploaderUid": "user-id"
+      "name": "Billing Template",
+      "type": "billing",
+      "uploadedBy": "user@example.com",
+      "uploadedAt": "2024-03-25T10:00:00.000Z",
+      "size": 102400
     }
   ]
 }
 ```
 
-#### POST `/templates`
+#### Upload Template
 
-Upload a new template.
-
-**Request (multipart/form-data):**
-
-```
-scope: ifr-scanner
-file: <file>
-name: Template Name (optional)
+```http
+POST /api/v1/templates
 ```
 
-**Response:**
+**Request Body** (multipart/form-data)
+- `file`: File - Template file (.xlsx, .xls)
+- `type`: string - Template type (billing, accomplishment)
 
+**Response**
 ```json
 {
   "id": "template-id",
-  "name": "Template Name",
-  "scope": "ifr-scanner",
-  "storagePath": "templates/ifr-scanner/file.xlsx",
-  "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "sizeBytes": 12345,
-  "createdAt": 1234567890,
-  "uploaderUid": "user-id"
+  "name": "template.xlsx",
+  "downloadUrl": "/api/v1/templates/template-id/download"
 }
 ```
 
-#### PATCH `/templates/{templateId}`
-
-Update template name and/or file.
-
-**Request (multipart/form-data):**
-
-```
-name: New Name (optional)
-file: <file> (optional)
-```
-
-**Response:**
-
-```json
-{
-  "id": "template-id",
-  "name": "New Name",
-  "scope": "ifr-scanner",
-  "storagePath": "templates/ifr-scanner/file.xlsx",
-  "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "sizeBytes": 12345,
-  "createdAt": 1234567890,
-  "updatedAt": 1234567891,
-  "updatedByUid": "user-id"
-}
-```
-
-#### DELETE `/templates/{templateId}`
-
-Delete a template.
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "scope": "ifr-scanner"
-}
-```
-
----
-
-### Accounts
-
-#### GET `/accounts`
-
-List all user accounts (admin only).
-
-**Required Permission:** `users:read`
-
-**Response:**
-
-```json
-{
-  "accounts": [
-    {
-      "uid": "user-id",
-      "email": "user@example.com",
-      "displayName": "User Name",
-      "role": "admin",
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "disabled": false,
-      "permissions": ["workspace:read", "workspace:write"]
-    }
-  ]
-}
-```
-
-#### POST `/accounts`
-
-Create a new user account (admin only).
-
-**Required Permission:** `users:write`
-
-**Request:**
-
-```json
-{
-  "email": "user@example.com",
-  "password": "secure-password",
-  "displayName": "User Name",
-  "role": "user",
-  "permissions": ["workspace:read"]
-}
-```
-
-**Response:**
-
-```json
-{
-  "uid": "user-id",
-  "email": "user@example.com",
-  "displayName": "User Name",
-  "role": "user",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "disabled": false,
-  "permissions": ["workspace:read"]
-}
-```
-
-#### PATCH `/accounts/{uid}`
-
-Update user account (admin only).
-
-**Required Permission:** `users:write`
-
-**Request:**
-
-```json
-{
-  "displayName": "New Name",
-  "role": "admin",
-  "disabled": false,
-  "permissions": ["workspace:read", "workspace:write"]
-}
-```
-
-**Response:**
-
-```json
-{
-  "uid": "user-id",
-  "email": "user@example.com",
-  "displayName": "New Name",
-  "role": "admin",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "disabled": false,
-  "permissions": ["workspace:read", "workspace:write"]
-}
-```
-
-#### DELETE `/accounts/{uid}`
-
-Delete user account (admin only).
-
-**Required Permission:** `users:delete`
-
-**Response:**
-
-```json
-{
-  "success": true
-}
-```
-
----
-
-### Consolidate Land Profiles
-
-#### POST `/consolidate-land-profiles`
-
-Consolidate multiple land profile Excel files.
-
-**Request (multipart/form-data):**
-
-```
-template: <template-file>
-landProfile_0: <file>
-landProfile_1: <file>
-...
-```
-
-**Response:**
-Binary Excel file with headers:
+#### Download Template
 
 ```http
-Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-Content-Disposition: attachment; filename="consolidated-ifr-{timestamp}.xlsx"
-X-Processed-Count: 10
-X-Error-Count: 0
-X-Warning-Count: 1
-X-Errors: []
-X-Warnings: ["Column I (Area) is left blank..."]
+GET /api/v1/templates/:templateId/download
 ```
 
----
+**Response**: Binary file download
 
-### IFR Checker
-
-#### POST `/ifr-checker`
-
-Validate consolidated file against source IFR data.
-
-**Request (multipart/form-data):**
-
-```
-consolidatedFile: <file>
-sourceFile_0: <file>
-sourceFile_1: <file>
-...
-```
-
-**Response:**
-
-```json
-{
-  "discrepancies": [
-    {
-      "lotCode": "LOT-001",
-      "field": "principal",
-      "consolidated": 1000.0,
-      "source": 1050.0,
-      "difference": -50.0
-    }
-  ],
-  "summary": {
-    "totalLots": 100,
-    "lotsWithDiscrepancies": 5,
-    "missingLots": 2,
-    "extraLots": 1
-  }
-}
-```
-
----
-
-### Merge Files
-
-#### POST `/merge-files`
-
-Merge PDF or Excel files.
-
-**Request (multipart/form-data):**
-
-```
-mode: pdf | excel
-file_0: <file>
-file_1: <file>
-...
-fileName: output-name (optional)
-```
-
-**Response:**
-Binary file (PDF or Excel) with headers:
+#### Delete Template
 
 ```http
-Content-Type: application/pdf (or Excel MIME type)
-Content-Disposition: attachment; filename="merged-{timestamp}.pdf"
+DELETE /api/v1/templates/:templateId
 ```
 
 ---
 
-### LIPA Summary
+### Inventory
 
-#### POST `/lipa-summary/scan`
+#### List Inventory Items
 
-Scan LIPA files and extract data.
-
-**Request (multipart/form-data):**
-
-```
-file_0: <file>
-file_1: <file>
-...
+```http
+GET /api/v1/inventory
 ```
 
-**Response:**
+**Query Parameters**
+- `category` (optional): Filter by category
+- `search` (optional): Search term
 
+**Response**
 ```json
 {
-  "scannedData": [
+  "items": [
     {
-      "fileName": "file1.xlsx",
-      "data": { ... }
+      "id": "item-id",
+      "name": "Item Name",
+      "category": "Equipment",
+      "quantity": 10,
+      "unit": "pcs",
+      "lastUpdated": "2024-03-25T10:00:00.000Z"
     }
   ]
 }
 ```
 
-#### POST `/lipa-summary/report`
+#### Create Inventory Item
 
-Generate LIPA summary report.
+```http
+POST /api/v1/inventory
+```
 
-**Request:**
-
+**Request Body**
 ```json
 {
-  "scannedData": [ ... ],
-  "options": { ... }
+  "name": "New Item",
+  "category": "Equipment",
+  "quantity": 5,
+  "unit": "pcs"
 }
 ```
 
-**Response:**
-Binary Excel file
+#### Update Inventory Item
+
+```http
+PUT /api/v1/inventory/:itemId
+```
+
+#### Delete Inventory Item
+
+```http
+DELETE /api/v1/inventory/:itemId
+```
 
 ---
 
-### Accomplishment Tasks
+### Audit Trail
 
-#### GET `/accomplishment-tasks`
+```http
+GET /api/v1/audit-trail
+```
 
-Get accomplishment tasks.
+**Query Parameters**
+- `startDate` (optional): ISO date string
+- `endDate` (optional): ISO date string
+- `userId` (optional): Filter by user
+- `action` (optional): Filter by action type
 
-**Response:**
-
+**Response**
 ```json
 {
-  "tasks": [
+  "entries": [
     {
-      "id": "task-id",
-      "title": "Task Title",
-      "description": "Task Description",
-      "category": "Category"
+      "id": "audit-id",
+      "timestamp": "2024-03-25T10:00:00.000Z",
+      "userId": "user-id",
+      "action": "account.create",
+      "details": {
+        "targetEmail": "newuser@example.com"
+      },
+      "ipAddress": "192.168.1.1"
     }
   ]
-}
-```
-
-#### POST `/accomplishment-tasks`
-
-Create accomplishment task.
-
-**Request:**
-
-```json
-{
-  "title": "Task Title",
-  "description": "Task Description",
-  "category": "Category"
-}
-```
-
-**Response:**
-
-```json
-{
-  "id": "task-id",
-  "title": "Task Title",
-  "description": "Task Description",
-  "category": "Category",
-  "createdAt": 1234567890
 }
 ```
 
@@ -507,56 +397,44 @@ Create accomplishment task.
 
 ## Error Responses
 
-All errors follow this format:
+All endpoints return consistent error responses:
 
 ```json
 {
-  "error": "Error message",
-  "code": "ERROR_CODE",
-  "details": { ... }
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message"
+  }
 }
 ```
 
 ### Common Error Codes
 
-- `400 Bad Request`: Invalid request parameters
-- `401 Unauthorized`: Missing or invalid authentication
-- `403 Forbidden`: Insufficient permissions
-- `404 Not Found`: Resource not found
-- `429 Too Many Requests`: Rate limit exceeded
-- `500 Internal Server Error`: Server error
+- `400` - Bad Request (validation error)
+- `401` - Unauthorized (not authenticated)
+- `403` - Forbidden (insufficient permissions)
+- `404` - Not Found
+- `429` - Too Many Requests (rate limited)
+- `500` - Internal Server Error
 
-### Example Error Response
+---
 
-```json
-{
-  "error": "Forbidden",
-  "requiredPermission": "users:write"
-}
-```
+## Security
 
-## Security Headers
+### CSRF Protection
 
-All responses include security headers:
+All state-changing requests (POST, PUT, DELETE) require CSRF token:
 
 ```http
-X-Frame-Options: DENY
-X-Content-Type-Options: nosniff
-Referrer-Policy: strict-origin-when-cross-origin
-Content-Security-Policy: default-src 'self'; ...
-Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+x-csrf-token: <token-from-cookie>
 ```
 
-## Audit Trail
+### File Upload Limits
 
-All API requests are logged to the audit trail with:
+- Maximum file size: 2GB
+- Template files: 100MB max
+- Allowed extensions: .xlsx, .xls, .pdf
 
-- User ID and email
-- Action performed
-- Request route and method
-- HTTP status code
-- IP address and user agent
-- Timestamp
-- Additional details (errors, warnings, etc.)
+### Content Security Policy
 
-Access audit trail via Firebase Realtime Database at `/audit_trails/{uid}`.
+Strict CSP headers are applied to all responses. See security documentation for details.

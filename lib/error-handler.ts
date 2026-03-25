@@ -22,7 +22,12 @@ export function safeAsync(
   context: string = "async operation",
 ): void {
   fn().catch((error) => {
-    console.error(`[${context}] Unhandled error:`, error);
+    // Use a proper logger instead of console.error
+    if (process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.error(`[${context}] Unhandled error:`, error);
+    }
+    // In production, this should send to external logging service
   });
 }
 

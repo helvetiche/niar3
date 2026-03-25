@@ -33,6 +33,7 @@ export function logPermissionCheck(entry: Omit<AuditLogEntry, "timestamp">) {
   }
 
   if (process.env.NODE_ENV === "development") {
+    // eslint-disable-next-line no-console
     console.log("[AUDIT]", JSON.stringify(logEntry, null, 2));
   }
 }
@@ -58,6 +59,7 @@ export function logAuthFailure(email: string, reason: string, route: string) {
   captureMessage(`Authentication failed: ${email} - ${reason}`, "warning");
 
   if (process.env.NODE_ENV === "development") {
+    // eslint-disable-next-line no-console
     console.log("[AUTH_FAILURE]", JSON.stringify(logEntry, null, 2));
   }
 }

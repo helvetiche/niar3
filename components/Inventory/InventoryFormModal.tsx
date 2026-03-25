@@ -58,7 +58,7 @@ export function InventoryFormModal({
     (initialValues?.unit as "box" | "pieces" | "ream") || "pieces",
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const values: CreateInventoryInput = {

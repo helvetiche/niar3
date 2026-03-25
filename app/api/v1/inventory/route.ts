@@ -4,6 +4,7 @@ import {
   getInventoryItemsPaginated,
   createInventoryItem,
 } from "@/lib/firebase-admin/inventory";
+import { logger } from "@/lib/logger";
 
 const createItemBodySchema = z.object({
   sku: z.string().min(1),
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Error fetching inventory:", error);
+    logger.error("Error fetching inventory:", error);
     return NextResponse.json(
       { error: "Failed to fetch inventory items" },
       { status: 500 },
@@ -70,7 +71,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
-    console.error("Error creating inventory item:", error);
+    logger.error("Error creating inventory item:", error);
     return NextResponse.json(
       { error: "Failed to create inventory item" },
       { status: 500 },

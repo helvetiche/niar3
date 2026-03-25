@@ -16,6 +16,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { exportInventoryToExcel } from "@/lib/utils/excel-export";
+import { logger } from "@/lib/logger";
 import {
   useInventoryQuery,
   useCreateInventoryMutation,
@@ -184,7 +185,7 @@ export function Inventory(): JSX.Element {
             refetch();
           },
           onError: (error: Error) => {
-            console.error("Failed to update quarterly data:", error);
+            logger.error("Failed to update quarterly data:", error);
             setIsUpdatingCell(false);
           },
         },
@@ -222,7 +223,7 @@ export function Inventory(): JSX.Element {
           refetch();
         },
         onError: (error: Error) => {
-          console.error("Failed to update quarterly data:", error);
+          logger.error("Failed to update quarterly data:", error);
           setIsUpdatingCell(false);
         },
       },
@@ -288,7 +289,7 @@ export function Inventory(): JSX.Element {
           .toUpperCase(),
       });
     } catch (error) {
-      console.error("Failed to export inventory:", error);
+      logger.error("Failed to export inventory:", error);
     } finally {
       setIsExporting(false);
     }

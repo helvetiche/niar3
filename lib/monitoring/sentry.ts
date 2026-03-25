@@ -10,7 +10,10 @@ const SENTRY_ENVIRONMENT =
  */
 export function initSentry() {
   if (!SENTRY_DSN) {
-    console.warn("Sentry DSN not configured. Error monitoring disabled.");
+    if (process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.warn("Sentry DSN not configured. Error monitoring disabled.");
+    }
     return;
   }
 

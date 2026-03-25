@@ -218,7 +218,10 @@ export function useConsolidateLandProfiles() {
         errors = JSON.parse(decoded);
       }
     } catch (e) {
-      console.error("Failed to parse errors header:", e);
+      if (process.env.NODE_ENV === "development") {
+        // eslint-disable-next-line no-console
+        console.error("Failed to parse errors header:", e);
+      }
     }
 
     try {
@@ -227,7 +230,10 @@ export function useConsolidateLandProfiles() {
         warnings = JSON.parse(decoded);
       }
     } catch (e) {
-      console.error("Failed to parse warnings header:", e);
+      if (process.env.NODE_ENV === "development") {
+        // eslint-disable-next-line no-console
+        console.error("Failed to parse warnings header:", e);
+      }
     }
 
     return { count: processedCount, errors, warnings };

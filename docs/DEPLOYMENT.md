@@ -3,264 +3,366 @@
 ## Prerequisites
 
 - Vercel account
-- Firebase project with Admin SDK credentials
-- Upstash Redis account (for production)
-- Sentry account (optional)
+- Firebase project
+- Upstash Redis account (optional, for rate limiting)
+- Sentry account (optional, for error monitoring)
 
 ## Environment Variables
 
-Configure the following environment variables in your deployment platform:
+### Required
 
-### Required Variables
-
-```bash
+```env
 # Firebase Admin SDK
 FIREBASE_ADMIN_PROJECT_ID=your-project-id
 FIREBASE_ADMIN_CLIENT_EMAIL=your-client-email
-FIREBASE_ADMIN_PRIVATE_KEY="your-private-key"
+FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 
 # Firebase Client SDK
 NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
 ```
 
-### Optional Variables
+### Optional
 
-```bash
+```env
 # Upstash Redis (for production rate limiting)
-UPSTASH_REDIS_REST_URL=your-redis-url
-UPSTASH_REDIS_REST_TOKEN=your-redis-token
+UPSTASH_REDIS_REST_URL=https://your-redis.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-token
 
 # Sentry (for error monitoring)
-NEXT_PUBLIC_SENTRY_DSN=your-sentry-dsn
+NEXT_PUBLIC_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
 NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
 
 # Gemini API (for AI features)
 GEMINI_API_KEY=your-gemini-api-key
-
-# Site Configuration
-NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ```
 
-## Deployment to Vercel
+## Vercel Deployment
 
-### Automatic Deployment (Recommended)
+### 1. Connect Repository
 
-1. Push your code to GitHub
-2. Import the project in Vercel
-3. Configure environment variables in Vercel dashboard
-4. Vercel will automatically deploy on every push to main branch
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Click "Add New Project"
+3. Import your Git repository
+4. Select the repository
 
-### Manual Deployment
+### 2. Configure Project
 
-1. Install Vercel CLI:
+```
+Framework Preset: Next.js
+Root Directory: ./
+Build Command: npm run build
+Output Directory: .next
+Install Command: npm install
+```
+
+### 3. Environment Variables
+
+Add all required environment variables in Vercel dashboard:
+
+1. Go to Project Settings → Environment Variables
+2. Add each variable
+3. Select environments (Production, Preview, Development)
+
+### 4. Deploy
+
+Click "Deploy" and wait for the build to complete.
+
+## Post-Deployment
+
+### 1. Verify Deployment
 
 ```bash
-npm install -g vercel
+# Check health endpoint
+curl https://your-app.vercel.app/api/v1/health
+
+# Expected response
+{"status":"ok","timestamp":"2024-03-25T10:00:00.000Z"}
 ```
 
-2. Login to Vercel:
+### 2. Set Up Super Admin
 
 ```bash
-vercel login
+# Clone repository
+git clone https://github.com/your-username/niatools.git
+cd niatools
+
+# Install dependencies
+npm install
+
+# Set environment variables
+cp .env.example .env.local
+# Edit .env.local with production credentials
+
+# Run script
+npm run set-super-admin
+# Enter email when prompted
 ```
 
-3. Deploy to production:
+### 3. Configure Firebase
 
-```bash
-vercel --prod
-```
-
-### Vercel Configuration
-
-The project includes `vercel.json` for optimal configuration:
+1. Go to Firebase Console
+2. Enable Authentication → Email/Password
+3. Set up Realtime Database rules:
 
 ```json
 {
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "framework": "nextjs",
-  "regions": ["iad1"],
-  "env": {
-    "NODE_ENV": "production"
+  "rules": {
+    "audit-trail": {
+      ".read": "auth != null && auth.token.role == 'super-admin'",
+      ".write": "auth != null"
+    },
+    "templates": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.role == 'admin' || auth.token.role == 'super-admin')"
+    }
   }
 }
 ```
 
-## Deployment to Other Platforms
+### 4. Configure Upstash Redis
 
-### Docker Deployment
+1. Create Redis database at [Upstash Console](https://console.upstash.com/)
+2. Copy REST URL and Token
+3. Add to Vercel environment variables
+4. Redeploy
 
-1. Build Docker image:
+### 5. Configure Sentry
 
-```bash
-docker build -t niatools .
+1. Create project at [Sentry](https://sentry.io/)
+2. Copy DSN
+3. Add to Vercel environment variables
+4. Redeploy
+
+## Custom Domain
+
+### 1. Add Domain
+
+1. Go to Project Settings → Domains
+2. Add your domain
+3. Configure DNS records
+
+### 2. DNS Configuration
+
+Add these records to your DNS provider:
+
+```
+Type: A
+Name: @
+Value: 76.76.21.21
+
+Type: CNAME
+Name: www
+Value: cname.vercel-dns.com
 ```
 
-2. Run container:
+### 3. SSL Certificate
 
-```bash
-docker run -p 3000:3000 \
-  -e FIREBASE_ADMIN_PROJECT_ID=your-project-id \
-  -e FIREBASE_ADMIN_CLIENT_EMAIL=your-client-email \
-  -e FIREBASE_ADMIN_PRIVATE_KEY="your-private-key" \
-  niatools
-```
-
-### Traditional Server Deployment
-
-1. Build the application:
-
-```bash
-npm run build
-```
-
-2. Start the production server:
-
-```bash
-npm start
-```
-
-3. Use a process manager like PM2:
-
-```bash
-pm2 start npm --name "niatools" -- start
-```
-
-## Post-Deployment Checklist
-
-- [ ] Verify environment variables are set correctly
-- [ ] Test authentication flow
-- [ ] Test file upload functionality
-- [ ] Verify rate limiting is working
-- [ ] Check error monitoring (Sentry)
-- [ ] Test all critical workflows
-- [ ] Verify security headers are applied
-- [ ] Check performance metrics
-- [ ] Set up monitoring alerts
-- [ ] Configure backup strategy
-
-## Rollback Procedure
-
-### Vercel Rollback
-
-1. Go to Vercel dashboard
-2. Navigate to Deployments
-3. Find the previous working deployment
-4. Click "Promote to Production"
-
-### Manual Rollback
-
-1. Revert to previous commit:
-
-```bash
-git revert HEAD
-git push origin main
-```
-
-2. Or checkout previous version:
-
-```bash
-git checkout <previous-commit-hash>
-git push origin main --force
-```
+Vercel automatically provisions SSL certificates. Wait 24-48 hours for DNS propagation.
 
 ## Monitoring
 
-### Health Check Endpoint
+### Vercel Analytics
+
+Automatically enabled. View in Vercel Dashboard → Analytics.
+
+### Sentry
+
+1. Go to Sentry Dashboard
+2. View errors and performance
+3. Set up alerts
+
+### Upstash
+
+1. Go to Upstash Console
+2. View Redis metrics
+3. Monitor rate limiting
+
+## Rollback
+
+### Instant Rollback
+
+1. Go to Vercel Dashboard → Deployments
+2. Find previous deployment
+3. Click "..." → "Promote to Production"
+
+### Git Rollback
 
 ```bash
-curl https://your-domain.com/api/v1/health
+# Revert to previous commit
+git revert HEAD
+git push origin main
+
+# Or reset to specific commit
+git reset --hard <commit-hash>
+git push origin main --force
 ```
 
-Expected response:
+## Scaling
 
-```json
-{
-  "status": "ok",
-  "timestamp": "2024-03-06T12:00:00.000Z"
-}
-```
+### Vercel Pro
 
-### Performance Monitoring
+- Unlimited bandwidth
+- Advanced analytics
+- Priority support
+- Team collaboration
 
-- Vercel Analytics: Built-in performance monitoring
-- Sentry: Error tracking and performance monitoring
-- Firebase Console: Database and storage metrics
+### Database Scaling
 
-### Logs
+Consider migrating from Firebase to:
+- PostgreSQL (Supabase, Neon)
+- MongoDB (Atlas)
+- PlanetScale (MySQL)
 
-View logs in:
+### File Storage
 
-- Vercel Dashboard: Real-time logs
-- Sentry: Error logs with context
-- Firebase Console: Audit trail logs
-
-## Scaling Considerations
-
-### Horizontal Scaling
-
-- Vercel automatically scales based on traffic
-- Firebase scales automatically
-- Upstash Redis supports high throughput
-
-### Performance Optimization
-
-1. Enable CDN caching for static assets
-2. Optimize images with Next.js Image component
-3. Use SWR for client-side caching
-4. Implement background job queue for heavy operations
-
-### Database Optimization
-
-1. Add indexes to frequently queried fields
-2. Implement pagination for large datasets
-3. Use Firebase Realtime Database rules for security
-4. Monitor query performance in Firebase Console
-
-## Security Checklist
-
-- [ ] HTTPS enabled (automatic on Vercel)
-- [ ] Security headers configured
-- [ ] Rate limiting enabled
-- [ ] CORS properly configured
-- [ ] Environment variables secured
-- [ ] Firebase security rules configured
-- [ ] Audit logging enabled
-- [ ] Regular security updates
+Consider migrating to:
+- AWS S3
+- Cloudflare R2
+- Vercel Blob
 
 ## Troubleshooting
 
 ### Build Failures
 
-1. Check build logs in Vercel dashboard
-2. Verify all dependencies are installed
-3. Check TypeScript errors: `npm run type-check`
-4. Verify environment variables are set
+```bash
+# Check build logs in Vercel Dashboard
+# Common issues:
+# - Missing environment variables
+# - TypeScript errors
+# - Dependency issues
+
+# Test build locally
+npm run build
+```
 
 ### Runtime Errors
 
-1. Check Sentry for error details
-2. Review Vercel function logs
-3. Verify Firebase credentials
-4. Check rate limiting configuration
+```bash
+# Check function logs in Vercel Dashboard
+# Check Sentry for error details
+# Enable debug logging
+```
 
-### Performance Issues
+### Rate Limiting Issues
 
-1. Review Vercel Speed Insights
-2. Check Firebase usage metrics
-3. Monitor Redis performance
-4. Analyze slow API endpoints
+```bash
+# Check Upstash Console for Redis metrics
+# Verify environment variables
+# Test rate limiting locally
+```
+
+### Authentication Issues
+
+```bash
+# Verify Firebase credentials
+# Check session cookie settings
+# Test authentication flow
+```
+
+## Security Checklist
+
+- [ ] All environment variables set
+- [ ] Firebase rules configured
+- [ ] Rate limiting enabled
+- [ ] HTTPS enforced
+- [ ] Security headers applied
+- [ ] CSRF protection enabled
+- [ ] Super admin account created
+- [ ] Sentry monitoring active
+- [ ] Backup strategy in place
+
+## Backup Strategy
+
+### Database Backup
+
+```bash
+# Export Firebase data
+firebase database:get / > backup.json
+
+# Schedule regular backups
+# Use Firebase scheduled functions
+```
+
+### Code Backup
+
+- Git repository (GitHub, GitLab)
+- Vercel automatic backups
+- Local backups
+
+## Performance Optimization
+
+### Edge Caching
+
+```typescript
+// Add to API routes
+export const runtime = 'edge';
+export const revalidate = 60; // Cache for 60 seconds
+```
+
+### Image Optimization
+
+```typescript
+// Use Next.js Image component
+import Image from 'next/image';
+
+<Image
+  src="/image.jpg"
+  width={500}
+  height={300}
+  alt="Description"
+/>
+```
+
+### Bundle Analysis
+
+```bash
+# Analyze bundle size
+npm run build
+# Check .next/analyze/
+
+# Optimize imports
+# Use dynamic imports for large components
+```
+
+## Maintenance
+
+### Regular Updates
+
+```bash
+# Update dependencies monthly
+npm update
+npm audit fix
+
+# Test thoroughly
+npm test
+npm run build
+```
+
+### Security Audits
+
+```bash
+# Run security audit
+npm audit
+
+# Fix vulnerabilities
+npm audit fix --force
+```
+
+### Performance Monitoring
+
+- Monitor Vercel Analytics weekly
+- Check Sentry errors daily
+- Review rate limiting metrics
+- Analyze user feedback
 
 ## Support
 
-For deployment issues:
-
-- Check [Vercel Documentation](https://vercel.com/docs)
-- Review [Next.js Deployment Guide](https://nextjs.org/docs/deployment)
-- Contact support: your-support-email@example.com
+- Documentation: `/docs`
+- Issues: GitHub Issues
+- Email: support@niatools.example.com
+- Status: status.niatools.example.com

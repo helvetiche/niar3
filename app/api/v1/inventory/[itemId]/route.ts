@@ -5,6 +5,7 @@ import {
   deleteInventoryItem,
   getInventoryItem,
 } from "@/lib/firebase-admin/inventory";
+import { logger } from "@/lib/logger";
 
 const updateItemBodySchema = z.object({
   sku: z.string().min(1).optional(),
@@ -31,7 +32,7 @@ export async function GET(
 
     return NextResponse.json(item);
   } catch (error) {
-    console.error("Error fetching inventory item:", error);
+    logger.error("Error fetching inventory item:", error);
     return NextResponse.json(
       { error: "Failed to fetch inventory item" },
       { status: 500 },
@@ -63,7 +64,7 @@ export async function PATCH(
 
     return NextResponse.json(updated, { status: 200 });
   } catch (error) {
-    console.error("Error updating inventory item:", error);
+    logger.error("Error updating inventory item:", error);
     return NextResponse.json(
       { error: "Failed to update inventory item" },
       { status: 500 },
@@ -81,7 +82,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, id: itemId }, { status: 200 });
   } catch (error) {
-    console.error("Error deleting inventory item:", error);
+    logger.error("Error deleting inventory item:", error);
     return NextResponse.json(
       { error: "Failed to delete inventory item" },
       { status: 500 },

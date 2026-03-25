@@ -1,10 +1,22 @@
 /**
- * Runs once when the Next.js server starts.
- * Validates env early so the process fails fast on invalid config.
+ * Next.js Instrumentation Hook
+ * Runs once when the server starts (before any requests are handled)
+ * Perfect for environment validation and initialization
  */
+
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { getServerEnv } = await import("@/config/env");
-    getServerEnv();
+    // Server-side initialization
+    const { validateEnv } = await import("./lib/env-validation");
+
+    try {
+      validateEnv();
+      // eslint-disable-next-line no-console
+      console.log("✅ Environment variables validated successfully");
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("❌ Failed to start: Invalid environment configuration");
+      process.exit(1);
+    }
   }
 }

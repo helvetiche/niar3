@@ -52,7 +52,10 @@ export async function withApiMiddleware(
     // Apply security headers to response
     return applySecurityHeaders(response);
   } catch (error) {
-    console.error("[API Middleware] Error:", error);
+    if (process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.error("[API Middleware] Error:", error);
+    }
     const { error: errorResponse, statusCode } = createErrorResponse(
       "INTERNAL_SERVER_ERROR",
       "An unexpected error occurred",

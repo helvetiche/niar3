@@ -23,7 +23,8 @@ export function createAsyncEffect<T>(
       if (!cancelled) {
         if (onError) {
           onError(error);
-        } else {
+        } else if (process.env.NODE_ENV === "development") {
+          // eslint-disable-next-line no-console
           console.error("Async effect error:", error);
         }
       }
@@ -47,7 +48,8 @@ export async function handleAsync(
   } catch (error) {
     if (onError) {
       onError(error);
-    } else {
+    } else if (process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
       console.error("Async handler error:", error);
     }
   }
@@ -55,10 +57,13 @@ export async function handleAsync(
 
 /**
  * Wrapper for async operations that should be fire-and-forget
- * but still log errors
+ * but still log errors in development
  */
 export function fireAndForget(fn: () => Promise<void>, context?: string): void {
   fn().catch((error) => {
-    console.error(`[${context || "fire-and-forget"}] Error:`, error);
+    if (process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.error(`[${context || "fire-and-forget"}] Error:`, error);
+    }
   });
 }
