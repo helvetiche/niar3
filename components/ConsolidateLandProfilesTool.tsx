@@ -9,15 +9,13 @@ import {
   MicrosoftExcelLogoIcon,
   FolderOpenIcon,
   InfoIcon,
-  FileXlsIcon,
 } from "@phosphor-icons/react";
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
-import { TemplateManagerInline } from "@/components/TemplateManagerInline";
+import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
 import { useConsolidateLandProfiles } from "@/hooks/useConsolidateLandProfiles";
 
 export default function ConsolidateLandProfilesTool() {
   const {
-    templateInputRef,
     landProfileInputRef,
     templateFile,
     selectedTemplateId,
@@ -25,107 +23,18 @@ export default function ConsolidateLandProfilesTool() {
     isProcessing,
     result,
     consolidationTemplates,
-    handleTemplateSelection,
+    isOverlayVisible,
+    isOverlayOpaque,
+    elapsedSeconds,
+    isFinalizing,
     handleLandProfileSelection,
     removeLandProfileFile,
-    removeTemplateFile,
-    handleTemplateIdChange,
     handleConsolidate,
     canProceedToStep,
+    updateFileDetails,
   } = useConsolidateLandProfiles();
 
   const steps = [
-    {
-      title: "Select Template",
-      description: "Choose or upload",
-      content: (
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-medium text-white">
-              Select Template File
-            </h3>
-            <p className="mt-1 text-sm text-white/80">
-              Choose a saved template or upload a new consolidation template
-              Excel file.
-            </p>
-          </div>
-
-          <div>
-            <p className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
-              <FileXlsIcon size={16} className="text-white" />
-              Consolidation Template
-            </p>
-            <TemplateManagerInline
-              scope="consolidation"
-              selectedTemplateId={selectedTemplateId}
-              onSelectedTemplateIdChange={handleTemplateIdChange}
-            />
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/20"></div>
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-emerald-900 px-2 text-white/60">OR</span>
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-3 text-sm font-medium text-white">
-              Upload Template File
-            </p>
-            <input
-              ref={templateInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={(e) => handleTemplateSelection(e.target.files)}
-              className="hidden"
-            />
-
-            <button
-              type="button"
-              onClick={() => templateInputRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                handleTemplateSelection(e.dataTransfer.files);
-              }}
-              className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/5 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/10"
-            >
-              <UploadSimpleIcon size={34} className="text-white" />
-              <span className="font-medium">
-                Drag and drop template file here, or click to browse
-              </span>
-            </button>
-
-            {templateFile && (
-              <div className="mt-3 rounded-xl border border-white/35 bg-white/5 p-4">
-                <p className="mb-2 flex items-center gap-2 text-sm font-medium text-white">
-                  <CheckCircleIcon size={16} className="text-white" />
-                  Template file selected
-                </p>
-                <div className="flex items-center justify-between rounded-lg border border-white/20 bg-white/5 p-3">
-                  <div className="flex items-center gap-2">
-                    <FileIcon size={18} className="text-white/80" />
-                    <span className="text-sm text-white">
-                      {templateFile.name}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={removeTemplateFile}
-                    className="rounded p-1 text-white/70 transition hover:bg-white/20 hover:text-white"
-                  >
-                    <XIcon size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      ),
-    },
     {
       title: "Upload IFR Files",
       description: "Select IFR files",
@@ -198,6 +107,87 @@ export default function ConsolidateLandProfilesTool() {
       ),
     },
     {
+      title: "Details",
+      description: "Enter information",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Enter File Details
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Provide division number and irrigation association for each
+              uploaded file.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+            <div className="overflow-x-auto">
+              <table className="w-full border border-white/30 text-sm">
+                <thead className="border-b border-white/20 bg-white/5">
+                  <tr className="text-left text-white">
+                    <th className="border-r border-white/20 p-3 font-semibold">
+                      File Name
+                    </th>
+                    <th className="border-r border-white/20 p-3 font-semibold">
+                      Division Number
+                    </th>
+                    <th className="p-3 font-semibold">
+                      Irrigation Association (IA)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {landProfileFiles.map((item, idx) => (
+                    <tr
+                      key={item.id}
+                      className={`border-b border-white/10 last:border-b-0 ${
+                        idx % 2 === 0 ? "bg-white/5" : ""
+                      }`}
+                    >
+                      <td className="border-r border-white/20 p-3 text-white/90">
+                        {item.file.name}
+                      </td>
+                      <td className="border-r border-white/20 p-3">
+                        <input
+                          type="text"
+                          value={item.divisionNumber || ""}
+                          onChange={(e) =>
+                            updateFileDetails(
+                              item.id,
+                              "divisionNumber",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="Enter division number"
+                          className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-1 focus:ring-white"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <input
+                          type="text"
+                          value={item.irrigationAssociation || ""}
+                          onChange={(e) =>
+                            updateFileDetails(
+                              item.id,
+                              "irrigationAssociation",
+                              e.target.value,
+                            )
+                          }
+                          placeholder="Enter IA"
+                          className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-1 focus:ring-white"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
       title: "Review",
       description: "Consolidate files",
       content: (
@@ -221,17 +211,58 @@ export default function ConsolidateLandProfilesTool() {
                   : selectedTemplateId
                     ? consolidationTemplates.find(
                         (t) => t.id === selectedTemplateId,
-                      )?.name || "Selected"
-                    : "Not selected"}
+                      )?.name || "Auto-selected"
+                    : "Auto-selected"}
               </p>
               <p>
-                <span className="text-white/70">IFR Files:</span>{" "}
+                <span className="text-white/70">Total IFR Files:</span>{" "}
                 {landProfileFiles.length}
               </p>
             </div>
           </div>
 
-       
+          <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+            <h4 className="mb-3 text-sm font-medium text-white">
+              File Details
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="w-full border border-white/30 text-sm">
+                <thead className="border-b border-white/20 bg-white/5">
+                  <tr className="text-left text-white">
+                    <th className="border-r border-white/20 p-3 font-semibold">
+                      File Name
+                    </th>
+                    <th className="border-r border-white/20 p-3 font-semibold">
+                      Division Number
+                    </th>
+                    <th className="p-3 font-semibold">
+                      Irrigation Association (IA)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {landProfileFiles.map((item, idx) => (
+                    <tr
+                      key={item.id}
+                      className={`border-b border-white/10 last:border-b-0 ${
+                        idx % 2 === 0 ? "bg-white/5" : ""
+                      }`}
+                    >
+                      <td className="border-r border-white/20 p-3 text-white/90">
+                        {item.file.name}
+                      </td>
+                      <td className="border-r border-white/20 p-3 text-white">
+                        {item.divisionNumber || "-"}
+                      </td>
+                      <td className="p-3 text-white">
+                        {item.irrigationAssociation || "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
           {result && (
             <div className="space-y-4">
@@ -323,6 +354,13 @@ export default function ConsolidateLandProfilesTool() {
         onComplete={() => void handleConsolidate()}
         canProceed={canProceedToStep}
         completeButtonText={isProcessing ? "Processing..." : "Consolidate"}
+      />
+
+      <ProcessingOverlay
+        isVisible={isOverlayVisible}
+        isOpaque={isOverlayOpaque}
+        isFinalizing={isFinalizing}
+        elapsedSeconds={elapsedSeconds}
       />
     </section>
   );

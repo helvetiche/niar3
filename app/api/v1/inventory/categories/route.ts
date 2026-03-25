@@ -9,7 +9,7 @@ export async function GET(): Promise<NextResponse> {
     console.error("Error fetching categories:", error);
     return NextResponse.json(
       { error: "Failed to fetch categories" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

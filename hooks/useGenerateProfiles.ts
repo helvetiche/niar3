@@ -38,6 +38,13 @@ export function useGenerateProfiles() {
 
   const { data: ifrTemplates = [] } = useTemplates("ifr-scanner");
 
+  // Auto-select the first template when templates are loaded
+  useEffect(() => {
+    if (ifrTemplates.length > 0 && !selectedTemplateId) {
+      setSelectedTemplateId(ifrTemplates[0].id);
+    }
+  }, [ifrTemplates, selectedTemplateId]);
+
   useEffect(() => {
     if (sourceFiles.length === 0) {
       setSourceFolderNames({});
@@ -151,7 +158,6 @@ export function useGenerateProfiles() {
 
   const canProceedToStep = (step: number): boolean => {
     if (step === 0) return sourceFiles.length > 0;
-    if (step === 2) return !!selectedTemplateId;
     return true;
   };
 

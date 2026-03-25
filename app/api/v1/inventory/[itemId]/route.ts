@@ -19,7 +19,7 @@ const updateItemBodySchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ itemId: string }> }
+  { params }: { params: Promise<{ itemId: string }> },
 ): Promise<NextResponse> {
   try {
     const { itemId } = await params;
@@ -34,14 +34,14 @@ export async function GET(
     console.error("Error fetching inventory item:", error);
     return NextResponse.json(
       { error: "Failed to fetch inventory item" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ itemId: string }> }
+  { params }: { params: Promise<{ itemId: string }> },
 ): Promise<NextResponse> {
   try {
     const { itemId } = await params;
@@ -51,7 +51,7 @@ export async function PATCH(
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid payload", details: parsed.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -66,14 +66,14 @@ export async function PATCH(
     console.error("Error updating inventory item:", error);
     return NextResponse.json(
       { error: "Failed to update inventory item" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ itemId: string }> }
+  { params }: { params: Promise<{ itemId: string }> },
 ): Promise<NextResponse> {
   try {
     const { itemId } = await params;
@@ -84,7 +84,7 @@ export async function DELETE(
     console.error("Error deleting inventory item:", error);
     return NextResponse.json(
       { error: "Failed to delete inventory item" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

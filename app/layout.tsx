@@ -21,7 +21,7 @@ const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://niatools.vercel.app";
 const SITE_NAME = "NIA Productivity Tools";
 const SITE_DESCRIPTION =
-  "NIA Region 3 productivity tools. Automate manual processes into minute-level results. Features: LIPA Summary, Merge Files, IFR Scanner. National Irrigation Administration Region 3.";
+  "NIA Region 3 productivity tools. Automate manual processes into minute-level results. Features: LIPA Summary, Merge Files, Generate Billing Unit. National Irrigation Administration Region 3.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     "LIPA summary",
     "billing unit",
     "merge files",
-    "IFR scanner",
+    "Generate Billing Unit",
     "irrigation",
     "automation",
     "workflow",

@@ -122,7 +122,7 @@ const TOOLS = [
   },
   {
     id: "ifr-scanner" as const,
-    name: "IFR SCANNER",
+    name: "GENERATE BILLING UNIT",
     description: "Scan and extract data from IFR documents automatically.",
     icon: MagnifyingGlassIcon,
   },
@@ -187,7 +187,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const [isDragMode, setIsDragMode] = useState(loadDragMode);
   const { selectedTab, setSelectedTab } = useWorkspaceTab();
   const { toolOrder, updateToolOrder, resetToolOrder } = useToolOrder(
-    TOOLS.map((t) => t.id)
+    TOOLS.map((t) => t.id),
   );
 
   const sensors = useSensors(
@@ -198,7 +198,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   useEffect(() => {

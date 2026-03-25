@@ -17,8 +17,8 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
-import { TemplateManagerInline } from "@/components/TemplateManagerInline";
 import { MasonryModal } from "@/components/MasonryModal";
+import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
 import { useSwrftTool } from "@/hooks/useSwrftTool";
 import type { AccomplishmentTaskDesignation } from "@/lib/api/accomplishment-tasks";
 
@@ -51,8 +51,7 @@ const ALL_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 export function SwrftToolStepped() {
   const {
     selectedTemplateId,
-    firstName,
-    lastName,
+    fullName,
     selectedMonths,
     includeFirstHalf,
     includeSecondHalf,
@@ -70,9 +69,11 @@ export function SwrftToolStepped() {
     isTasksLoading,
     swrftTemplates,
     filteredTasks,
-    setSelectedTemplateId,
-    setFirstName,
-    setLastName,
+    isOverlayVisible,
+    isOverlayOpaque,
+    elapsedSeconds,
+    isFinalizing,
+    setFullName,
     setIncludeFirstHalf,
     setIncludeSecondHalf,
     setNewTaskLabel,
@@ -92,63 +93,35 @@ export function SwrftToolStepped() {
 
   const steps = [
     {
-      title: "Template & Info",
-      description: "Basic details",
+      title: "Personal Info",
+      description: "Enter your name",
       content: (
         <div className="space-y-4">
           <div>
             <h3 className="text-lg font-medium text-white">
-              Template & Personal Info
+              Personal Information
             </h3>
             <p className="mt-1 text-sm text-white/80">
-              Select your template and enter your name for the report.
+              Enter your name for the report.
             </p>
           </div>
 
-          <div>
-            <p className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
-              <FileXlsIcon size={16} className="text-white" />
-              Accomplishment Template
-            </p>
-            <TemplateManagerInline
-              scope="swrft"
-              selectedTemplateId={selectedTemplateId}
-              onSelectedTemplateIdChange={setSelectedTemplateId}
+          <label className="block" htmlFor="swrft-full-name">
+            <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+              <UserIcon size={16} className="text-white" />
+              Full Name
+            </span>
+            <input
+              id="swrft-full-name"
+              type="text"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              placeholder="Enter your full name"
+              className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
             />
-          </div>
-
-          <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-            <label className="block" htmlFor="swrft-first-name">
-              <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
-                <UserIcon size={16} className="text-white" />
-                First Name
-              </span>
-              <input
-                id="swrft-first-name"
-                type="text"
-                value={firstName}
-                onChange={(event) => setFirstName(event.target.value)}
-                placeholder="Enter first name"
-                className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-              />
-            </label>
-            <label className="block" htmlFor="swrft-last-name">
-              <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
-                <UserIcon size={16} className="text-white" />
-                Last Name
-              </span>
-              <input
-                id="swrft-last-name"
-                type="text"
-                value={lastName}
-                onChange={(event) => setLastName(event.target.value)}
-                placeholder="Enter last name"
-                className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-              />
-            </label>
-          </div>
+          </label>
           <p className="text-xs text-white/70">
-            These appear in the report header and output filename.
+            This appears in the report header and output filename.
           </p>
         </div>
       ),
@@ -407,12 +380,11 @@ export function SwrftToolStepped() {
                 <span className="text-white/70">Template:</span>{" "}
                 {selectedTemplateId
                   ? swrftTemplates.find((t) => t.id === selectedTemplateId)
-                      ?.name || selectedTemplateId
-                  : "Not selected"}
+                      ?.name || "Auto-selected"
+                  : "Auto-selected"}
               </p>
               <p>
-                <span className="text-white/70">Name:</span> {firstName}{" "}
-                {lastName}
+                <span className="text-white/70">Name:</span> {fullName}
               </p>
               <p>
                 <span className="text-white/70">Task:</span>{" "}
@@ -474,6 +446,13 @@ export function SwrftToolStepped() {
         onComplete={() => void handleGenerate()}
         canProceed={canProceedToStep}
         completeButtonText={isSubmitting ? "Generating..." : "Generate"}
+      />
+
+      <ProcessingOverlay
+        isVisible={isOverlayVisible}
+        isOpaque={isOverlayOpaque}
+        isFinalizing={isFinalizing}
+        elapsedSeconds={elapsedSeconds}
       />
 
       <MasonryModal

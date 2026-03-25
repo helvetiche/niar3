@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useAccomplishmentTasks } from "@/hooks/useAccomplishmentTasks";
@@ -12,10 +12,11 @@ import { downloadBlob, getErrorMessage } from "@/lib/utils";
 
 const ALL_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export function useSwrftTool() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [selectedMonths, setSelectedMonths] = useState<number[]>([
     ...ALL_MONTHS,
   ]);
@@ -33,6 +34,12 @@ export function useSwrftTool() {
     "all" | AccomplishmentTaskDesignation
   >("all");
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [isOverlayOpaque, setIsOverlayOpaque] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+
+  const elapsedIntervalRef = useRef<number | null>(null);
 
   const {
     data: tasks = [],
@@ -41,6 +48,51 @@ export function useSwrftTool() {
   } = useAccomplishmentTasks();
 
   const { data: swrftTemplates = [] } = useTemplates("swrft");
+
+  // Auto-select the first template when templates are loaded
+  useEffect(() => {
+    if (swrftTemplates.length > 0 && !selectedTemplateId) {
+      setSelectedTemplateId(swrftTemplates[0].id);
+    }
+  }, [swrftTemplates, selectedTemplateId]);
+
+  useEffect(() => {
+    return () => {
+      if (elapsedIntervalRef.current !== null) {
+        clearInterval(elapsedIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const startTimer = () => {
+    if (elapsedIntervalRef.current) {
+      clearInterval(elapsedIntervalRef.current);
+    }
+    elapsedIntervalRef.current = window.setInterval(() => {
+      setElapsedSeconds((previous) => previous + 1);
+    }, 1000);
+  };
+
+  const stopTimer = () => {
+    if (elapsedIntervalRef.current) {
+      clearInterval(elapsedIntervalRef.current);
+      elapsedIntervalRef.current = null;
+    }
+  };
+
+  const showOverlay = () => {
+    setIsOverlayVisible(true);
+    setIsOverlayOpaque(false);
+    window.requestAnimationFrame(() => {
+      setIsOverlayOpaque(true);
+    });
+  };
+
+  const hideOverlay = async (fadeMs: number) => {
+    setIsOverlayOpaque(false);
+    await wait(fadeMs);
+    setIsOverlayVisible(false);
+  };
 
   const selectedTask = selectedTaskId
     ? (tasks.find((t) => t.id === selectedTaskId) ?? null)
@@ -115,10 +167,9 @@ export function useSwrftTool() {
       toast.error("Please select an accomplishment template.");
       return;
     }
-    const first = firstName.trim();
-    const last = lastName.trim();
-    if (!first || !last) {
-      toast.error("Please enter your first name and last name.");
+    const name = fullName.trim();
+    if (!name) {
+      toast.error("Please enter your full name.");
       return;
     }
     if (selectedMonths.length < 1) {
@@ -131,17 +182,23 @@ export function useSwrftTool() {
     }
 
     setIsSubmitting(true);
-    const loadingToastId = toast.loading(
-      "Generating accomplishment reports...",
-    );
+    setIsFinalizing(false);
+    setElapsedSeconds(0);
+    showOverlay();
+    startTimer();
 
     try {
       const customTasks = selectedTask ? [selectedTask.label] : undefined;
 
+      // Split full name into first and last name (simple split by space)
+      const nameParts = name.split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
       const result = await generateSwrft({
         templateId: selectedTemplateId,
-        firstName: first,
-        lastName: last,
+        firstName,
+        lastName,
         designation,
         months: selectedMonths,
         includeFirstHalf,
@@ -149,27 +206,28 @@ export function useSwrftTool() {
         customTasks,
       });
 
+      setIsFinalizing(true);
+
       downloadBlob(result.blob, result.fileName);
       const count =
         selectedMonths.length * (includeFirstHalf ? 1 : 0) +
         selectedMonths.length * (includeSecondHalf ? 1 : 0);
-      toast.dismiss(loadingToastId);
       toast.success(
         `Downloaded merged accomplishment report with ${String(count)} period sheet(s).`,
       );
     } catch (error) {
-      toast.dismiss(loadingToastId);
       toast.error(
         getErrorMessage(error, "Failed to generate accomplishment report."),
       );
     } finally {
+      stopTimer();
+      await hideOverlay(300);
       setIsSubmitting(false);
     }
   };
 
   const canProceedToStep = (step: number): boolean => {
-    if (step === 0)
-      return !!selectedTemplateId && !!firstName.trim() && !!lastName.trim();
+    if (step === 0) return !!fullName.trim();
     if (step === 2)
       return (
         selectedMonths.length > 0 && (includeFirstHalf || includeSecondHalf)
@@ -180,8 +238,7 @@ export function useSwrftTool() {
   return {
     // State
     selectedTemplateId,
-    firstName,
-    lastName,
+    fullName,
     selectedMonths,
     includeFirstHalf,
     includeSecondHalf,
@@ -200,10 +257,13 @@ export function useSwrftTool() {
     isTasksLoading,
     swrftTemplates,
     filteredTasks,
+    isOverlayVisible,
+    isOverlayOpaque,
+    elapsedSeconds,
+    isFinalizing,
     // Setters
     setSelectedTemplateId,
-    setFirstName,
-    setLastName,
+    setFullName,
     setIncludeFirstHalf,
     setIncludeSecondHalf,
     setNewTaskLabel,

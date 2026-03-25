@@ -17,11 +17,14 @@ import {
 const getTemplatePath = (): string => {
   const candidates = [
     path.join(process.cwd(), /*turbopackIgnore: true*/ "data", "template.xlsx"),
-    path.join(process.cwd(), /*turbopackIgnore: true*/ "public", "template.xlsx"),
+    path.join(
+      process.cwd(),
+      /*turbopackIgnore: true*/ "public",
+      "template.xlsx",
+    ),
   ];
-  
+
   for (const candidate of candidates) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     if (existsSync(/*turbopackIgnore: true*/ candidate)) return candidate;
   }
   throw new Error(

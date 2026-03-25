@@ -49,7 +49,7 @@ export async function GET(
 
     // Download the file from storage
     const fileBuffer = await downloadBufferFromStorage(template.storagePath);
-    
+
     await logAuditTrailEntry({
       uid: result.user.uid,
       action: "templates.template-id.download.get",
@@ -58,13 +58,19 @@ export async function GET(
       method: "GET",
       request,
       httpStatus: 200,
-      details: { templateId, scope: template.scope, sizeBytes: fileBuffer.length },
+      details: {
+        templateId,
+        scope: template.scope,
+        sizeBytes: fileBuffer.length,
+      },
     });
 
     // Return the file as a blob
     const response = new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
-        "Content-Type": template.contentType || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Type":
+          template.contentType ||
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="${template.name}"`,
         "Content-Length": fileBuffer.length.toString(),
       },

@@ -1,5 +1,15 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import {
+  RATE_LIMIT_API_REQUESTS,
+  RATE_LIMIT_API_WINDOW_SECONDS,
+  RATE_LIMIT_AUTH_REQUESTS,
+  RATE_LIMIT_AUTH_WINDOW_SECONDS,
+  RATE_LIMIT_PUBLIC_REQUESTS,
+  RATE_LIMIT_PUBLIC_WINDOW_SECONDS,
+  RATE_LIMIT_HEAVY_REQUESTS,
+  RATE_LIMIT_HEAVY_WINDOW_SECONDS,
+} from "@/constants/config";
 
 /**
  * Distributed rate limiting with Upstash Redis.
@@ -15,36 +25,45 @@ const redis =
     : null;
 
 /**
- * General API rate limit: 10 requests per 10 seconds per identifier.
+ * General API rate limit
  */
 export const apiRateLimit = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(10, "10 s"),
+      limiter: Ratelimit.slidingWindow(
+        RATE_LIMIT_API_REQUESTS,
+        `${RATE_LIMIT_API_WINDOW_SECONDS} s`,
+      ),
       analytics: true,
       prefix: "rl:api",
     })
   : null;
 
 /**
- * Stricter limit for auth endpoints: 5 attempts per minute.
+ * Stricter limit for auth endpoints
  */
 export const authRateLimit = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(5, "1 m"),
+      limiter: Ratelimit.slidingWindow(
+        RATE_LIMIT_AUTH_REQUESTS,
+        `${RATE_LIMIT_AUTH_WINDOW_SECONDS} s`,
+      ),
       analytics: true,
       prefix: "rl:auth",
     })
   : null;
 
 /**
- * Lenient limit for public pages: 30 req/min per IP.
+ * Lenient limit for public pages
  */
 export const publicRateLimit = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(30, "1 m"),
+      limiter: Ratelimit.slidingWindow(
+        RATE_LIMIT_PUBLIC_REQUESTS,
+        `${RATE_LIMIT_PUBLIC_WINDOW_SECONDS} s`,
+      ),
       analytics: true,
       prefix: "rl:public",
     })
@@ -52,12 +71,14 @@ export const publicRateLimit = redis
 
 /**
  * Stricter limit for heavy operations (merge, generate-profiles, lipa-summary).
- * 5 requests per minute per IP to prevent DoS.
  */
 export const heavyOperationRateLimit = redis
   ? new Ratelimit({
       redis,
-      limiter: Ratelimit.slidingWindow(5, "1 m"),
+      limiter: Ratelimit.slidingWindow(
+        RATE_LIMIT_HEAVY_REQUESTS,
+        `${RATE_LIMIT_HEAVY_WINDOW_SECONDS} s`,
+      ),
       analytics: true,
       prefix: "rl:heavy",
     })

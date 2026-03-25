@@ -9,7 +9,9 @@ interface BannerWithLoginWrapperProps {
   shouldAutoOpen?: boolean;
 }
 
-export function BannerWithLoginWrapper({ shouldAutoOpen = false }: BannerWithLoginWrapperProps) {
+export function BannerWithLoginWrapper({
+  shouldAutoOpen = false,
+}: BannerWithLoginWrapperProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(shouldAutoOpen);
 

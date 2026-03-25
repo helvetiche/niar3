@@ -84,7 +84,11 @@ export async function exportInventoryToExcel({
     [mainHeaderRow, subHeaderRow].forEach((row) => {
       row.eachCell((cell) => {
         cell.font = { name: "Calibri", size: 10, bold: true };
-        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
         cell.fill = {
           type: "pattern",
           pattern: "solid",
@@ -102,28 +106,59 @@ export async function exportInventoryToExcel({
     // Add data rows
     items.forEach((item, index) => {
       const yearlyData = item.yearlyData?.[year] || {};
-      const q1 = yearlyData.q1 || { requestedQuantity: null, receivedQuantity: null, baseQuantity: 0 };
-      const q2 = yearlyData.q2 || { requestedQuantity: null, receivedQuantity: null, baseQuantity: 0 };
-      const q3 = yearlyData.q3 || { requestedQuantity: null, receivedQuantity: null, baseQuantity: 0 };
-      const q4 = yearlyData.q4 || { requestedQuantity: null, receivedQuantity: null, baseQuantity: 0 };
+      const q1 = yearlyData.q1 || {
+        requestedQuantity: null,
+        receivedQuantity: null,
+        baseQuantity: 0,
+      };
+      const q2 = yearlyData.q2 || {
+        requestedQuantity: null,
+        receivedQuantity: null,
+        baseQuantity: 0,
+      };
+      const q3 = yearlyData.q3 || {
+        requestedQuantity: null,
+        receivedQuantity: null,
+        baseQuantity: 0,
+      };
+      const q4 = yearlyData.q4 || {
+        requestedQuantity: null,
+        receivedQuantity: null,
+        baseQuantity: 0,
+      };
 
       // Calculate totals and balances for each quarter
       const q1Total = (q1.baseQuantity || 0) + (q1.requestedQuantity ?? 0);
       const q1Remaining = q1Total - (q1.receivedQuantity ?? 0);
       const q1Balance = q1Remaining > 0 ? q1Remaining : 0;
 
-      const q2RequestedWithRollover = (q2.baseQuantity || 0) + (q2.requestedQuantity ?? 0) + (q1Remaining > 0 ? q1Remaining : 0);
-      const q2ReceivedWithRollover = (q2.receivedQuantity ?? 0) + (q1Remaining < 0 ? Math.abs(q1Remaining) : 0);
+      const q2RequestedWithRollover =
+        (q2.baseQuantity || 0) +
+        (q2.requestedQuantity ?? 0) +
+        (q1Remaining > 0 ? q1Remaining : 0);
+      const q2ReceivedWithRollover =
+        (q2.receivedQuantity ?? 0) +
+        (q1Remaining < 0 ? Math.abs(q1Remaining) : 0);
       const q2Remaining = q2RequestedWithRollover - q2ReceivedWithRollover;
       const q2Balance = q2Remaining > 0 ? q2Remaining : 0;
 
-      const q3RequestedWithRollover = (q3.baseQuantity || 0) + (q3.requestedQuantity ?? 0) + (q2Remaining > 0 ? q2Remaining : 0);
-      const q3ReceivedWithRollover = (q3.receivedQuantity ?? 0) + (q2Remaining < 0 ? Math.abs(q2Remaining) : 0);
+      const q3RequestedWithRollover =
+        (q3.baseQuantity || 0) +
+        (q3.requestedQuantity ?? 0) +
+        (q2Remaining > 0 ? q2Remaining : 0);
+      const q3ReceivedWithRollover =
+        (q3.receivedQuantity ?? 0) +
+        (q2Remaining < 0 ? Math.abs(q2Remaining) : 0);
       const q3Remaining = q3RequestedWithRollover - q3ReceivedWithRollover;
       const q3Balance = q3Remaining > 0 ? q3Remaining : 0;
 
-      const q4RequestedWithRollover = (q4.baseQuantity || 0) + (q4.requestedQuantity ?? 0) + (q3Remaining > 0 ? q3Remaining : 0);
-      const q4ReceivedWithRollover = (q4.receivedQuantity ?? 0) + (q3Remaining < 0 ? Math.abs(q3Remaining) : 0);
+      const q4RequestedWithRollover =
+        (q4.baseQuantity || 0) +
+        (q4.requestedQuantity ?? 0) +
+        (q3Remaining > 0 ? q3Remaining : 0);
+      const q4ReceivedWithRollover =
+        (q4.receivedQuantity ?? 0) +
+        (q3Remaining < 0 ? Math.abs(q3Remaining) : 0);
       const q4Remaining = q4RequestedWithRollover - q4ReceivedWithRollover;
       const q4Balance = q4Remaining > 0 ? q4Remaining : 0;
 

@@ -27,7 +27,7 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   "template-manager": {
     name: "TEMPLATE MANAGER",
     description:
-      "Manage shared templates used by IFR Scanner and Accomplishment Report.",
+      "Manage shared templates used by Generate Billing Unit and Accomplishment Report.",
   },
   "lipa-summary": {
     name: "LIPA SUMMARY",
@@ -43,7 +43,7 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
     description: "Generate quincena accomplishment reports.",
   },
   "ifr-scanner": {
-    name: "IFR SCANNER",
+    name: "GENERATE BILLING UNIT",
     description: "Scan and extract data from IFR documents automatically.",
   },
   accounts: {

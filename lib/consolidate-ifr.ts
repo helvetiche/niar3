@@ -142,7 +142,12 @@ export async function extractIFRData(
  */
 export async function consolidateIFR(
   templateBuffer: Buffer,
-  ifrFiles: { buffer: Buffer; fileName: string }[],
+  ifrFiles: {
+    buffer: Buffer;
+    fileName: string;
+    divisionNumber?: string;
+    irrigationAssociation?: string;
+  }[],
 ): Promise<{
   buffer: Buffer;
   processedCount: number;
@@ -181,6 +186,14 @@ export async function consolidateIFR(
           sheet.cell(`L${currentRow}`).value(data.oldAccount);
           sheet.cell(`M${currentRow}`).value(data.total);
 
+          // Add IA and Division Number
+          if (file.irrigationAssociation) {
+            sheet.cell(`N${currentRow}`).value(file.irrigationAssociation);
+          }
+          if (file.divisionNumber) {
+            sheet.cell(`O${currentRow}`).value(file.divisionNumber);
+          }
+
           currentRow++;
           processedCount++;
         }
@@ -192,9 +205,7 @@ export async function consolidateIFR(
     }
 
     if (processedCount > 0) {
-      warnings.push(
-        `Successfully consolidated ${processedCount} IFR files with calculated Principal and Penalty values.`,
-      );
+      warnings.push(`Successfully consolidated ${processedCount} IFR files.`);
     }
 
     const output = await workbook.outputAsync();

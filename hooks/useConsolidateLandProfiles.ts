@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { useTemplates } from "@/hooks/useTemplates";
 import { getErrorMessage } from "@/lib/utils";
@@ -6,6 +6,8 @@ import { getErrorMessage } from "@/lib/utils";
 interface UploadedFile {
   file: File;
   id: string;
+  divisionNumber?: string;
+  irrigationAssociation?: string;
 }
 
 interface ConsolidationResult {
@@ -17,14 +19,63 @@ interface ConsolidationResult {
 export function useConsolidateLandProfiles() {
   const templateInputRef = useRef<HTMLInputElement | null>(null);
   const landProfileInputRef = useRef<HTMLInputElement | null>(null);
+  const elapsedIntervalRef = useRef<number | null>(null);
 
   const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [landProfileFiles, setLandProfileFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<ConsolidationResult | null>(null);
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [isOverlayOpaque, setIsOverlayOpaque] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   const { data: consolidationTemplates = [] } = useTemplates("consolidation");
+
+  // Auto-select the first template when templates are loaded
+  useEffect(() => {
+    if (
+      consolidationTemplates.length > 0 &&
+      !selectedTemplateId &&
+      !templateFile
+    ) {
+      setSelectedTemplateId(consolidationTemplates[0].id);
+    }
+  }, [consolidationTemplates, selectedTemplateId, templateFile]);
+
+  const wait = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
+
+  const startTimer = () => {
+    if (elapsedIntervalRef.current) {
+      clearInterval(elapsedIntervalRef.current);
+    }
+    elapsedIntervalRef.current = window.setInterval(() => {
+      setElapsedSeconds((previous) => previous + 1);
+    }, 1000);
+  };
+
+  const stopTimer = () => {
+    if (elapsedIntervalRef.current) {
+      clearInterval(elapsedIntervalRef.current);
+      elapsedIntervalRef.current = null;
+    }
+  };
+
+  const showOverlay = () => {
+    setIsOverlayVisible(true);
+    setIsOverlayOpaque(false);
+    window.requestAnimationFrame(() => {
+      setIsOverlayOpaque(true);
+    });
+  };
+
+  const hideOverlay = async (fadeMs: number) => {
+    setIsOverlayOpaque(false);
+    await wait(fadeMs);
+    setIsOverlayVisible(false);
+  };
 
   const handleTemplateSelection = (incoming: FileList | null) => {
     const file = incoming?.[0];
@@ -37,10 +88,26 @@ export function useConsolidateLandProfiles() {
 
   const handleLandProfileSelection = (incoming: FileList | null) => {
     const files = Array.from(incoming ?? []);
-    const newFiles = files.map((file) => ({
-      file,
-      id: `${file.name}-${Date.now()}-${Math.random()}`,
-    }));
+    const newFiles = files.map((file) => {
+      // Parse filename: DIV. {DIVISION NO.} - {DIVISION NAME} IA.xlsx
+      const fileName = file.name.replace(/\.(xlsx|xls)$/i, ""); // Remove extension
+      const match = fileName.match(/DIV\.\s*(\d+)\s*-\s*(.+?)\s*IA$/i);
+
+      let divisionNumber = "";
+      let irrigationAssociation = "";
+
+      if (match) {
+        divisionNumber = match[1]; // Extract division number
+        irrigationAssociation = match[2].trim(); // Extract division name (IA)
+      }
+
+      return {
+        file,
+        id: `${file.name}-${Date.now()}-${Math.random()}`,
+        divisionNumber,
+        irrigationAssociation,
+      };
+    });
 
     setLandProfileFiles((prev) => [...prev, ...newFiles]);
     setResult(null);
@@ -52,6 +119,16 @@ export function useConsolidateLandProfiles() {
 
   const removeLandProfileFile = (id: string) => {
     setLandProfileFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  const updateFileDetails = (
+    id: string,
+    field: "divisionNumber" | "irrigationAssociation",
+    value: string,
+  ) => {
+    setLandProfileFiles((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, [field]: value } : f)),
+    );
   };
 
   const removeTemplateFile = () => {
@@ -92,6 +169,11 @@ export function useConsolidateLandProfiles() {
 
     landProfileFiles.forEach((item, index) => {
       formData.append(`landProfile_${index}`, item.file);
+      formData.append(`divisionNumber_${index}`, item.divisionNumber || "");
+      formData.append(
+        `irrigationAssociation_${index}`,
+        item.irrigationAssociation || "",
+      );
     });
 
     return formData;
@@ -101,7 +183,15 @@ export function useConsolidateLandProfiles() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `consolidated-land-profiles-${Date.now()}.xlsx`;
+
+    // Format: CONSOLIDATION MM/DD/YYYY
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const year = now.getFullYear();
+    const filename = `CONSOLIDATION ${month}-${day}-${year}.zip`;
+
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -114,8 +204,31 @@ export function useConsolidateLandProfiles() {
     const processedCount = parseInt(
       response.headers.get("X-Processed-Count") || "0",
     );
-    const errors = JSON.parse(response.headers.get("X-Errors") || "[]");
-    const warnings = JSON.parse(response.headers.get("X-Warnings") || "[]");
+
+    // Decode base64 encoded headers
+    const errorsHeader = response.headers.get("X-Errors") || "";
+    const warningsHeader = response.headers.get("X-Warnings") || "";
+
+    let errors: string[] = [];
+    let warnings: string[] = [];
+
+    try {
+      if (errorsHeader) {
+        const decoded = atob(errorsHeader);
+        errors = JSON.parse(decoded);
+      }
+    } catch (e) {
+      console.error("Failed to parse errors header:", e);
+    }
+
+    try {
+      if (warningsHeader) {
+        const decoded = atob(warningsHeader);
+        warnings = JSON.parse(decoded);
+      }
+    } catch (e) {
+      console.error("Failed to parse warnings header:", e);
+    }
 
     return { count: processedCount, errors, warnings };
   };
@@ -130,6 +243,10 @@ export function useConsolidateLandProfiles() {
     }
 
     setIsProcessing(true);
+    setIsFinalizing(false);
+    setElapsedSeconds(0);
+    showOverlay();
+    startTimer();
 
     try {
       const formData = await buildFormData();
@@ -143,6 +260,8 @@ export function useConsolidateLandProfiles() {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to consolidate files");
       }
+
+      setIsFinalizing(true);
 
       const consolidationResult = parseConsolidationResult(response);
       const blob = await response.blob();
@@ -163,13 +282,19 @@ export function useConsolidateLandProfiles() {
       toast.error(getErrorMessage(error, "Failed to consolidate IFR files."));
       setResult(null);
     } finally {
+      stopTimer();
+      await hideOverlay(300);
       setIsProcessing(false);
     }
   };
 
   const canProceedToStep = (step: number): boolean => {
-    if (step === 0) return !!(templateFile || selectedTemplateId);
-    if (step === 1) return landProfileFiles.length > 0;
+    if (step === 0) return landProfileFiles.length > 0;
+    if (step === 1) {
+      return landProfileFiles.every(
+        (f) => f.divisionNumber && f.irrigationAssociation,
+      );
+    }
     return true;
   };
 
@@ -184,6 +309,10 @@ export function useConsolidateLandProfiles() {
     isProcessing,
     result,
     consolidationTemplates,
+    isOverlayVisible,
+    isOverlayOpaque,
+    elapsedSeconds,
+    isFinalizing,
     // Handlers
     handleTemplateSelection,
     handleLandProfileSelection,
@@ -192,5 +321,6 @@ export function useConsolidateLandProfiles() {
     handleTemplateIdChange,
     handleConsolidate,
     canProceedToStep,
+    updateFileDetails,
   };
 }

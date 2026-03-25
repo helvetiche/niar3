@@ -49,7 +49,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     console.error("Error fetching inventory:", error);
     return NextResponse.json(
       { error: "Failed to fetch inventory items" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -62,7 +62,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid payload", details: parsed.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -73,7 +73,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     console.error("Error creating inventory item:", error);
     return NextResponse.json(
       { error: "Failed to create inventory item" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

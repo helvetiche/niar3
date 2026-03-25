@@ -65,7 +65,7 @@ const HUB_TOOLS: HubTool[] = [
   },
   {
     id: "ifr-scanner",
-    name: "IFR SCANNER",
+    name: "GENERATE BILLING UNIT",
     description:
       "Scan IFR documents automatically, extract relevant data fields accurately, minimize encoding mistakes, and speed up reporting tasks for operations teams.",
     icon: MagnifyingGlassIcon,
@@ -125,7 +125,7 @@ const HUB_TOOLS: HubTool[] = [
   },
   {
     id: "ifr-checker",
-    name: "IFR CHECKER",
+    name: "GENERATE BILLING UNIT",
     description:
       "Validate consolidated files against source IFR data. Identify discrepancies in calculations, missing lots, and data mismatches automatically.",
     icon: ShieldCheckIcon,

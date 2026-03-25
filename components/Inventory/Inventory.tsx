@@ -28,7 +28,7 @@ import type { InventoryItem } from "@/lib/db/inventory-types";
 import { InventoryFormModal } from "./InventoryFormModal";
 import { MasonryModal } from "@/components/MasonryModal";
 
-const PAGE_SIZE = 16;
+const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
 
 export function Inventory(): JSX.Element {
@@ -47,15 +47,21 @@ export function Inventory(): JSX.Element {
   const [editItemId, setEditItemId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [selectedExportYears, setSelectedExportYears] = useState<number[]>([selectedYear]);
+  const [selectedExportYears, setSelectedExportYears] = useState<number[]>([
+    selectedYear,
+  ]);
 
-  const { data, isLoading, error, mutate: refetch } = useInventoryQuery({
+  const {
+    data,
+    isLoading,
+    error,
+    mutate: refetch,
+  } = useInventoryQuery({
     limit: PAGE_SIZE,
     page,
     search: searchParam || null,
     category: null,
   });
-
 
   const createMutation = useCreateInventoryMutation();
   const updateQuarterlyMutation = useUpdateQuarterlyDataMutation();
@@ -89,7 +95,7 @@ export function Inventory(): JSX.Element {
         totalPages - 3,
         totalPages - 2,
         totalPages - 1,
-        totalPages
+        totalPages,
       );
     } else {
       result.push(
@@ -99,7 +105,7 @@ export function Inventory(): JSX.Element {
         currentPage,
         currentPage + 1,
         "ellipsis",
-        totalPages
+        totalPages,
       );
     }
     return result;
@@ -112,13 +118,11 @@ export function Inventory(): JSX.Element {
     (e: React.ChangeEvent<HTMLInputElement>): void => {
       setSearchInput(e.target.value);
     },
-    []
+    [],
   );
 
-
-
   const handleCreateSubmit = (
-    values: CreateInventoryInput | UpdateInventoryInput
+    values: CreateInventoryInput | UpdateInventoryInput,
   ): void => {
     createMutation.mutate(values as CreateInventoryInput, {
       onSuccess: () => {
@@ -129,7 +133,7 @@ export function Inventory(): JSX.Element {
   };
 
   const handleEditSubmit = (
-    values: CreateInventoryInput | UpdateInventoryInput
+    values: CreateInventoryInput | UpdateInventoryInput,
   ): void => {
     if (!editItemId) return;
     updateMutation.mutate(values as UpdateInventoryInput, {
@@ -143,7 +147,7 @@ export function Inventory(): JSX.Element {
   const handleStartEdit = (
     itemId: string,
     field: "requested" | "received",
-    currentValue: number
+    currentValue: number,
   ): void => {
     setEditingCell({ itemId, field });
     setEditValue(String(currentValue));
@@ -154,7 +158,7 @@ export function Inventory(): JSX.Element {
     if (!editingCell || isUpdatingCell) return;
 
     const trimmedValue = editValue.trim();
-    
+
     // If empty, set to null
     if (trimmedValue === "") {
       const apiFieldName: "requestedQuantity" | "receivedQuantity" =
@@ -183,7 +187,7 @@ export function Inventory(): JSX.Element {
             console.error("Failed to update quarterly data:", error);
             setIsUpdatingCell(false);
           },
-        }
+        },
       );
       return;
     }
@@ -221,7 +225,7 @@ export function Inventory(): JSX.Element {
           console.error("Failed to update quarterly data:", error);
           setIsUpdatingCell(false);
         },
-      }
+      },
     );
   };
 
@@ -246,7 +250,7 @@ export function Inventory(): JSX.Element {
   const handleExportExcel = async (): Promise<void> => {
     try {
       setIsExporting(true);
-      
+
       // Fetch all items with current filters, paginating through results
       const allItems = [];
       let page = 1;
@@ -256,7 +260,7 @@ export function Inventory(): JSX.Element {
         const response = await fetch(
           `/api/v1/inventory?limit=100&page=${page}${
             searchParam ? `&search=${encodeURIComponent(searchParam)}` : ""
-          }`
+          }`,
         );
 
         if (!response.ok) {
@@ -279,7 +283,9 @@ export function Inventory(): JSX.Element {
       await exportInventoryToExcel({
         items: allItems,
         years: selectedExportYears,
-        month: new Date().toLocaleString("en-US", { month: "long" }).toUpperCase(),
+        month: new Date()
+          .toLocaleString("en-US", { month: "long" })
+          .toUpperCase(),
       });
     } catch (error) {
       console.error("Failed to export inventory:", error);
@@ -322,7 +328,8 @@ export function Inventory(): JSX.Element {
           </span>
         </div>
         <p className="mt-2 max-w-3xl text-sm text-white/85">
-          Track and manage inventory items with quarterly requested and received quantities.
+          Track and manage inventory items with quarterly requested and received
+          quantities.
         </p>
       </header>
 
@@ -358,6 +365,9 @@ export function Inventory(): JSX.Element {
             <option value={2025}>2025</option>
             <option value={2026}>2026</option>
             <option value={2027}>2027</option>
+            <option value={2028}>2028</option>
+            <option value={2029}>2029</option>
+            <option value={2030}>2030</option>
           </select>
           <div className="flex rounded-lg border border-emerald-700 bg-emerald-950/50">
             {[1, 2, 3, 4].map((quarter) => (
@@ -482,7 +492,11 @@ export function Inventory(): JSX.Element {
 
         {!isLoading && !error && items.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <PackageIcon size={48} weight="duotone" className="text-white/40 mb-4" />
+            <PackageIcon
+              size={48}
+              weight="duotone"
+              className="text-white/40 mb-4"
+            />
             <p className="text-sm text-white/70">
               {searchParam
                 ? "No items match your search."
@@ -552,7 +566,7 @@ export function Inventory(): JSX.Element {
                       | "q2"
                       | "q3"
                       | "q4";
-                    
+
                     // Extract quarterly data from yearlyData
                     const yearlyData = item.yearlyData?.[selectedYear] || {};
                     const quarterData = yearlyData[quarterKey] || {
@@ -568,8 +582,11 @@ export function Inventory(): JSX.Element {
                         | "q2"
                         | "q3"
                         | "q4";
-                      const prevYearlyData = item.yearlyData?.[selectedYear] || {};
-                      const prevQuarterData = prevYearlyData[prevQuarterKey] || {
+                      const prevYearlyData =
+                        item.yearlyData?.[selectedYear] || {};
+                      const prevQuarterData = prevYearlyData[
+                        prevQuarterKey
+                      ] || {
                         requestedQuantity: null,
                         receivedQuantity: null,
                         baseQuantity: 0,
@@ -578,7 +595,8 @@ export function Inventory(): JSX.Element {
                         (prevQuarterData.baseQuantity || 0) +
                         (prevQuarterData.requestedQuantity ?? 0);
                       prevRemaining =
-                        prevTotalRequested - (prevQuarterData.receivedQuantity ?? 0);
+                        prevTotalRequested -
+                        (prevQuarterData.receivedQuantity ?? 0);
                     } else if (selectedQuarter === 1) {
                       // Q1 of current year - check Q4 of previous year
                       const prevYearData = item.yearlyData?.[selectedYear - 1];
@@ -598,21 +616,25 @@ export function Inventory(): JSX.Element {
 
                     // Calculate totals for remaining (includes carryover)
                     const totalRequested =
-                      (quarterData.baseQuantity || 0) + 
+                      (quarterData.baseQuantity || 0) +
                       (quarterData.requestedQuantity ?? 0) +
                       (prevRemaining > 0 ? prevRemaining : 0);
                     const totalReceived =
                       (quarterData.receivedQuantity ?? 0) +
                       (prevRemaining < 0 ? Math.abs(prevRemaining) : 0);
                     const remaining = totalRequested - totalReceived;
-                    
+
                     // Display values (only what user inputted, not including carryover)
                     const displayRequested = quarterData.requestedQuantity ?? 0;
                     const displayReceived = quarterData.receivedQuantity ?? 0;
-                    
+
                     // Check if values have been set by user
-                    const hasRequestedValue = quarterData.requestedQuantity !== null && quarterData.requestedQuantity !== undefined;
-                    const hasReceivedValue = quarterData.receivedQuantity !== null && quarterData.receivedQuantity !== undefined;
+                    const hasRequestedValue =
+                      quarterData.requestedQuantity !== null &&
+                      quarterData.requestedQuantity !== undefined;
+                    const hasReceivedValue =
+                      quarterData.receivedQuantity !== null &&
+                      quarterData.receivedQuantity !== undefined;
 
                     return (
                       <tr key={item.id} className="even:bg-emerald-900/30">
@@ -645,13 +667,16 @@ export function Inventory(): JSX.Element {
                               />
                             </div>
                           ) : (
-                            <div className="flex flex-col items-center justify-center gap-1.5 cursor-pointer" onClick={() =>
-                                    handleStartEdit(
-                                      item.id,
-                                      "requested",
-                                      quarterData.requestedQuantity ?? 0
-                                    )
-                                  }>
+                            <div
+                              className="flex flex-col items-center justify-center gap-1.5 cursor-pointer"
+                              onClick={() =>
+                                handleStartEdit(
+                                  item.id,
+                                  "requested",
+                                  quarterData.requestedQuantity ?? 0,
+                                )
+                              }
+                            >
                               <div className="text-sm text-white">
                                 {hasRequestedValue ? displayRequested : "—"}
                               </div>
@@ -677,18 +702,23 @@ export function Inventory(): JSX.Element {
                               />
                             </div>
                           ) : (
-                            <div className="flex flex-col items-center justify-center gap-1.5 cursor-pointer" onClick={() =>
-                                    handleStartEdit(
-                                      item.id,
-                                      "received",
-                                      quarterData.receivedQuantity ?? 0
-                                    )
-                                  }>
+                            <div
+                              className="flex flex-col items-center justify-center gap-1.5 cursor-pointer"
+                              onClick={() =>
+                                handleStartEdit(
+                                  item.id,
+                                  "received",
+                                  quarterData.receivedQuantity ?? 0,
+                                )
+                              }
+                            >
                               <div className="text-sm text-white">
                                 {hasReceivedValue ? displayReceived : "—"}
                               </div>
                               <span className="inline-flex items-center rounded-full bg-emerald-700/40 px-2 py-0.5 text-xs text-white/70 whitespace-nowrap">
-                                {prevRemaining < 0 ? `+${Math.abs(prevRemaining)}` : "—"}
+                                {prevRemaining < 0
+                                  ? `+${Math.abs(prevRemaining)}`
+                                  : "—"}
                               </span>
                             </div>
                           )}
@@ -727,7 +757,7 @@ export function Inventory(): JSX.Element {
                           </div>
                         </td>
                       </tr>
-                    )
+                    ),
                   )}
                 </tbody>
               </table>
@@ -749,7 +779,10 @@ export function Inventory(): JSX.Element {
                 <div className="flex items-center gap-1">
                   {getPageNumbers().map((n, i) =>
                     n === "ellipsis" ? (
-                      <span key={`ellipsis-${i}`} className="px-2 text-white/40">
+                      <span
+                        key={`ellipsis-${i}`}
+                        className="px-2 text-white/40"
+                      >
                         ...
                       </span>
                     ) : (
@@ -767,7 +800,7 @@ export function Inventory(): JSX.Element {
                       >
                         {n}
                       </button>
-                    )
+                    ),
                   )}
                 </div>
                 <button
@@ -819,11 +852,19 @@ export function Inventory(): JSX.Element {
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 border border-white/30">
-                  <DownloadIcon size={20} className="text-white" weight="regular" />
+                  <DownloadIcon
+                    size={20}
+                    className="text-white"
+                    weight="regular"
+                  />
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-white">Export Inventory</h3>
-                  <p className="text-xs text-white/70">Select years to include</p>
+                  <h3 className="text-base font-medium text-white">
+                    Export Inventory
+                  </h3>
+                  <p className="text-xs text-white/70">
+                    Select years to include
+                  </p>
                 </div>
               </div>
               <button
@@ -835,18 +876,24 @@ export function Inventory(): JSX.Element {
               </button>
             </div>
             <p className="text-xs text-white/80 mb-6 leading-5">
-              Choose which years to include in your Excel export. Each selected year will be saved as a separate sheet in the workbook with all quarterly data and calculations.
+              Choose which years to include in your Excel export. Each selected
+              year will be saved as a separate sheet in the workbook with all
+              quarterly data and calculations.
             </p>
             <div className="flex flex-wrap gap-2 mb-6">
-              {[2024, 2025, 2026, 2027].map((year) => (
+              {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((year) => (
                 <button
                   key={year}
                   type="button"
                   onClick={() => {
                     if (selectedExportYears.includes(year)) {
-                      setSelectedExportYears(selectedExportYears.filter((y) => y !== year));
+                      setSelectedExportYears(
+                        selectedExportYears.filter((y) => y !== year),
+                      );
                     } else {
-                      setSelectedExportYears([...selectedExportYears, year].sort());
+                      setSelectedExportYears(
+                        [...selectedExportYears, year].sort(),
+                      );
                     }
                   }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -860,7 +907,10 @@ export function Inventory(): JSX.Element {
               ))}
             </div>
             <p className="text-xs text-white/80 mb-6">
-              {selectedExportYears.length} year{selectedExportYears.length !== 1 ? 's' : ''} selected • {selectedExportYears.length} sheet{selectedExportYears.length !== 1 ? 's' : ''}
+              {selectedExportYears.length} year
+              {selectedExportYears.length !== 1 ? "s" : ""} selected •{" "}
+              {selectedExportYears.length} sheet
+              {selectedExportYears.length !== 1 ? "s" : ""}
             </p>
             <div className="flex gap-3">
               <button

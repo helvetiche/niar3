@@ -13,7 +13,7 @@ function inventoryCollection() {
 
 function toInventoryItem(
   id: string,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
 ): InventoryItem | null {
   if (!data) return null;
 
@@ -31,13 +31,15 @@ function toInventoryItem(
     stockAmount: typeof data.stockAmount === "number" ? data.stockAmount : 0,
     stockMonth:
       typeof data.stockMonth === "number" ? data.stockMonth : undefined,
-    yearlyData: data.yearlyData as Record<string, Record<string, QuarterlyData | undefined>> | undefined,
+    yearlyData: data.yearlyData as
+      | Record<string, Record<string, QuarterlyData | undefined>>
+      | undefined,
     isActive: typeof data.isActive === "boolean" ? data.isActive : true,
     createdAt: new Date(
-      typeof data.createdAt === "number" ? data.createdAt : Date.now()
+      typeof data.createdAt === "number" ? data.createdAt : Date.now(),
     ),
     updatedAt: new Date(
-      typeof data.updatedAt === "number" ? data.updatedAt : Date.now()
+      typeof data.updatedAt === "number" ? data.updatedAt : Date.now(),
     ),
   };
 }
@@ -72,7 +74,7 @@ export async function getInventoryItemsPaginated(params: {
   if (search) {
     const searchLower = search.toLowerCase();
     items = items.filter((item) =>
-      item.name.toLowerCase().includes(searchLower)
+      item.name.toLowerCase().includes(searchLower),
     );
   }
 
@@ -181,7 +183,7 @@ export async function updateInventoryItem(
     unit?: "box" | "pieces" | "ream";
     stockAmount?: number;
     stockMonth?: number;
-  }
+  },
 ): Promise<InventoryItem | null> {
   const ref = inventoryCollection().doc(id);
   const existing = await ref.get();
@@ -200,8 +202,7 @@ export async function updateInventoryItem(
   if (updates.unit !== undefined) payload.unit = updates.unit;
   if (updates.stockAmount !== undefined)
     payload.stockAmount = updates.stockAmount;
-  if (updates.stockMonth !== undefined)
-    payload.stockMonth = updates.stockMonth;
+  if (updates.stockMonth !== undefined) payload.stockMonth = updates.stockMonth;
 
   await ref.update(payload);
 
@@ -214,7 +215,7 @@ export async function updateInventoryQuarterlyData(
   year: number,
   quarter: number,
   field: "requestedQuantity" | "receivedQuantity",
-  value: number | null
+  value: number | null,
 ): Promise<InventoryItem | null> {
   if (quarter < 1 || quarter > 4) {
     throw new Error("Quarter must be between 1 and 4");
@@ -226,8 +227,9 @@ export async function updateInventoryQuarterlyData(
   if (!existing.exists) return null;
 
   const data = existing.data();
-  const yearlyData = (data?.yearlyData as Record<string, Record<string, QuarterlyData>>) || {};
-  
+  const yearlyData =
+    (data?.yearlyData as Record<string, Record<string, QuarterlyData>>) || {};
+
   // Initialize year if it doesn't exist
   if (!yearlyData[year]) {
     yearlyData[year] = {
@@ -270,7 +272,7 @@ export async function deleteInventoryItem(id: string): Promise<void> {
 }
 
 export async function getInventoryItem(
-  id: string
+  id: string,
 ): Promise<InventoryItem | null> {
   const ref = inventoryCollection().doc(id);
   const snap = await ref.get();

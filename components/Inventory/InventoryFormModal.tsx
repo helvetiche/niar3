@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { XIcon, PackageIcon, StackIcon, CubeIcon } from "@phosphor-icons/react";
-import type { CreateInventoryInput, UpdateInventoryInput } from "@/lib/hooks/use-inventory";
+import type {
+  CreateInventoryInput,
+  UpdateInventoryInput,
+} from "@/lib/hooks/use-inventory";
 import type { InventoryItem } from "@/lib/db/inventory-types";
 import { MasonryModal } from "@/components/MasonryModal";
 
@@ -48,11 +51,11 @@ export function InventoryFormModal({
   error,
 }: InventoryFormModalProps) {
   const [name, setName] = useState(initialValues?.name || "");
-  const [stockAmount, setStockAmount] = useState(
-    initialValues?.stockAmount || 0
+  const [stockAmount, setStockAmount] = useState<number | "">(
+    initialValues?.stockAmount ?? "",
   );
   const [selectedUnit, setSelectedUnit] = useState<"box" | "pieces" | "ream">(
-    (initialValues?.unit as "box" | "pieces" | "ream") || "pieces"
+    (initialValues?.unit as "box" | "pieces" | "ream") || "pieces",
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,7 +65,7 @@ export function InventoryFormModal({
       sku: `ITEM-${Date.now()}`, // Auto-generate SKU
       name: name.trim(),
       unit: selectedUnit,
-      stockAmount,
+      stockAmount: stockAmount === "" ? 0 : stockAmount,
     };
 
     onSubmit(values);
@@ -81,7 +84,11 @@ export function InventoryFormModal({
           <div className="flex items-center justify-between border-b border-white/20 px-6 py-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 border border-white/30">
-                <PackageIcon size={20} className="text-white" weight="regular" />
+                <PackageIcon
+                  size={20}
+                  className="text-white"
+                  weight="regular"
+                />
               </div>
               <div>
                 <h2 className="text-base font-medium text-white">
@@ -151,9 +158,13 @@ export function InventoryFormModal({
                   required
                   value={stockAmount}
                   onChange={(e) =>
-                    setStockAmount(parseInt(e.target.value) || 0)
+                    setStockAmount(
+                      e.target.value === ""
+                        ? ""
+                        : parseInt(e.target.value) || 0,
+                    )
                   }
-                  placeholder="Enter stock amount..."
+                  placeholder="0"
                   className="w-full rounded-lg border border-white/50 bg-white/20 px-4 py-2.5 text-sm text-white placeholder:text-white/40 transition-all focus:border-white focus:outline-none focus:ring-2 focus:ring-white/40"
                   disabled={isSubmitting}
                 />

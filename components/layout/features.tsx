@@ -58,7 +58,7 @@ const FEATURES = [
   },
   {
     id: "ifr-scanner",
-    title: "IFR SCANNER",
+    title: "GENERATE BILLING UNIT",
     description:
       "Scan IFR documents automatically, extract relevant data fields accurately, minimize encoding mistakes, and speed up reporting tasks for operations teams.",
     icon: MagnifyingGlassIcon,

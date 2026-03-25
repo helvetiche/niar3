@@ -39,8 +39,14 @@ async function fixQuarterlyNulls() {
 
       if (quarterData) {
         updates[quarterKey] = {
-          requestedQuantity: quarterData.requestedQuantity === 0 ? null : quarterData.requestedQuantity,
-          receivedQuantity: quarterData.receivedQuantity === 0 ? null : quarterData.receivedQuantity,
+          requestedQuantity:
+            quarterData.requestedQuantity === 0
+              ? null
+              : quarterData.requestedQuantity,
+          receivedQuantity:
+            quarterData.receivedQuantity === 0
+              ? null
+              : quarterData.receivedQuantity,
           baseQuantity: quarterData.baseQuantity || 0,
         };
       }

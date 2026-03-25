@@ -80,10 +80,7 @@ export async function GET(
       details: { templateId },
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Failed to get template" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to get template" }, { status: 500 }),
     );
   }
 }

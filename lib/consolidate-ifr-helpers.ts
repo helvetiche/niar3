@@ -35,16 +35,21 @@ export const COLUMN_MAPPING = {
 
 export function shouldSkipSeason(
   cropYear: number,
-  cropSeason: string,
+  cropSeason: string | number | null | undefined,
 ): boolean {
   if (cropYear < 1975) return true;
-  if (cropYear === 1975 && cropSeason.toUpperCase() === "DRY") return true;
+  const seasonStr = String(cropSeason || "").toUpperCase();
+  if (cropYear === 1975 && seasonStr === "DRY") return true;
   return false;
 }
 
-export function buildCropSeasonCode(year: number, season: string): string {
+export function buildCropSeasonCode(
+  year: number,
+  season: string | number | null | undefined,
+): string {
   const yearCode = year >= 2000 ? String(year) : String(year).slice(-2);
-  const seasonCode = season.toUpperCase() === "DRY" ? "D" : "W";
+  const seasonStr = String(season || "").toUpperCase();
+  const seasonCode = seasonStr === "DRY" ? "D" : "W";
   return `${yearCode}-${seasonCode}`;
 }
 
@@ -87,6 +92,12 @@ export function extractRowData(
     OLD_ACCOUNT,
   } = COLUMN_MAPPING;
 
+  // Helper function to clean "N" values (treat single "N" or "n" as empty)
+  const cleanValue = (value: unknown): string => {
+    const str = String(value || "").trim();
+    return str.toUpperCase() === "N" ? "" : str;
+  };
+
   return {
     lotCode: sheet[`${LOT_CODE}${row}`]?.v || null,
     cropSeason: sheet[`${CROP_SEASON}${row}`]?.v || null,
@@ -96,10 +107,10 @@ export function extractRowData(
     area: sheet[`${PLANTED_AREA}${row}`]?.v
       ? parseFloat(String(sheet[`${PLANTED_AREA}${row}`].v))
       : null,
-    ownerLastName: String(sheet[`${OWNER_LAST}${row}`]?.v || ""),
-    ownerFirstName: String(sheet[`${OWNER_FIRST}${row}`]?.v || ""),
-    tillerLastName: String(sheet[`${TILLER_LAST}${row}`]?.v || ""),
-    tillerFirstName: String(sheet[`${TILLER_FIRST}${row}`]?.v || ""),
+    ownerLastName: cleanValue(sheet[`${OWNER_LAST}${row}`]?.v),
+    ownerFirstName: cleanValue(sheet[`${OWNER_FIRST}${row}`]?.v),
+    tillerLastName: cleanValue(sheet[`${TILLER_LAST}${row}`]?.v),
+    tillerFirstName: cleanValue(sheet[`${TILLER_FIRST}${row}`]?.v),
     oldAccount: parseFloat(String(sheet[`${OLD_ACCOUNT}${row}`]?.v || 0)),
   };
 }

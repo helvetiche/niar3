@@ -8,6 +8,7 @@ import { withAuth } from "@/lib/auth";
 import { withHeavyOperationRateLimit } from "@/lib/rate-limit/with-api-rate-limit";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 import { logger } from "@/lib/logger";
+import JSZip from "jszip";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -57,18 +58,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get all IFR files
-    const ifrFiles: { buffer: Buffer; fileName: string }[] = [];
+    // Get all IFR files with their metadata
+    const ifrFiles: {
+      buffer: Buffer;
+      fileName: string;
+      divisionNumber: string;
+      irrigationAssociation: string;
+    }[] = [];
     let fileIndex = 0;
 
     while (true) {
       const file = formData.get(`landProfile_${fileIndex}`) as File;
       if (!file) break;
 
+      const divisionNumber = formData.get(
+        `divisionNumber_${fileIndex}`,
+      ) as string;
+      const irrigationAssociation = formData.get(
+        `irrigationAssociation_${fileIndex}`,
+      ) as string;
+
       const arrayBuffer = await file.arrayBuffer();
       ifrFiles.push({
         buffer: Buffer.from(arrayBuffer),
         fileName: file.name,
+        divisionNumber: divisionNumber || "",
+        irrigationAssociation: irrigationAssociation || "",
       });
 
       fileIndex++;
@@ -97,19 +112,47 @@ export async function POST(request: NextRequest) {
     const templateArrayBuffer = await templateFile.arrayBuffer();
     const templateBuffer = Buffer.from(templateArrayBuffer);
 
-    // Add debugging info
-    logger.info(`Template file: ${templateFile.name}, size: ${templateFile.size}, type: ${templateFile.type}`);
-    logger.info(`Template buffer size: ${templateBuffer.length}`);
-    
-    // Log first few bytes for debugging
-    const firstBytes = templateBuffer.subarray(0, 8);
-    logger.info(`Template first bytes: ${Array.from(firstBytes).map(b => b.toString(16).padStart(2, '0')).join(' ')}`);
+    // Create a ZIP file to hold all consolidated files
+    const zip = new JSZip();
+    let processedCount = 0;
+    const allErrors: string[] = [];
+    const allWarnings: string[] = [];
 
-    // Process consolidation with automatic calculation
-    const { buffer, processedCount, errors, warnings } = await consolidateIFR(
-      templateBuffer,
-      ifrFiles,
-    );
+    // Process each IFR file separately
+    for (const file of ifrFiles) {
+      try {
+        // Process single file with template
+        const {
+          buffer,
+          processedCount: fileProcessedCount,
+          errors,
+          warnings,
+        } = await consolidateIFR(templateBuffer, [
+          {
+            buffer: file.buffer,
+            fileName: file.fileName,
+            divisionNumber: file.divisionNumber,
+            irrigationAssociation: file.irrigationAssociation,
+          },
+        ]);
+
+        if (fileProcessedCount > 0) {
+          // Generate output filename: DIV. {NO} - {NAME} (CONSOLIDATED).xlsx
+          const outputFileName = `DIV. ${file.divisionNumber} - ${file.irrigationAssociation} (CONSOLIDATED).xlsx`;
+
+          // Add to ZIP
+          zip.file(outputFileName, buffer);
+          processedCount += fileProcessedCount;
+        }
+
+        allErrors.push(...errors);
+        allWarnings.push(...warnings);
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+        allErrors.push(`Error processing ${file.fileName}: ${errorMsg}`);
+      }
+    }
 
     if (processedCount === 0) {
       await logAuditTrailEntry({
@@ -120,7 +163,7 @@ export async function POST(request: NextRequest) {
         method: "POST",
         request,
         httpStatus: 500,
-        details: { reason: "no-files-processed", errorCount: errors.length },
+        details: { reason: "no-files-processed", errorCount: allErrors.length },
       });
       return applySecurityHeaders(
         NextResponse.json(
@@ -132,19 +175,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return the file with metadata in headers
-    const response = secureFileResponse(buffer, {
-      contentType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      filename: `consolidated-ifr-${Date.now()}.xlsx`,
+    // Generate ZIP file
+    const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+
+    // Return the ZIP file with metadata in headers
+    const response = secureFileResponse(zipBuffer, {
+      contentType: "application/zip",
+      filename: `consolidated-ifr-${Date.now()}.zip`,
     });
 
     // Add custom headers for metadata
     response.headers.set("X-Processed-Count", processedCount.toString());
-    response.headers.set("X-Error-Count", errors.length.toString());
-    response.headers.set("X-Warning-Count", warnings.length.toString());
-    response.headers.set("X-Errors", JSON.stringify(errors));
-    response.headers.set("X-Warnings", JSON.stringify(warnings));
+    response.headers.set("X-Error-Count", allErrors.length.toString());
+    response.headers.set("X-Warning-Count", allWarnings.length.toString());
+
+    // Encode to base64 to handle special characters
+    response.headers.set(
+      "X-Errors",
+      Buffer.from(JSON.stringify(allErrors)).toString("base64"),
+    );
+    response.headers.set(
+      "X-Warnings",
+      Buffer.from(JSON.stringify(allWarnings)).toString("base64"),
+    );
 
     await logAuditTrailEntry({
       uid: user.uid,
@@ -156,8 +209,8 @@ export async function POST(request: NextRequest) {
       httpStatus: 200,
       details: {
         processedCount,
-        errorCount: errors.length,
-        warningCount: warnings.length,
+        errorCount: allErrors.length,
+        warningCount: allWarnings.length,
         fileCount: ifrFiles.length,
       },
     });
