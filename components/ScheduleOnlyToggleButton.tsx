@@ -15,8 +15,8 @@ export function ScheduleOnlyToggleButton({
       onClick={onToggle}
       className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
         scheduleOnly
-          ? "border-emerald-400 bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-          : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100"
+          ? "border-white bg-white/30 text-white hover:bg-white/40"
+          : "border-white/40 bg-white/5 text-white hover:bg-white/10"
       }`}
       aria-pressed={scheduleOnly}
       aria-label="Toggle schedule-only view"

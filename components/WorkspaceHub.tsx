@@ -22,9 +22,11 @@ import {
   WarningCircleIcon,
   PackageIcon,
   CubeIcon,
+  CalendarIcon,
 } from "@phosphor-icons/react";
 import {
   useWorkspaceTab,
+  useWorkspaceUser,
   type WorkspaceTab,
 } from "@/contexts/WorkspaceContext";
 
@@ -147,11 +149,39 @@ const HUB_TOOLS: HubTool[] = [
       { id: "manage", label: "Manage Items", icon: CheckCircleIcon },
     ],
   },
+  {
+    id: "calendar",
+    name: "CALENDAR",
+    description:
+      "Manage your schedule with color-coded calendar notes. Organize deadlines with progress tracking and proximity buckets for better time management.",
+    icon: CalendarIcon,
+    tags: [
+      { id: "schedule", label: "Schedule Notes", icon: CalendarIcon },
+      { id: "color-coded", label: "Color Coded", icon: SparkleIcon },
+      { id: "deadlines", label: "Deadline Alerts", icon: LightningIcon },
+    ],
+  },
+  {
+    id: "schedules",
+    name: "SCHEDULES",
+    description:
+      "Email schedules with automatic reminders and deadline tracking. Create recurring schedules with customizable deadlines and automated email notifications.",
+    icon: CheckCircleIcon,
+    tags: [
+      { id: "email", label: "Email Reminders", icon: CheckCircleIcon },
+      { id: "deadlines", label: "Deadline Tracking", icon: DatabaseIcon },
+      { id: "recurring", label: "Recurring Schedules", icon: LightningIcon },
+    ],
+  },
 ];
 
 export function WorkspaceHub() {
   const { setSelectedTab } = useWorkspaceTab();
+  const user = useWorkspaceUser();
   const [search, setSearch] = useState("");
+
+  const isSuperAdmin = user.customClaims?.role === "super-admin";
+  const userPermissions = user.customClaims?.permissions || [];
 
   const handleSelectTool = (toolId: WorkspaceTab) => {
     if (toolId === "hub") return;
@@ -160,8 +190,16 @@ export function WorkspaceHub() {
 
   const filteredTools = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    if (!keyword) return HUB_TOOLS;
-    return HUB_TOOLS.filter((tool) => {
+    
+    // Super admins have access to all tools
+    const permittedTools = isSuperAdmin 
+      ? HUB_TOOLS 
+      : HUB_TOOLS.filter((tool) => userPermissions.includes(tool.id));
+    
+    // Then filter by search keyword
+    if (!keyword) return permittedTools;
+    
+    return permittedTools.filter((tool) => {
       const inName = tool.name.toLowerCase().includes(keyword);
       const inDescription = tool.description.toLowerCase().includes(keyword);
       const inTags = tool.tags.some((tag) =>
@@ -169,7 +207,7 @@ export function WorkspaceHub() {
       );
       return inName || inDescription || inTags;
     });
-  }, [search]);
+  }, [search, isSuperAdmin, userPermissions]);
 
   return (
     <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">

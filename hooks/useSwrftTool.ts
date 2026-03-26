@@ -190,15 +190,10 @@ export function useSwrftTool() {
     try {
       const customTasks = selectedTask ? [selectedTask.label] : undefined;
 
-      // Split full name into first and last name (simple split by space)
-      const nameParts = name.split(" ");
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || "";
-
       const result = await generateSwrft({
         templateId: selectedTemplateId,
-        firstName,
-        lastName,
+        firstName: name,
+        lastName: "",
         designation,
         months: selectedMonths,
         includeFirstHalf,

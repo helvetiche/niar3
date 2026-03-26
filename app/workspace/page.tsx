@@ -13,6 +13,9 @@ import { AccountManagement } from "@/components/AccountManagement";
 import ConsolidateLandProfilesTool from "@/components/ConsolidateLandProfilesTool";
 import IFRCheckerTool from "@/components/IFRCheckerTool";
 import { Inventory } from "@/components/Inventory/Inventory";
+import { WorkspaceCalendar } from "@/components/WorkspaceCalendar";
+import { Schedules } from "@/components/Schedules";
+import { PermissionGuard } from "@/components/PermissionGuard";
 import {
   useWorkspaceTab,
   type WorkspaceTab,
@@ -64,6 +67,14 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
     name: "INVENTORY",
     description: "Track and manage inventory items with quarterly data.",
   },
+  calendar: {
+    name: "CALENDAR",
+    description: "Manage your schedule with color-coded calendar notes and deadlines.",
+  },
+  schedules: {
+    name: "SCHEDULES",
+    description: "Email schedules with automatic reminders and deadline tracking.",
+  },
 };
 
 export default function WorkspacePage() {
@@ -102,26 +113,52 @@ export default function WorkspacePage() {
       )}
       <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-emerald-950">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col p-2 sm:p-3 md:p-4">
-          {selectedTab === "lipa-summary" ? (
-            <LipaSummaryToolStepped />
-          ) : selectedTab === "hub" ? (
+          {selectedTab === "hub" ? (
             <WorkspaceHub />
+          ) : selectedTab === "lipa-summary" ? (
+            <PermissionGuard toolId="lipa-summary">
+              <LipaSummaryToolStepped />
+            </PermissionGuard>
           ) : selectedTab === "template-manager" ? (
-            <TemplatesTool />
+            <PermissionGuard toolId="template-manager">
+              <TemplatesTool />
+            </PermissionGuard>
           ) : selectedTab === "ifr-scanner" ? (
-            <GenerateProfilesToolStepped />
+            <PermissionGuard toolId="ifr-scanner">
+              <GenerateProfilesToolStepped />
+            </PermissionGuard>
           ) : selectedTab === "merge-files" ? (
-            <MergeFilesToolStepped />
+            <PermissionGuard toolId="merge-files">
+              <MergeFilesToolStepped />
+            </PermissionGuard>
           ) : selectedTab === "swrft" ? (
-            <SwrftToolStepped />
+            <PermissionGuard toolId="swrft">
+              <SwrftToolStepped />
+            </PermissionGuard>
           ) : selectedTab === "accounts" ? (
-            <AccountManagement />
+            <PermissionGuard toolId="accounts">
+              <AccountManagement />
+            </PermissionGuard>
           ) : selectedTab === "consolidate-land-profiles" ? (
-            <ConsolidateLandProfilesTool />
+            <PermissionGuard toolId="consolidate-land-profiles">
+              <ConsolidateLandProfilesTool />
+            </PermissionGuard>
           ) : selectedTab === "ifr-checker" ? (
-            <IFRCheckerTool />
+            <PermissionGuard toolId="ifr-checker">
+              <IFRCheckerTool />
+            </PermissionGuard>
           ) : selectedTab === "inventory" ? (
-            <Inventory />
+            <PermissionGuard toolId="inventory">
+              <Inventory />
+            </PermissionGuard>
+          ) : selectedTab === "calendar" ? (
+            <PermissionGuard toolId="calendar">
+              <WorkspaceCalendar />
+            </PermissionGuard>
+          ) : selectedTab === "schedules" ? (
+            <PermissionGuard toolId="schedules">
+              <Schedules />
+            </PermissionGuard>
           ) : (
             TOOL_CONTENT[selectedTab] && (
               <WorkspaceToolPlaceholder

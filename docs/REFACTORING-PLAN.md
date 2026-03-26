@@ -28,10 +28,10 @@ This document outlines the refactoring plan for improving code maintainability, 
    - Business logic: LIPA processing
    - Keep in route: Request handling
 
-5. **✅ ifr-checker/route.ts** (265 lines → 40 lines)
-   - ✅ Extracted to: `lib/services/ifr-checker.service.ts`
-   - ✅ Reduced route handler to 40 lines
-   - ✅ Business logic properly separated
+5. **  ifr-checker/route.ts** (265 lines → 40 lines)
+   -   Extracted to: `lib/services/ifr-checker.service.ts`
+   -   Reduced route handler to 40 lines
+   -   Business logic properly separated
 
 ### Refactoring Pattern
 
@@ -131,7 +131,7 @@ npm uninstall xlsx xlsx-populate xlsx-calc
 4. RefreshSessionButton
 
 #### Low Impact (already optimized)
-1. ✅ Spinner (memoized)
+1.   Spinner (memoized)
 2. ErrorBoundary (rarely re-renders)
 
 ### Memoization Pattern
@@ -165,7 +165,7 @@ export const Component = memo(
 ### Files Needing Documentation
 
 #### Services
-- lib/services/ifr-checker.service.ts ✅
+- lib/services/ifr-checker.service.ts  
 - lib/services/audit-queue.ts
 - lib/services/template-cache.ts
 
@@ -177,8 +177,8 @@ export const Component = memo(
 
 #### API Utilities
 - lib/api-client.ts
-- lib/error-handler.ts ✅
-- lib/security-headers.ts ✅
+- lib/error-handler.ts  
+- lib/security-headers.ts  
 
 ### JSDoc Pattern
 
@@ -247,10 +247,10 @@ function mapArray<T, U>(arr: T[], fn: (item: T) => U): U[] { ... }
 ## Implementation Timeline
 
 ### Week 1
-- ✅ Extract ifr-checker business logic
-- ✅ Memoize WorkspaceContext
-- ✅ Complete Sentry integration
-- ✅ Create Spinner component
+-   Extract ifr-checker business logic
+-   Memoize WorkspaceContext
+-   Complete Sentry integration
+-   Create Spinner component
 
 ### Week 2
 - Extract generate-profiles business logic

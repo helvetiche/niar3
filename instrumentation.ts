@@ -12,7 +12,7 @@ export async function register() {
     try {
       validateEnv();
        
-      console.log("✅ Environment variables validated successfully");
+      console.log("  Environment variables validated successfully");
     } catch {
        
       console.error("❌ Failed to start: Invalid environment configuration");

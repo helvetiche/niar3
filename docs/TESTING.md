@@ -186,7 +186,7 @@ it("should call setState", () => {
 });
 ```
 
-✅ Good:
+  Good:
 
 ```typescript
 it("should display updated value", async () => {
@@ -204,7 +204,7 @@ it("should display updated value", async () => {
 it("works", () => { ... });
 ```
 
-✅ Good:
+  Good:
 
 ```typescript
 it("should validate email format and show error for invalid input", () => { ... });

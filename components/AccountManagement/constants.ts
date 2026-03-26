@@ -4,6 +4,10 @@ import {
   ArrowsMergeIcon,
   MagnifyingGlassIcon,
   UsersThreeIcon,
+  FileXlsIcon,
+  FolderOpenIcon,
+  ShieldCheckIcon,
+  PackageIcon,
 } from "@phosphor-icons/react";
 import type { AvailableTool } from "./types";
 
@@ -31,9 +35,37 @@ export const AVAILABLE_TOOLS: AvailableTool[] = [
   },
   {
     id: "ifr-scanner",
-    name: "IFR Scanner",
+    name: "Generate Billing Unit",
     description: "Scan and extract IFR data",
     icon: MagnifyingGlassIcon,
+    isBasic: true,
+  },
+  {
+    id: "swrft",
+    name: "Accomplishment Report",
+    description: "Generate quincena accomplishment reports",
+    icon: FileXlsIcon,
+    isBasic: true,
+  },
+  {
+    id: "consolidate-land-profiles",
+    name: "Consolidate IFR",
+    description: "Consolidate multiple IFR files into one",
+    icon: FolderOpenIcon,
+    isBasic: true,
+  },
+  {
+    id: "ifr-checker",
+    name: "IFR Checker",
+    description: "Validate consolidated files against source IFR data",
+    icon: ShieldCheckIcon,
+    isBasic: true,
+  },
+  {
+    id: "inventory",
+    name: "Inventory",
+    description: "Track and manage inventory items with quarterly data",
+    icon: PackageIcon,
     isBasic: true,
   },
   {

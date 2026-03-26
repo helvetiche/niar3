@@ -43,6 +43,7 @@ import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
 import type { UserProfile } from "@/types/profile";
 import type { WorkspaceTab } from "@/contexts/WorkspaceContext";
 import { useToolOrder } from "@/hooks/useToolOrder";
+import { usePinnedTools } from "@/hooks/usePinnedTools";
 import { DraggableToolItem } from "./DraggableToolItem";
 import { MasonryModal } from "./MasonryModal";
 import { ProfileModal } from "./ProfileModal";
@@ -153,6 +154,18 @@ const TOOLS = [
     description: "Track and manage inventory items with quarterly data.",
     icon: PackageIcon,
   },
+  {
+    id: "calendar" as const,
+    name: "CALENDAR",
+    description: "Manage your schedule with color-coded calendar notes and deadlines.",
+    icon: ListBulletsIcon,
+  },
+  {
+    id: "schedules" as const,
+    name: "SCHEDULES",
+    description: "Email schedules with automatic reminders and deadline tracking.",
+    icon: SquaresFourIcon,
+  },
 ] as const;
 
 function getDisplayName(profile: UserProfile, email: string | null): string {
@@ -189,6 +202,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const { toolOrder, updateToolOrder, resetToolOrder } = useToolOrder(
     TOOLS.map((t) => t.id),
   );
+  const { isPinned, togglePin } = usePinnedTools();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -311,37 +325,48 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
     "U"
   ).toUpperCase();
   const isSuperAdmin = user.customClaims?.role === "super-admin";
-
-  const filteredTools = TOOLS.filter((tool) => {
-    if (
-      "requiresSuperAdmin" in tool &&
-      tool.requiresSuperAdmin &&
-      !isSuperAdmin
-    ) {
-      return false;
-    }
-    return (
-      tool.name.toLowerCase().includes(search.toLowerCase()) ||
-      tool.description.toLowerCase().includes(search.toLowerCase())
-    );
-  });
+  const userPermissions = user.customClaims?.permissions || [];
 
   // Sort tools based on saved order
-  const sortedTools = isDragMode
-    ? TOOLS.filter((tool) => {
-        if (
-          "requiresSuperAdmin" in tool &&
-          tool.requiresSuperAdmin &&
-          !isSuperAdmin
-        ) {
-          return false;
-        }
-        return true;
-      }).sort((a, b) => toolOrder.indexOf(a.id) - toolOrder.indexOf(b.id))
-    : filteredTools;
+  const sortedTools = TOOLS.filter((tool) => {
+    // Always show hub
+    if (tool.id === "hub") {
+      return true;
+    }
+
+    // Super admins have access to everything
+    if (isSuperAdmin) {
+      return true;
+    }
+
+    // Check if user has permission for this tool
+    if (!userPermissions.includes(tool.id)) {
+      return false;
+    }
+
+    return true;
+  }).sort((a, b) => {
+    // First, sort by pinned status (pinned items first)
+    const aPinned = isPinned(a.id);
+    const bPinned = isPinned(b.id);
+    
+    if (aPinned && !bPinned) return -1;
+    if (!aPinned && bPinned) return 1;
+    
+    // Then sort by saved order
+    return toolOrder.indexOf(a.id) - toolOrder.indexOf(b.id);
+  });
+
+  // Apply search filter if not in drag mode
+  const displayedTools = isDragMode
+    ? sortedTools
+    : sortedTools.filter((tool) =>
+        tool.name.toLowerCase().includes(search.toLowerCase()) ||
+        tool.description.toLowerCase().includes(search.toLowerCase())
+      );
 
   const effectiveCollapsed = collapsed && isDesktop;
-  const navItems = effectiveCollapsed ? TOOLS : sortedTools;
+  const navItems = effectiveCollapsed ? TOOLS : displayedTools;
   const showSidebarContent = isDesktop || isMobileMenuOpen;
   const mobileNavPanelClassName = isDesktop
     ? "flex min-h-0 flex-1 flex-col"
@@ -606,6 +631,8 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
                           isActive={isActive}
                           isCollapsed={effectiveCollapsed}
                           isDragEnabled={isDragMode}
+                          isPinned={isPinned(item.id)}
+                          onTogglePin={(id) => togglePin(id as WorkspaceTab)}
                           onClick={() => setSelectedTab(item.id)}
                         />
                       );

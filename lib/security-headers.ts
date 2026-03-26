@@ -29,7 +29,7 @@ export const SECURITY_RESPONSE_HEADERS: Record<string, string> = {
   "Content-Security-Policy":
     "default-src 'self'; " +
     (process.env.NODE_ENV === "development"
-      ? "script-src 'self' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; "
+      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; "
       : "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; ") +
     "style-src 'self' 'unsafe-inline'; " + // Tailwind requires inline styles
     "img-src 'self' data: https:; " +
@@ -38,7 +38,7 @@ export const SECURITY_RESPONSE_HEADERS: Record<string, string> = {
     "frame-ancestors 'none'; " +
     "base-uri 'self'; " +
     "form-action 'self'; " +
-    "upgrade-insecure-requests;",
+    (process.env.NODE_ENV === "production" ? "upgrade-insecure-requests;" : ""),
   // CORS - Allow same origin
   "Access-Control-Allow-Origin": "https://niatools.vercel.app",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",

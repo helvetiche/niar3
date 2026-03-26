@@ -64,7 +64,7 @@ export function AddNoteTooltip({
       <button
         type="button"
         onClick={onClick}
-        className="rounded-md p-1 text-zinc-400 transition hover:bg-white/60 hover:text-zinc-700"
+        className="rounded-md p-1 text-white/60 transition hover:bg-white/20 hover:text-white"
         aria-label={ariaLabel}
       >
         {children}

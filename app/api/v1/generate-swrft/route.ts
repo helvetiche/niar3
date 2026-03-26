@@ -83,27 +83,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const firstName =
+    const fullName =
       typeof firstNameOverride === "string" && firstNameOverride.trim()
         ? firstNameOverride.trim()
         : "";
-    const lastName =
-      typeof lastNameOverride === "string" && lastNameOverride.trim()
-        ? lastNameOverride.trim()
-        : "";
-    if (!firstName || !lastName) {
+    
+    if (!fullName) {
       return applySecurityHeaders(
         NextResponse.json(
           {
-            error:
-              "First name and last name are required. Enter them in the form.",
+            error: "Full name is required. Enter it in the form.",
           },
           { status: 400 },
         ),
       );
     }
-
-    const fullName = `${lastName}, ${firstName}`;
 
     let months: number[] = [];
     if (typeof monthsRaw === "string" && monthsRaw.trim()) {
@@ -186,7 +180,7 @@ export async function POST(request: Request) {
       customTasks,
     );
 
-    const outputBaseName = `${sanitizeForFilename(lastName)}, ${sanitizeForFilename(firstName)} - ${designationValue}`;
+    const outputBaseName = `${sanitizeForFilename(fullName)} - ${designationValue}`;
     const outputName = outputBaseName.toLowerCase().endsWith(".xlsx")
       ? outputBaseName
       : `${outputBaseName}.xlsx`;

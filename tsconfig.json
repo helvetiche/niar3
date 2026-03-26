@@ -34,6 +34,7 @@
   "exclude": [
     "node_modules",
     "reference",
+    "nia-reminder",
     "tests",
     "**/*.test.ts",
     "**/*.test.tsx",

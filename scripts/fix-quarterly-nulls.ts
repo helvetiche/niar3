@@ -55,7 +55,7 @@ async function fixQuarterlyNulls() {
     if (Object.keys(updates).length > 0) {
       await doc.ref.update(updates);
       updated++;
-      console.log(`✅ Updated: ${data.sku}`);
+      console.log(`  Updated: ${data.sku}`);
     }
   }
 

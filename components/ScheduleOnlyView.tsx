@@ -30,38 +30,38 @@ export function ScheduleOnlyView({
 
   if (items.length === 0) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-50 text-sm text-zinc-500">
+      <div className="flex min-h-0 flex-1 items-center justify-center rounded-lg border border-emerald-700 bg-emerald-950/50 text-sm text-white/70">
         No schedules for this month yet.
       </div>
     );
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-dashed border-zinc-200 bg-zinc-50 p-4">
+    <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-emerald-700 bg-emerald-950/50 p-4">
       <div className="space-y-3">
         {items.map(({ id, day, note, daysUntil, progress }) => (
           <div
             key={id}
-            className="rounded-lg border border-dashed border-zinc-200 bg-white p-3"
+            className="rounded-lg border border-emerald-700 bg-emerald-900/50 p-3"
           >
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-medium text-zinc-500">
+              <p className="text-xs font-medium text-white/70">
                 {monthName} {day}, {year}
               </p>
               <span
                 className={`text-[10px] font-medium ${
                   daysUntil <= 0
-                    ? "text-amber-600"
+                    ? "text-amber-400"
                     : daysUntil <= 3
-                      ? "text-emerald-600"
-                      : "text-zinc-400"
+                      ? "text-emerald-400"
+                      : "text-white/50"
                 }`}
               >
                 {formatDeadline(daysUntil)}
               </span>
             </div>
             <div
-              className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-200"
+              className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-emerald-800"
               role="progressbar"
               aria-valuenow={progress}
               aria-valuemin={0}
@@ -76,14 +76,14 @@ export function ScheduleOnlyView({
                       ? "bg-amber-400"
                       : progress < 80
                         ? "bg-emerald-500"
-                        : "bg-emerald-600"
+                        : "bg-emerald-400"
                 }`}
                 style={{
                   width: `${progress <= 0 ? 5 : Math.min(100, progress)}%`,
                 }}
               />
             </div>
-            <p className="mt-2 flex items-center gap-2 text-sm text-zinc-800">
+            <p className="mt-2 flex items-center gap-2 text-sm text-white">
               <span
                 className={`h-2.5 w-2.5 shrink-0 rounded-full ${getNoteBg(note.color)}`}
                 aria-hidden

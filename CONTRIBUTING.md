@@ -123,12 +123,12 @@ npm run test:coverage
 
 ### Before Submitting
 
-1. ✅ All tests pass
-2. ✅ No linting errors
-3. ✅ Type checking passes
-4. ✅ Code is formatted
-5. ✅ Documentation updated
-6. ✅ Commit messages follow convention
+1.   All tests pass
+2.   No linting errors
+3.   Type checking passes
+4.   Code is formatted
+5.   Documentation updated
+6.   Commit messages follow convention
 
 ### PR Template
 

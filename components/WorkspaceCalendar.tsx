@@ -93,14 +93,36 @@ export function WorkspaceCalendar() {
   const MAX_VISIBLE_NOTES = 3;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col rounded-xl border-2 border-dashed border-zinc-300 bg-white p-6 shadow-sm">
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
+      <header className="mb-6">
+        <h2 className="flex items-center gap-2 text-xl font-medium text-white sm:text-2xl">
+          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+            <NotePencilIcon size={20} className="text-white" />
+          </span>
+          Calendar & Notes
+        </h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <NotePencilIcon size={12} className="text-white" />
+            Color-coded Notes
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <ListChecksIcon size={12} className="text-white" />
+            {totalSchedules} Schedule{totalSchedules === 1 ? "" : "s"}
+          </span>
+        </div>
+        <p className="mt-2 max-w-3xl text-sm text-white/85">
+          Track important dates, deadlines, and reminders with color-coded notes.
+        </p>
+      </header>
+
       <div className="mb-4 flex shrink-0 items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex gap-0.5 rounded-lg border-2 border-dashed border-zinc-300 p-0.5">
+          <div className="flex gap-0.5 rounded-lg border border-white/40 bg-white/5 p-0.5">
             <button
               type="button"
               onClick={prevMonth}
-              className="rounded-md p-2 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+              className="rounded-md p-2 text-white transition hover:bg-white/10"
               aria-label="Previous month"
             >
               <CaretLeftIcon size={18} weight="bold" />
@@ -108,25 +130,21 @@ export function WorkspaceCalendar() {
             <button
               type="button"
               onClick={nextMonth}
-              className="rounded-md p-2 text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900"
+              className="rounded-md p-2 text-white transition hover:bg-white/10"
               aria-label="Next month"
             >
               <CaretRightIcon size={18} weight="bold" />
             </button>
           </div>
-          <h2 className="text-lg font-semibold tracking-tight text-zinc-800">
+          <h3 className="text-lg font-semibold tracking-tight text-white">
             {MONTHS[month]} {year}
-          </h2>
+          </h3>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-zinc-500">
-            {totalSchedules} schedule{totalSchedules === 1 ? "" : "s"} this
-            month
-          </span>
           <button
             type="button"
             onClick={goToToday}
-            className="rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50"
+            className="rounded-lg border border-white/40 bg-white/5 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-white/10"
           >
             Today
           </button>
@@ -143,7 +161,7 @@ export function WorkspaceCalendar() {
           {DAYS.map((d) => (
             <div
               key={d}
-              className="flex items-center justify-center py-2 text-xs font-medium uppercase tracking-wider text-zinc-500"
+              className="flex items-center justify-center py-2 text-xs font-medium uppercase tracking-wider text-white/70"
             >
               {d}
             </div>
@@ -158,19 +176,19 @@ export function WorkspaceCalendar() {
                 key={`${isCurrentMonth ? "cur" : "other"}-${d}-${i}`}
                 className={`relative flex min-h-[80px] flex-col overflow-hidden rounded-md p-2 text-sm ${
                   !isCurrentMonth
-                    ? "border border-dashed border-zinc-100 bg-zinc-50/50 text-red-400"
+                    ? "border border-emerald-700/30 bg-emerald-950/30 text-white/40"
                     : isToday(d)
-                      ? "border-2 border-dashed border-emerald-600 bg-emerald-50"
-                      : "border border-dashed border-zinc-200 text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+                      ? "border-2 border-white bg-white/20"
+                      : "border border-emerald-700 bg-emerald-950/50 text-white hover:border-white/40 hover:bg-emerald-800/50"
                 }`}
               >
                 <div className="flex justify-end">
                   {isToday(d) ? (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-semibold text-emerald-900">
                       {d}
                     </span>
                   ) : (
-                    <span className={!isCurrentMonth ? "text-red-400/80" : ""}>
+                    <span className={!isCurrentMonth ? "text-white/40" : "text-white"}>
                       {d}
                     </span>
                   )}
@@ -202,7 +220,7 @@ export function WorkspaceCalendar() {
                         </NotePopover>
                       ))}
                       {overflowCount > 0 && (
-                        <div className="text-xs font-medium text-zinc-500">
+                        <div className="text-xs font-medium text-white/70">
                           +{overflowCount} more
                         </div>
                       )}
@@ -215,17 +233,17 @@ export function WorkspaceCalendar() {
         </div>
       )}
 
-      <div className="mt-4 flex shrink-0 flex-col gap-3 rounded-lg border-2 border-dashed border-zinc-200 bg-zinc-50 p-4">
+      <div className="mt-4 flex shrink-0 flex-col gap-3 rounded-lg border border-emerald-700 bg-emerald-950/50 p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <ListChecksIcon
               size={18}
               weight="duotone"
-              className="text-zinc-600"
+              className="text-white"
             />
-            <h3 className="text-sm font-semibold text-zinc-800">
+            <h4 className="text-sm font-semibold text-white">
               Schedule &amp; reminders — {MONTHS[month]} {year}
-            </h3>
+            </h4>
           </div>
           <ScheduleOnlyToggleButton
             scheduleOnly={scheduleOnly}
@@ -233,7 +251,7 @@ export function WorkspaceCalendar() {
           />
         </div>
         {totalSchedules === 0 ? (
-          <p className="py-2 text-xs text-zinc-500">
+          <p className="py-2 text-xs text-white/70">
             No notes or reminders yet. Click the + on any date to add one.
           </p>
         ) : (
@@ -249,20 +267,20 @@ export function WorkspaceCalendar() {
               return (
                 <div
                   key={bucket}
-                  className="flex flex-col rounded-lg border border-dashed border-zinc-200 bg-white p-3"
+                  className="flex flex-col rounded-lg border border-emerald-700 bg-emerald-900/50 p-3"
                 >
                   <p
                     className={`mb-2 text-xs font-semibold uppercase tracking-wider ${
                       bucket === "nearest"
-                        ? "text-emerald-700"
-                        : "text-zinc-500"
+                        ? "text-white"
+                        : "text-white/70"
                     }`}
                   >
                     {label}
                   </p>
                   <div className="max-h-36 space-y-3 overflow-y-auto">
                     {entries.length === 0 ? (
-                      <p className="py-2 text-xs text-zinc-400">—</p>
+                      <p className="py-2 text-xs text-white/50">—</p>
                     ) : (
                       <>
                         {entries.flatMap(({ day, items }) =>
@@ -282,25 +300,25 @@ export function WorkspaceCalendar() {
                             return (
                               <div
                                 key={`${day}-${i}`}
-                                className="rounded-lg border border-dashed border-zinc-100 bg-zinc-50/50 px-3 py-2"
+                                className="rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-2"
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <p className="text-xs font-medium text-zinc-500">
+                                  <p className="text-xs font-medium text-white/70">
                                     {MONTHS[month]} {day}
                                   </p>
                                   <span
                                     className={`text-[10px] font-medium ${
                                       daysUntil <= 0
-                                        ? "text-amber-600"
+                                        ? "text-amber-400"
                                         : daysUntil <= 3
-                                          ? "text-emerald-600"
-                                          : "text-zinc-400"
+                                          ? "text-emerald-400"
+                                          : "text-white/50"
                                     }`}
                                   >
                                     {progressLabel}
                                   </span>
                                 </div>
-                                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-zinc-200">
+                                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-emerald-800">
                                   <div
                                     className={`h-full rounded-full transition-all ${
                                       progress <= 0
@@ -309,14 +327,14 @@ export function WorkspaceCalendar() {
                                           ? "bg-amber-400"
                                           : progress < 80
                                             ? "bg-emerald-500"
-                                            : "bg-emerald-600"
+                                            : "bg-emerald-400"
                                     }`}
                                     style={{
                                       width: `${progress <= 0 ? 5 : Math.min(100, progress)}%`,
                                     }}
                                   />
                                 </div>
-                                <p className="mt-1.5 flex items-center gap-2 text-sm text-zinc-800">
+                                <p className="mt-1.5 flex items-center gap-2 text-sm text-white">
                                   <span
                                     className={`h-2 w-2 shrink-0 rounded-full ${getNoteBg(item.color)}`}
                                     aria-hidden
@@ -343,17 +361,17 @@ export function WorkspaceCalendar() {
           onClose={() => setAddModalDate(null)}
         >
           {(close) => (
-            <div className="rounded-xl border-2 border-dashed border-zinc-300 bg-white p-6 shadow-xl">
+            <div className="rounded-2xl border border-white/40 bg-emerald-900 p-6 shadow-xl">
               <div className="mb-4 flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-900 text-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/40 bg-white/10 text-white">
                   <NotePencilIcon size={22} weight="duotone" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="font-semibold text-zinc-800">
+                  <h3 className="font-semibold text-white">
                     Add note — {MONTHS[addModalDate.month]} {addModalDate.day},{" "}
                     {addModalDate.year}
                   </h3>
-                  <p className="mt-0.5 text-sm text-zinc-500">
+                  <p className="mt-0.5 text-sm text-white/70">
                     Add a note or reminder for this date. Choose a color to
                     categorize it.
                   </p>
@@ -362,7 +380,7 @@ export function WorkspaceCalendar() {
               <button
                 type="button"
                 onClick={close}
-                className="absolute right-4 top-4 rounded p-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                className="absolute right-4 top-4 rounded p-1 text-white/70 hover:bg-white/20 hover:text-white"
                 aria-label="Close"
               >
                 <XIcon size={18} weight="bold" />
@@ -372,11 +390,11 @@ export function WorkspaceCalendar() {
                 onChange={(e) => setNewNoteText(e.target.value)}
                 placeholder="Note or reminder..."
                 rows={3}
-                className="w-full resize-none rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="w-full resize-none rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                 autoFocus
               />
               <div className="mt-3">
-                <p className="mb-2 text-xs font-medium text-zinc-500">Color</p>
+                <p className="mb-2 text-xs font-medium text-white/70">Color</p>
                 <div
                   className="columns-2 gap-2 sm:columns-3 lg:columns-4"
                   style={{ columnFill: "balance" } as React.CSSProperties}
@@ -388,8 +406,8 @@ export function WorkspaceCalendar() {
                       onClick={() => setSelectedColor(id)}
                       className={`mb-2 flex w-full items-center justify-center rounded-lg border-2 p-2.5 transition break-inside-avoid ${
                         selectedColor === id
-                          ? "border-emerald-500 bg-emerald-50"
-                          : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
+                          ? "border-white bg-white/30"
+                          : "border-white/40 bg-white/5 hover:border-white/60 hover:bg-white/10"
                       }`}
                       aria-label={`Select ${id} color`}
                       aria-pressed={selectedColor === id}
@@ -407,7 +425,7 @@ export function WorkspaceCalendar() {
                 <button
                   type="button"
                   onClick={close}
-                  className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 hover:bg-zinc-100"
+                  className="rounded-lg border border-white/40 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10"
                 >
                   Cancel
                 </button>
@@ -415,7 +433,7 @@ export function WorkspaceCalendar() {
                   type="button"
                   onClick={handleAddNote}
                   disabled={!newNoteText.trim()}
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                  className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-emerald-900 hover:bg-emerald-50 disabled:opacity-50"
                 >
                   Add
                 </button>
@@ -424,6 +442,6 @@ export function WorkspaceCalendar() {
           )}
         </MasonryModal>
       )}
-    </div>
+    </section>
   );
 }

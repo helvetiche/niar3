@@ -21,6 +21,8 @@ export const WORKSPACE_TABS = [
   "consolidate-land-profiles",
   "ifr-checker",
   "inventory",
+  "calendar",
+  "schedules",
 ] as const;
 export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
 
@@ -76,4 +78,11 @@ export function useWorkspaceUser() {
   if (!ctx)
     throw new Error("useWorkspaceUser must be used within WorkspaceProvider");
   return ctx.user;
+}
+
+export function useWorkspaceContext() {
+  const ctx = useContext(WorkspaceContext);
+  if (!ctx)
+    throw new Error("useWorkspaceContext must be used within WorkspaceProvider");
+  return ctx;
 }

@@ -56,7 +56,7 @@ export function NotePopover({ note, children, onRemove }: NotePopoverProps) {
   const popover = isHovered && (
     <div
       ref={popoverRef}
-      className="z-[99999] overflow-hidden rounded-xl border-2 border-dashed border-zinc-200 bg-white shadow-xl shadow-emerald-900/5"
+      className="z-[99999] overflow-hidden rounded-xl border border-white/40 bg-emerald-900 shadow-xl"
       onMouseEnter={show}
       onMouseLeave={hide}
     >
@@ -67,13 +67,13 @@ export function NotePopover({ note, children, onRemove }: NotePopoverProps) {
           <PushPinIcon size={20} weight="duotone" />
         </div>
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="text-sm font-medium text-zinc-800">{note.text}</p>
-          <p className="mt-0.5 text-xs capitalize text-zinc-500">
+          <p className="text-sm font-medium text-white">{note.text}</p>
+          <p className="mt-0.5 text-xs capitalize text-white/70">
             {note.color}
           </p>
         </div>
       </div>
-      <div className="border-t border-zinc-100 p-2">
+      <div className="border-t border-white/20 p-2">
         <button
           type="button"
           onClick={(e) => {
@@ -81,7 +81,7 @@ export function NotePopover({ note, children, onRemove }: NotePopoverProps) {
             onRemove();
             setIsHovered(false);
           }}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700"
+          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-red-400 transition hover:bg-red-900/30 hover:text-red-300"
         >
           <TrashIcon size={18} weight="duotone" />
           Remove note

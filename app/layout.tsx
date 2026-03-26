@@ -122,7 +122,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${poppins.variable} ${jetbrainsMono.variable}`}>
-      <body className="antialiased font-sans">
+      <body className="antialiased font-sans bg-emerald-900">
         <ErrorBoundary>
           <Providers>{children}</Providers>
         </ErrorBoundary>

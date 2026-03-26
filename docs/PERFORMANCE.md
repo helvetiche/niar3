@@ -340,9 +340,9 @@ export async function GET() {
 ## Action Items
 
 ### High Priority
-1. ✅ Memoize WorkspaceContext value
-2. ✅ Complete Sentry integration in logger
-3. ✅ Extract business logic from large route handlers
+1.   Memoize WorkspaceContext value
+2.   Complete Sentry integration in logger
+3.   Extract business logic from large route handlers
 4. ⏳ Remove duplicate Excel libraries
 5. ⏳ Memoize frequently re-rendering components
 

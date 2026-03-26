@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { WorkspaceTab } from "@/contexts/WorkspaceContext";
 
 const TOOL_ORDER_KEY = "workspace_tool_order";
@@ -6,6 +6,8 @@ const TOOL_ORDER_KEY = "workspace_tool_order";
 function loadToolOrderFromStorage(
   defaultOrder: WorkspaceTab[],
 ): WorkspaceTab[] {
+  if (typeof window === "undefined") return defaultOrder;
+  
   try {
     const saved = localStorage.getItem(TOOL_ORDER_KEY);
     if (saved) {
@@ -25,27 +27,39 @@ function loadToolOrderFromStorage(
 }
 
 export function useToolOrder(defaultOrder: WorkspaceTab[]) {
-  const [toolOrder, setToolOrder] = useState<WorkspaceTab[]>(() =>
-    loadToolOrderFromStorage(defaultOrder),
-  );
+  const [toolOrder, setToolOrder] = useState<WorkspaceTab[]>(defaultOrder);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load from localStorage on mount (client-side only)
+  useEffect(() => {
+    if (!isInitialized) {
+      const savedOrder = loadToolOrderFromStorage(defaultOrder);
+      setToolOrder(savedOrder);
+      setIsInitialized(true);
+    }
+  }, [defaultOrder, isInitialized]);
 
   // Save to localStorage whenever order changes
   const updateToolOrder = (newOrder: WorkspaceTab[]) => {
     setToolOrder(newOrder);
-    try {
-      localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(newOrder));
-    } catch {
-      // Silently fail if localStorage is unavailable
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(newOrder));
+      } catch {
+        // Silently fail if localStorage is unavailable
+      }
     }
   };
 
   // Reset to default order
   const resetToolOrder = () => {
     setToolOrder(defaultOrder);
-    try {
-      localStorage.removeItem(TOOL_ORDER_KEY);
-    } catch {
-      // Silently fail if localStorage is unavailable
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(TOOL_ORDER_KEY);
+      } catch {
+        // Silently fail if localStorage is unavailable
+      }
     }
   };
 

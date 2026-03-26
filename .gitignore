@@ -22,6 +22,7 @@
 
 # misc
 /reference
+/nia-reminder
 .DS_Store
 *.pem
 

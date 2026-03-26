@@ -22,6 +22,17 @@ export const PERMISSIONS = {
 
   // Health / monitoring (internal)
   HEALTH_READ: "health:read",
+
+  // Tools - these match the tool IDs in the workspace
+  TOOL_TEMPLATE_MANAGER: "template-manager",
+  TOOL_LIPA_SUMMARY: "lipa-summary",
+  TOOL_MERGE_FILES: "merge-files",
+  TOOL_SWRFT: "swrft",
+  TOOL_IFR_SCANNER: "ifr-scanner",
+  TOOL_CONSOLIDATE_LAND_PROFILES: "consolidate-land-profiles",
+  TOOL_IFR_CHECKER: "ifr-checker",
+  TOOL_ACCOUNTS: "accounts",
+  TOOL_INVENTORY: "inventory",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
