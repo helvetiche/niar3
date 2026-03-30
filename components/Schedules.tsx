@@ -14,7 +14,8 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { MasonryModal } from "@/components/MasonryModal";
 import type { Schedule, ScheduleDeadline, ReminderDate } from "@/types/schedule";
-import { calculateNextDeadline, formatDeadline, formatReminder } from "@/lib/schedule-helpers";
+import { calculateNextDeadline } from "@/lib/deadline-calculator";
+import { formatDeadline, formatReminder } from "@/lib/schedule-helpers";
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -311,7 +312,7 @@ export function Schedules() {
         ) : filteredSchedules.length > 0 ? (
           <div className="space-y-3">
             {filteredSchedules.map((schedule) => {
-              const nextDeadline = calculateNextDeadline(schedule.deadline, currentTime, schedule.createdAt);
+              const nextDeadline = calculateNextDeadline(schedule.deadline, currentTime);
               const diffMs = nextDeadline.getTime() - currentTime.getTime();
               const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
               const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
