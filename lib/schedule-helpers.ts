@@ -2,10 +2,11 @@ import type { ScheduleDeadline, ReminderDate } from "@/types/schedule";
 
 export function calculateNextDeadline(
   deadline: ScheduleDeadline,
-  currentTime: Date,
-  createdAt?: string
+  currentTime: Date
 ): Date {
-  const now = new Date(currentTime);
+  // Work in Manila timezone (UTC+8)
+  const manilaTimeString = currentTime.toLocaleString("en-US", { timeZone: "Asia/Manila" });
+  const now = new Date(manilaTimeString);
   
   // Parse time if available
   let targetHour = 14; // Default 2 PM

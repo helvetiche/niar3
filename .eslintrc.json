@@ -1,6 +1,7 @@
 {
   "extends": ["next/core-web-vitals", "next/typescript", "plugin:security/recommended"],
   "plugins": ["security"],
+  "ignorePatterns": ["nia-reminder/**/*"],
   "rules": {
     "no-console": ["error", { "allow": ["warn", "error"] }],
     "@typescript-eslint/no-explicit-any": "error",

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFirestore } from "@/lib/firebase-admin";
 import { requireAuth } from "@/lib/auth";
 import type { Schedule } from "@/types/schedule";
+import { syncScheduleCache } from "@/lib/schedule-cache";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const user = await requireAuth();
     const db = getFirestore();
@@ -72,6 +73,13 @@ export async function POST(request: NextRequest) {
       id: docRef.id,
       ...scheduleData,
     };
+
+    // Auto-sync cache after creating schedule
+    console.log("[AUTO-SYNC] Syncing cache after schedule creation...");
+    syncScheduleCache().catch((error) => {
+      console.error("[AUTO-SYNC] Failed to sync cache:", error);
+      // Don't fail the request if cache sync fails
+    });
 
     return NextResponse.json({ schedule }, { status: 201 });
   } catch (error) {

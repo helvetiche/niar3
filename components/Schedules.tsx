@@ -4,13 +4,11 @@ import {
   CalendarIcon,
   ClockIcon,
   EnvelopeIcon,
-  ListChecksIcon,
   MagnifyingGlassIcon,
   PlusIcon,
   TrashIcon,
   UserIcon,
   XIcon,
-  PencilSimpleIcon,
   CircleNotchIcon,
 } from "@phosphor-icons/react";
 import { useState, useEffect, useMemo } from "react";

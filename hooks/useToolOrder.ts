@@ -27,28 +27,25 @@ function loadToolOrderFromStorage(
 }
 
 export function useToolOrder(defaultOrder: WorkspaceTab[]) {
-  const [toolOrder, setToolOrder] = useState<WorkspaceTab[]>(defaultOrder);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Load from localStorage on mount (client-side only)
-  useEffect(() => {
-    if (!isInitialized) {
-      const savedOrder = loadToolOrderFromStorage(defaultOrder);
-      setToolOrder(savedOrder);
-      setIsInitialized(true);
-    }
-  }, [defaultOrder, isInitialized]);
+  const [toolOrder, setToolOrder] = useState<WorkspaceTab[]>(() => {
+    // Initialize from localStorage on mount
+    return loadToolOrderFromStorage(defaultOrder);
+  });
 
   // Save to localStorage whenever order changes
-  const updateToolOrder = (newOrder: WorkspaceTab[]) => {
-    setToolOrder(newOrder);
+  useEffect(() => {
     if (typeof window !== "undefined") {
       try {
-        localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(newOrder));
+        localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(toolOrder));
       } catch {
         // Silently fail if localStorage is unavailable
       }
     }
+  }, [toolOrder]);
+
+  // Save to localStorage whenever order changes
+  const updateToolOrder = (newOrder: WorkspaceTab[]) => {
+    setToolOrder(newOrder);
   };
 
   // Reset to default order

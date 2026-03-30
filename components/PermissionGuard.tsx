@@ -43,7 +43,7 @@ export function PermissionGuard({
                 Access Denied
               </h2>
               <p className="mt-2 text-sm text-white/70">
-                You don't have permission to access this tool.
+                You don&apos;t have permission to access this tool.
               </p>
               <p className="mt-1 text-xs text-white/50">
                 Contact your administrator if you need access.

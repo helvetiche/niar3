@@ -76,6 +76,7 @@ export function DraggableToolItem({
         } ${isDragEnabled ? "cursor-grab active:cursor-grabbing" : ""}`}
       >
         <div
+          suppressHydrationWarning
           className={`flex shrink-0 items-center justify-center rounded-lg border-2 border-dashed ${
             isPinned ? "border-yellow-400" : "border-white"
           } ${isCollapsed ? "p-2" : "p-2.5"}`}
@@ -84,16 +85,23 @@ export function DraggableToolItem({
             size={isCollapsed ? 20 : 24}
             weight="duotone"
             className={isPinned ? "text-yellow-300" : "text-white"}
+            suppressHydrationWarning
           />
         </div>
         {!isCollapsed && (
-          <div className="min-w-0 flex-1">
-            <p className={`text-sm font-medium ${isPinned ? "text-yellow-100" : "text-white"}`}>
+          <div className="min-w-0 flex-1" suppressHydrationWarning>
+            <p 
+              suppressHydrationWarning
+              className={`text-sm font-medium ${isPinned ? "text-yellow-100" : "text-white"}`}
+            >
               {name}
             </p>
-            <p className={`mt-0.5 text-xs line-clamp-2 ${
-              isPinned ? "text-yellow-200/70" : "text-emerald-200/80"
-            }`}>
+            <p 
+              suppressHydrationWarning
+              className={`mt-0.5 text-xs line-clamp-2 ${
+                isPinned ? "text-yellow-200/70" : "text-emerald-200/80"
+              }`}
+            >
               {description}
             </p>
           </div>

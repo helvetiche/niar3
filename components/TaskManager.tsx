@@ -2,7 +2,6 @@
 
 import {
   CheckCircleIcon,
-  ClockIcon,
   ListChecksIcon,
   MagnifyingGlassIcon,
   PlusIcon,
@@ -12,7 +11,6 @@ import {
   CaretDownIcon,
   CircleNotchIcon,
   PencilSimpleIcon,
-  UserIcon,
 } from "@phosphor-icons/react";
 import { useState, useMemo, useEffect } from "react";
 import { MasonryModal } from "@/components/MasonryModal";

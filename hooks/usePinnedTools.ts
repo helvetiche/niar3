@@ -18,17 +18,21 @@ function loadPinnedToolsFromStorage(): WorkspaceTab[] {
 }
 
 export function usePinnedTools() {
-  const [pinnedTools, setPinnedTools] = useState<WorkspaceTab[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [pinnedTools, setPinnedTools] = useState<WorkspaceTab[]>(() => {
+    // Initialize from localStorage on mount
+    return loadPinnedToolsFromStorage();
+  });
 
-  // Load from localStorage on mount (client-side only)
+  // Save to localStorage whenever pinnedTools changes
   useEffect(() => {
-    if (!isInitialized) {
-      const saved = loadPinnedToolsFromStorage();
-      setPinnedTools(saved);
-      setIsInitialized(true);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(PINNED_TOOLS_KEY, JSON.stringify(pinnedTools));
+      } catch {
+        // Silently fail if localStorage is unavailable
+      }
     }
-  }, [isInitialized]);
+  }, [pinnedTools]);
 
   // Toggle pin status for a tool
   const togglePin = (toolId: WorkspaceTab) => {
@@ -36,14 +40,6 @@ export function usePinnedTools() {
       const newPinned = current.includes(toolId)
         ? current.filter((id) => id !== toolId)
         : [...current, toolId];
-      
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem(PINNED_TOOLS_KEY, JSON.stringify(newPinned));
-        } catch {
-          // Silently fail if localStorage is unavailable
-        }
-      }
       
       return newPinned;
     });

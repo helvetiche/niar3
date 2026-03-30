@@ -4,7 +4,7 @@ import { sendTestEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth();
+    await requireAuth();
     const body = await request.json();
     const { email } = body;
 
