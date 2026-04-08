@@ -23,6 +23,7 @@ import {
   PackageIcon,
   CubeIcon,
   CalendarIcon,
+  ListChecksIcon,
 } from "@phosphor-icons/react";
 import {
   useWorkspaceTab,
@@ -171,6 +172,18 @@ const HUB_TOOLS: HubTool[] = [
       { id: "email", label: "Email Reminders", icon: CheckCircleIcon },
       { id: "deadlines", label: "Deadline Tracking", icon: DatabaseIcon },
       { id: "recurring", label: "Recurring Schedules", icon: LightningIcon },
+    ],
+  },
+  {
+    id: "task-manager",
+    name: "TASK MANAGER",
+    description:
+      "Mark recurring schedules complete for the current period. Daily, weekly, and monthly tasks grouped with search and quick detail views.",
+    icon: ListChecksIcon,
+    tags: [
+      { id: "period", label: "Period Tracking", icon: CheckCircleIcon },
+      { id: "checklist", label: "Checklist", icon: ListChecksIcon },
+      { id: "schedules", label: "Your Schedules", icon: CalendarIcon },
     ],
   },
 ];

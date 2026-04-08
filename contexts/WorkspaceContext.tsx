@@ -23,6 +23,7 @@ export const WORKSPACE_TABS = [
   "inventory",
   "calendar",
   "schedules",
+  "task-manager",
 ] as const;
 export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
 

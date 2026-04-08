@@ -8,6 +8,7 @@ import {
   FolderOpenIcon,
   ShieldCheckIcon,
   PackageIcon,
+  ListChecksIcon,
 } from "@phosphor-icons/react";
 import type { AvailableTool } from "./types";
 
@@ -66,6 +67,14 @@ export const AVAILABLE_TOOLS: AvailableTool[] = [
     name: "Inventory",
     description: "Track and manage inventory items with quarterly data",
     icon: PackageIcon,
+    isBasic: true,
+  },
+  {
+    id: "task-manager",
+    name: "Task Manager",
+    description:
+      "Check off recurring email schedules for the current day, week, or month",
+    icon: ListChecksIcon,
     isBasic: true,
   },
   {

@@ -40,6 +40,11 @@ interface MasonryModalProps {
   ease?: string;
   /** Extra classes for the inner panel (e.g. max-w-2xl). Default: max-w-sm */
   panelClassName?: string;
+  /**
+   * `right` = full-height drawer aligned to the viewport edge (e.g. half-width panel).
+   * `center` = default centered card layout with padding.
+   */
+  placement?: "center" | "right";
 }
 
 /**
@@ -54,8 +59,14 @@ export function MasonryModal({
   blurToFocus = true,
   duration = 0.6,
   ease = "power3.out",
-  panelClassName = "max-w-sm",
+  panelClassName,
+  placement = "center",
 }: MasonryModalProps) {
+  const centerPanelDefault = "max-w-sm";
+  const resolvedPanelClassName =
+    placement === "right"
+      ? `relative flex h-full min-h-0 w-[50vw] min-w-[min(100%,18rem)] flex-col overflow-hidden rounded-l-2xl border-l border-y border-emerald-700/60 bg-emerald-900 shadow-xl shadow-emerald-950/30 ${panelClassName ?? ""}`.trimEnd()
+      : `relative w-full ${panelClassName ?? centerPanelDefault}`;
   const [isMounted, setIsMounted] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -188,16 +199,21 @@ export function MasonryModal({
       children
     );
 
+  const overlayClassName =
+    placement === "right"
+      ? "fixed inset-0 z-[100] flex items-stretch justify-end bg-emerald-900/90 backdrop-blur-sm p-0"
+      : "fixed inset-0 z-[100] flex items-center justify-center bg-emerald-900/90 backdrop-blur-sm p-4";
+
   return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-emerald-900/90 backdrop-blur-sm p-4"
+      className={overlayClassName}
       onClick={handleClose}
       style={{ display: "none" }}
     >
       <div
         ref={panelRef}
-        className={`relative w-full ${panelClassName}`}
+        className={resolvedPanelClassName}
         onClick={(e) => e.stopPropagation()}
       >
         {content}

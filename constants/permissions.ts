@@ -33,6 +33,7 @@ export const PERMISSIONS = {
   TOOL_IFR_CHECKER: "ifr-checker",
   TOOL_ACCOUNTS: "accounts",
   TOOL_INVENTORY: "inventory",
+  TOOL_TASK_MANAGER: "task-manager",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

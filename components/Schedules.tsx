@@ -10,31 +10,45 @@ import {
   UserIcon,
   XIcon,
   CircleNotchIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
 } from "@phosphor-icons/react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { MasonryModal } from "@/components/MasonryModal";
 import type { Schedule, ScheduleDeadline, ReminderDate } from "@/types/schedule";
-import { calculateNextDeadline } from "@/lib/deadline-calculator";
+import { calculateNextDeadline, calculateReminderDate } from "@/lib/deadline-calculator";
 import { formatDeadline, formatReminder } from "@/lib/schedule-helpers";
+import { useWorkspaceUser } from "@/contexts/WorkspaceContext";
+import { useSchedules } from "@/hooks/useSchedules";
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export function Schedules() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const user = useWorkspaceUser();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // SWR hook for server-side pagination, search, and filtering
+  const {
+    schedules,
+    pagination,
+    isLoading,
+    search,
+    setSearch,
+    nextPage,
+    prevPage,
+    mutate,
+  } = useSchedules();
+
+  // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingScheduleId, setDeletingScheduleId] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [personAssigned, setPersonAssigned] = useState("");
-  const [personEmail, setPersonEmail] = useState("");
   const [status, setStatus] = useState<"active" | "inactive">("active");
   const [deadlineType, setDeadlineType] = useState<"daily" | "weekly" | "monthly">("daily");
   const [deadlineTime, setDeadlineTime] = useState("17:00");
@@ -42,38 +56,18 @@ export function Schedules() {
   const [dayOfMonth, setDayOfMonth] = useState(1);
   const [reminderDaysBefore, setReminderDaysBefore] = useState(1);
   const [reminderTime, setReminderTime] = useState("08:00");
-  const [testEmail, setTestEmail] = useState("");
-  const [isSendingTest, setIsSendingTest] = useState(false);
-  const [testEmailResult, setTestEmailResult] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Live countdown timer
   useEffect(() => {
-    fetchSchedules();
     const interval = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const fetchSchedules = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/v1/schedules");
-      if (response.ok) {
-        const data = await response.json();
-        setSchedules(data.schedules || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch schedules:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const resetForm = () => {
     setTitle("");
     setDescription("");
-    setPersonAssigned("");
-    setPersonEmail("");
     setStatus("active");
     setDeadlineType("daily");
     setDeadlineTime("17:00");
@@ -84,7 +78,7 @@ export function Schedules() {
   };
 
   const handleAddSchedule = async () => {
-    if (!title.trim() || !personAssigned.trim() || !personEmail.trim()) return;
+    if (!title.trim() || !user.email) return;
 
     const deadline: ScheduleDeadline = {
       type: deadlineType,
@@ -109,8 +103,8 @@ export function Schedules() {
           description: description.trim(),
           deadline,
           reminderDate,
-          personAssigned: personAssigned.trim(),
-          personEmail: personEmail.trim(),
+          personAssigned: user.email.split("@")[0],
+          personEmail: user.email,
           status,
         }),
       });
@@ -118,7 +112,7 @@ export function Schedules() {
       if (response.ok) {
         resetForm();
         setIsAddModalOpen(false);
-        await fetchSchedules();
+        mutate();
       }
     } catch (error) {
       console.error("Failed to add schedule:", error);
@@ -138,7 +132,7 @@ export function Schedules() {
       });
 
       if (response.ok) {
-        await fetchSchedules();
+        mutate();
       }
     } catch (error) {
       console.error("Failed to delete schedule:", error);
@@ -147,49 +141,9 @@ export function Schedules() {
     }
   };
 
-  const filteredSchedules = useMemo(() => {
-    if (!searchQuery.trim()) return schedules;
-
-    const query = searchQuery.toLowerCase();
-    return schedules.filter(
-      (schedule) =>
-        schedule.title.toLowerCase().includes(query) ||
-        schedule.description.toLowerCase().includes(query) ||
-        schedule.personAssigned.toLowerCase().includes(query) ||
-        schedule.personEmail.toLowerCase().includes(query),
-    );
-  }, [schedules, searchQuery]);
-
   const handleScheduleClick = (schedule: Schedule) => {
     setSelectedSchedule(schedule);
     setIsDetailModalOpen(true);
-  };
-
-  const handleSendTestEmail = async () => {
-    if (!testEmail.trim()) return;
-
-    try {
-      setIsSendingTest(true);
-      setTestEmailResult(null);
-      const response = await fetch("/api/v1/schedules/test-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: testEmail.trim() }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setTestEmailResult({ success: true, message: data.message });
-      } else {
-        setTestEmailResult({ success: false, message: data.error || "Failed to send test email" });
-      }
-    } catch (error) {
-      setTestEmailResult({ success: false, message: "Network error" });
-      console.error("Failed to send test email:", error);
-    } finally {
-      setIsSendingTest(false);
-    }
   };
 
   return (
@@ -204,7 +158,7 @@ export function Schedules() {
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
             <EnvelopeIcon size={12} className="text-white" />
-            {schedules.length} Schedule{schedules.length !== 1 ? "s" : ""}
+            {pagination?.totalItems ?? 0} Schedule{(pagination?.totalItems ?? 0) !== 1 ? "s" : ""}
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
             <ClockIcon size={12} className="text-white" />
@@ -216,7 +170,7 @@ export function Schedules() {
         </p>
       </header>
 
-      <div className="mb-4 space-y-3">
+      <div className="mb-4">
         <div className="flex items-center justify-between gap-3">
           <div className="relative flex-1">
             <MagnifyingGlassIcon
@@ -225,14 +179,14 @@ export function Schedules() {
             />
             <input
               type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               placeholder="Search schedules..."
               className="w-full rounded-lg border border-emerald-700 bg-emerald-950/50 py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-white/40 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             />
-            {searchQuery && (
+            {search && (
               <button
-                onClick={() => setSearchQuery("")}
+                onClick={() => setSearch("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
               >
                 <XIcon size={16} weight="bold" />
@@ -247,52 +201,6 @@ export function Schedules() {
             <PlusIcon size={18} />
             Add Schedule
           </button>
-        </div>
-
-        {/* Test Email Section */}
-        <div className="rounded-lg border border-emerald-700 bg-emerald-950/50 p-3">
-          <div className="mb-2 flex items-center gap-2">
-            <EnvelopeIcon size={16} className="text-white" />
-            <span className="text-sm font-medium text-white">Test Email System</span>
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="email"
-              value={testEmail}
-              onChange={(e) => setTestEmail(e.target.value)}
-              placeholder="Enter email to test..."
-              className="flex-1 rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-            />
-            <button
-              type="button"
-              onClick={handleSendTestEmail}
-              disabled={!testEmail.trim() || isSendingTest}
-              className="inline-flex items-center gap-2 rounded-lg border border-white bg-emerald-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSendingTest ? (
-                <>
-                  <CircleNotchIcon size={16} className="animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <EnvelopeIcon size={16} />
-                  Send Test
-                </>
-              )}
-            </button>
-          </div>
-          {testEmailResult && (
-            <div
-              className={`mt-2 rounded-lg px-3 py-2 text-sm ${
-                testEmailResult.success
-                  ? "bg-emerald-700/30 text-emerald-200"
-                  : "bg-red-700/30 text-red-200"
-              }`}
-            >
-              {testEmailResult.message}
-            </div>
-          )}
         </div>
       </div>
 
@@ -309,78 +217,199 @@ export function Schedules() {
               </div>
             ))}
           </div>
-        ) : filteredSchedules.length > 0 ? (
-          <div className="space-y-3">
-            {filteredSchedules.map((schedule) => {
-              const nextDeadline = calculateNextDeadline(schedule.deadline, currentTime);
-              const diffMs = nextDeadline.getTime() - currentTime.getTime();
-              const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-              const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        ) : schedules.length > 0 ? (
+          <div className="overflow-x-auto overflow-y-visible rounded-lg border border-emerald-700">
+            <table className="w-full min-w-0 table-fixed border-collapse">
+              <colgroup>
+                <col className="w-[34%]" />
+                <col className="w-[24%]" />
+                <col className="w-[30%]" />
+                <col className="w-[12%]" />
+              </colgroup>
+              <thead>
+                <tr className="border-b border-emerald-700 bg-emerald-950/70">
+                  <th className="min-w-0 border-r border-emerald-700 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/70">
+                    <div className="flex items-center gap-1.5">
+                      <CalendarIcon size={14} />
+                      Title
+                    </div>
+                  </th>
+                  <th className="min-w-0 border-r border-emerald-700 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/70">
+                    <div className="flex items-center gap-1.5">
+                      <EnvelopeIcon size={14} />
+                      Next Email
+                    </div>
+                  </th>
+                  <th className="min-w-0 border-r border-emerald-700 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-white/70">
+                    <div className="flex items-center gap-1.5">
+                      <EnvelopeIcon size={14} />
+                      Email
+                    </div>
+                  </th>
+                  <th className="min-w-0 px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-white/70">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {schedules.map((schedule) => {
+                  return (
+                    <tr
+                      key={schedule.id}
+                      onClick={() => handleScheduleClick(schedule)}
+                      className="cursor-pointer border-b border-emerald-700/50 bg-emerald-950/30 transition hover:bg-emerald-800/50 last:border-b-0"
+                    >
+                      <td className="max-w-0 min-w-0 border-r border-emerald-700/50 px-4 py-3 align-top">
+                        <div className="flex min-w-0 items-start gap-2">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-700/50">
+                            <CalendarIcon size={16} className="text-white" />
+                          </div>
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <span className="line-clamp-2 break-words text-sm font-medium text-white">
+                              {schedule.title}
+                            </span>
+                            {schedule.description ? (
+                              <span className="mt-0.5 line-clamp-2 break-words text-xs text-white/60">
+                                {schedule.description}
+                              </span>
+                            ) : (
+                              <span className="mt-0.5 block text-xs italic text-white/40">
+                                No Description Written
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="max-w-0 min-w-0 border-r border-emerald-700/50 px-4 py-3 align-top">
+                        {(() => {
+                          let nextDeadline = calculateNextDeadline(schedule.deadline, currentTime);
+                          let nextReminder = calculateReminderDate(schedule.reminderDate, nextDeadline);
+                          
+                          let attempts = 0;
+                          while (nextReminder <= currentTime && attempts < 10) {
+                            const nextDeadlineTime = new Date(nextDeadline.getTime() + 60000);
+                            nextDeadline = calculateNextDeadline(schedule.deadline, nextDeadlineTime);
+                            nextReminder = calculateReminderDate(schedule.reminderDate, nextDeadline);
+                            attempts++;
+                          }
+                          
+                          const diffMs = nextReminder.getTime() - currentTime.getTime();
+                          const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                          const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                          const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
 
-              return (
-                <div
-                  key={schedule.id}
-                  className="relative rounded-lg border border-emerald-700 bg-emerald-950/50 p-4 transition hover:bg-emerald-800/50"
-                >
-                  <button
-                    onClick={() => handleScheduleClick(schedule)}
-                    className="w-full text-left"
-                  >
-                    <div className="mb-2 flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <h3 className="mb-1 text-sm font-medium text-white">
-                          {schedule.title}
-                        </h3>
-                        <p className="text-xs text-white/60">
-                          {formatDeadline(schedule.deadline)}
-                        </p>
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          schedule.status === "active"
-                            ? "bg-emerald-700 text-white"
-                            : "bg-white/20 text-white/70"
-                        }`}
-                      >
-                        {schedule.status}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-white/60">
-                      <div className="flex items-center gap-1">
-                        <UserIcon size={12} />
-                        {schedule.personAssigned}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <ClockIcon size={12} />
-                        {days > 0 ? `${days}d ${hours}h` : `${hours}h`}
-                      </div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => handleDeleteSchedule(e, schedule.id)}
-                    disabled={deletingScheduleId === schedule.id}
-                    className="absolute right-2 top-2 rounded p-1 transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {deletingScheduleId === schedule.id ? (
-                      <CircleNotchIcon size={14} className="animate-spin text-white" />
-                    ) : (
-                      <TrashIcon size={14} className="text-white" />
-                    )}
-                  </button>
-                </div>
-              );
-            })}
+                          return (
+                            <div className="min-w-0 space-y-2">
+                              <div className="flex min-w-0 items-start gap-1.5 text-sm text-white/80">
+                                <EnvelopeIcon
+                                  size={14}
+                                  className="mt-0.5 shrink-0 text-white/50"
+                                />
+                                <span className="min-w-0 break-words">
+                                  {nextReminder.toLocaleDateString("en-US", {
+                                    weekday: "short",
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  })}
+                                </span>
+                              </div>
+                              <div
+                                className={`inline-flex max-w-full items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white ${
+                                  days === 0 && hours < 24
+                                    ? "border-amber-400/60 bg-amber-500/20"
+                                    : ""
+                                }`}
+                              >
+                                <ClockIcon size={12} className="shrink-0" />
+                                <span className="truncate">{`${days}d ${hours}h ${minutes}m ${seconds}s`}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td className="max-w-0 min-w-0 border-r border-emerald-700/50 px-4 py-3 align-top">
+                        <div className="flex min-w-0 items-start gap-2">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-700/50">
+                            <EnvelopeIcon size={16} className="text-white" />
+                          </div>
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <span className="block truncate text-sm text-white/80">
+                              {schedule.personEmail}
+                            </span>
+                            <span className="block truncate text-xs text-white/50">
+                              {schedule.personAssigned}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 align-top text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteSchedule(e, schedule.id)}
+                          disabled={deletingScheduleId === schedule.id}
+                          className="inline-flex items-center justify-center rounded-lg p-2 text-white/60 transition hover:bg-red-500/20 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                          title="Delete schedule"
+                        >
+                          {deletingScheduleId === schedule.id ? (
+                            <CircleNotchIcon size={16} className="animate-spin" />
+                          ) : (
+                            <TrashIcon size={16} />
+                          )}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         ) : (
           <div className="py-12 text-center">
             <CalendarIcon size={48} weight="duotone" className="mx-auto mb-4 text-white/40" />
             <p className="text-sm text-white/70">
-              {searchQuery ? "No schedules found" : "No schedules yet. Click Add Schedule to get started."}
+              {search ? "No schedules found" : "No schedules yet. Click Add Schedule to get started."}
             </p>
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between border-t border-emerald-700/50 pt-4">
+          <p className="text-xs text-white/60">
+            Showing {((pagination.page - 1) * pagination.itemsPerPage) + 1} to{" "}
+            {Math.min(pagination.page * pagination.itemsPerPage, pagination.totalItems)} of{" "}
+            {pagination.totalItems} schedules
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={prevPage}
+              disabled={!pagination.hasPrevPage}
+              className="inline-flex items-center gap-1 rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CaretLeftIcon size={14} />
+              Previous
+            </button>
+            <span className="text-xs text-white/70">
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={nextPage}
+              disabled={!pagination.hasNextPage}
+              className="inline-flex items-center gap-1 rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+              <CaretRightIcon size={14} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add Schedule Modal */}
       <MasonryModal
@@ -410,7 +439,7 @@ export function Schedules() {
               </button>
             </div>
             
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+            <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-2">
               <div>
                 <label className="mb-2 block text-sm font-medium text-white">
                   Title <span className="text-red-400">*</span>
@@ -435,33 +464,6 @@ export function Schedules() {
                   placeholder="Additional details..."
                   className="w-full resize-y rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-white">
-                    Person Assigned <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={personAssigned}
-                    onChange={(e) => setPersonAssigned(e.target.value)}
-                    placeholder="John Doe"
-                    className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-white">
-                    Email <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={personEmail}
-                    onChange={(e) => setPersonEmail(e.target.value)}
-                    placeholder="john@example.com"
-                    className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
-                  />
-                </div>
               </div>
 
               <div>
@@ -594,7 +596,7 @@ export function Schedules() {
               <button
                 type="button"
                 onClick={() => void handleAddSchedule()}
-                disabled={!title.trim() || !personAssigned.trim() || !personEmail.trim() || isSubmitting}
+                disabled={!title.trim() || !user.email || isSubmitting}
                 className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80"
               >
                 <PlusIcon size={18} />

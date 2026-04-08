@@ -18,7 +18,8 @@ export type NoteColorId =
   | "teal"
   | "blue"
   | "violet"
-  | "pink";
+  | "pink"
+  | "schedule";
 
 export const NOTE_COLOR_IDS: NoteColorId[] = [
   "red",
@@ -115,6 +116,13 @@ const COLOR_MAP = Object.fromEntries(
     { bg: c.bg, bgDark: c.bgDark, accent: c.accent },
   ]),
 ) as Record<NoteColorId, { bg: string; bgDark: string; accent: string }>;
+
+// Add schedule color (glassy white pill)
+COLOR_MAP.schedule = {
+  bg: "bg-white/10",
+  bgDark: "bg-white/10 border border-white/40",
+  accent: "from-white/20 to-white/30",
+};
 
 const DEFAULT_ENTRY = COLOR_MAP.emerald;
 

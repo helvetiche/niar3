@@ -1,21 +1,40 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import useSWR from "swr";
 import {
   fetchCalendarNotes,
   saveCalendarNotesForDate,
 } from "@/lib/api/calendar-notes";
+import type { Schedule } from "@/types/schedule";
+import { calculateNextDeadline } from "@/lib/deadline-calculator";
 
-export type NoteItem = { text: string; color: string };
+export type NoteItem = { text: string; color: string; isSchedule?: boolean; scheduleId?: string };
 
 const dateKey = (year: number, month: number, day: number) =>
   `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
 type TrayBucket = "nearest" | "normal" | "farthest";
 
+const scheduleFetcher = async (url: string) => {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Failed to fetch schedules");
+  return response.json();
+};
+
 export const useWorkspaceCalendar = (uid: string) => {
   const [viewDate, setViewDate] = useState(() => new Date());
   const [notes, setNotes] = useState<Record<string, NoteItem[]>>({});
   const [scheduleOnly, setScheduleOnly] = useState(false);
+
+  // Fetch all schedules (no pagination for calendar view)
+  const { data: schedulesData } = useSWR<{ schedules: Schedule[] }>(
+    "/api/v1/schedules?page=1&limit=1000",
+    scheduleFetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 5000,
+    }
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -37,7 +56,97 @@ export const useWorkspaceCalendar = (uid: string) => {
 
   const getNotesFor = (year: number, month: number, day: number) => {
     const key = dateKey(year, month, day);
-    return notes[key] ?? [];
+    const userNotes = notes[key] ?? [];
+    
+    // Add schedule deadlines for this date
+    const scheduleNotes: NoteItem[] = [];
+    if (schedulesData?.schedules) {
+      const targetDate = new Date(year, month, day);
+      
+      schedulesData.schedules.forEach((schedule) => {
+        if (schedule.status !== "active") return;
+        
+        // Check if this schedule has a deadline on this specific date
+        if (scheduleMatchesDate(schedule, targetDate)) {
+          scheduleNotes.push({
+            text: schedule.title,
+            color: "schedule", // Use special schedule color
+            isSchedule: true,
+            scheduleId: schedule.id,
+          });
+        }
+      });
+    }
+    
+    return [...userNotes, ...scheduleNotes];
+  };
+
+  // Helper function to check if a schedule has a deadline on a specific date
+  const scheduleMatchesDate = (schedule: Schedule, targetDate: Date): boolean => {
+    const { deadline } = schedule;
+    const targetYear = targetDate.getFullYear();
+    const targetMonth = targetDate.getMonth();
+    const targetDay = targetDate.getDate();
+    const targetDayOfWeek = targetDate.getDay();
+
+    switch (deadline.type) {
+      case "daily": {
+        // Daily schedules occur every day
+        return true;
+      }
+
+      case "weekly": {
+        // Weekly schedules occur on specific day of week
+        const scheduleDayOfWeek = deadline.dayOfWeek ?? 0;
+        return targetDayOfWeek === scheduleDayOfWeek;
+      }
+
+      case "monthly": {
+        // Monthly schedules occur on specific day of month
+        const scheduleDayOfMonth = deadline.dayOfMonth ?? 1;
+        return targetDay === scheduleDayOfMonth;
+      }
+
+      case "monthly-specific": {
+        // Yearly schedules occur on specific month and day
+        const scheduleMonth = (deadline.month ?? 1) - 1; // 0-indexed
+        const scheduleDay = deadline.day ?? 1;
+        return targetMonth === scheduleMonth && targetDay === scheduleDay;
+      }
+
+      case "interval": {
+        // Interval schedules occur every N days from creation date
+        const intervalDays = deadline.days ?? 1;
+        const createdAt = new Date(schedule.createdAt);
+        const daysSinceCreation = Math.floor(
+          (targetDate.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return daysSinceCreation >= 0 && daysSinceCreation % intervalDays === 0;
+      }
+
+      case "hourly": {
+        // Hourly schedules occur every day (multiple times per day)
+        return true;
+      }
+
+      case "per-minute": {
+        // Per-minute schedules occur every day (multiple times per day)
+        return true;
+      }
+
+      case "custom": {
+        // Custom schedules - calculate next deadline and check if it matches
+        const nextDeadline = calculateNextDeadline(deadline, targetDate);
+        return (
+          nextDeadline.getFullYear() === targetYear &&
+          nextDeadline.getMonth() === targetMonth &&
+          nextDeadline.getDate() === targetDay
+        );
+      }
+
+      default:
+        return false;
+    }
   };
 
   const addNote = async (
@@ -71,7 +180,18 @@ export const useWorkspaceCalendar = (uid: string) => {
     index: number,
   ) => {
     const key = dateKey(year, month, day);
-    const items = getNotesFor(year, month, day).filter((_, i) => i !== index);
+    const allItems = getNotesFor(year, month, day);
+    const itemToRemove = allItems[index];
+    
+    // Prevent removing schedule notes
+    if (itemToRemove?.isSchedule) {
+      toast.error("Cannot remove schedule deadlines from calendar");
+      return;
+    }
+    
+    // Only remove user notes
+    const userNotes = notes[key] ?? [];
+    const items = userNotes.filter((_, i) => i !== index);
     const updated = { ...notes, [key]: items };
     setNotes(updated);
     try {

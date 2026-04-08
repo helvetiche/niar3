@@ -4,23 +4,69 @@ import { requireAuth } from "@/lib/auth";
 import type { Schedule } from "@/types/schedule";
 import { syncScheduleCache } from "@/lib/schedule-cache";
 
-export async function GET(_request: NextRequest) {
+const ITEMS_PER_PAGE = 10;
+
+export async function GET(request: NextRequest) {
   try {
     const user = await requireAuth();
     const db = getFirestore();
 
-    const schedulesSnapshot = await db
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || String(ITEMS_PER_PAGE), 10);
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "";
+
+    // Get total count for pagination
+    const totalSnapshot = await db
       .collection("schedules")
       .where("userId", "==", user.uid)
-      .orderBy("createdAt", "desc")
       .get();
-
-    const schedules: Schedule[] = schedulesSnapshot.docs.map((doc) => ({
+    
+    let filteredSchedules = totalSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Schedule[];
 
-    return NextResponse.json({ schedules });
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredSchedules = filteredSchedules.filter(
+        (schedule) =>
+          schedule.title.toLowerCase().includes(searchLower) ||
+          schedule.description?.toLowerCase().includes(searchLower) ||
+          schedule.personAssigned?.toLowerCase().includes(searchLower) ||
+          schedule.personEmail?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply status filter
+    if (status && (status === "active" || status === "inactive")) {
+      filteredSchedules = filteredSchedules.filter(
+        (schedule) => schedule.status === status
+      );
+    }
+
+    const totalItems = filteredSchedules.length;
+    const itemsPerPage = Math.min(limit, 1000); // Max 1000 items
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (page - 1) * itemsPerPage;
+    const paginatedSchedules = filteredSchedules.slice(
+      startIndex,
+      startIndex + itemsPerPage
+    );
+
+    return NextResponse.json({
+      schedules: paginatedSchedules,
+      pagination: {
+        page,
+        totalPages,
+        totalItems,
+        itemsPerPage,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
   } catch (error) {
     console.error("Error fetching schedules:", error);
     return NextResponse.json(
@@ -42,11 +88,13 @@ export async function POST(request: NextRequest) {
       deadline,
       reminderDate,
       personAssigned,
-      personEmail,
       status,
     } = body;
 
-    if (!title || !personAssigned || !personEmail || !deadline || !reminderDate) {
+    // Force the email to be the current user's email for security
+    const userEmail = user.email;
+
+    if (!title || !userEmail || !deadline || !reminderDate) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -60,8 +108,8 @@ export async function POST(request: NextRequest) {
       description: description || "",
       deadline,
       reminderDate,
-      personAssigned,
-      personEmail,
+      personAssigned: personAssigned || userEmail.split("@")[0],
+      personEmail: userEmail,
       status: status || "active",
       createdAt: now,
       updatedAt: now,

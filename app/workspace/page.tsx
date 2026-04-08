@@ -15,6 +15,7 @@ import IFRCheckerTool from "@/components/IFRCheckerTool";
 import { Inventory } from "@/components/Inventory/Inventory";
 import { WorkspaceCalendar } from "@/components/WorkspaceCalendar";
 import { Schedules } from "@/components/Schedules";
+import { TaskManager } from "@/components/TaskManager";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import {
   useWorkspaceTab,
@@ -74,6 +75,11 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   schedules: {
     name: "SCHEDULES",
     description: "Email schedules with automatic reminders and deadline tracking.",
+  },
+  "task-manager": {
+    name: "TASK MANAGER",
+    description:
+      "Track recurring schedule completion by period (today, this week, this month).",
   },
 };
 
@@ -154,6 +160,12 @@ export default function WorkspacePage() {
           ) : selectedTab === "calendar" ? (
             <PermissionGuard toolId="calendar">
               <WorkspaceCalendar />
+            </PermissionGuard>
+          ) : selectedTab === "task-manager" ? (
+            <PermissionGuard toolId="task-manager">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                <TaskManager />
+              </div>
             </PermissionGuard>
           ) : selectedTab === "schedules" ? (
             <PermissionGuard toolId="schedules">

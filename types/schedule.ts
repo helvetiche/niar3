@@ -55,3 +55,23 @@ export interface Schedule {
   createdAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
 }
+
+/** One completion record for a schedule in a specific period (recurring tasks). */
+export interface TaskCompletion {
+  id: string;
+  scheduleId: string;
+  /** Denormalized for querying completions by schedule owner. */
+  scheduleOwnerId: string;
+  userId: string;
+  completedAt: string;
+  completedBy: string;
+  completedByName?: string;
+  periodStart: string;
+  periodEnd: string;
+  deadlineType: ScheduleDeadlineType;
+  notes?: string;
+  scheduleTitle: string;
+  scheduleDescription: string;
+  personAssigned: string;
+  personEmail: string;
+}

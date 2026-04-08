@@ -28,6 +28,7 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   ListBulletsIcon,
+  ListChecksIcon,
   SquaresFourIcon,
   PencilSimpleIcon,
   SignOutIcon,
@@ -165,6 +166,13 @@ const TOOLS = [
     name: "SCHEDULES",
     description: "Email schedules with automatic reminders and deadline tracking.",
     icon: SquaresFourIcon,
+  },
+  {
+    id: "task-manager" as const,
+    name: "TASK MANAGER",
+    description:
+      "Check off recurring schedules for the current period with period-based completion tracking.",
+    icon: ListChecksIcon,
   },
 ] as const;
 

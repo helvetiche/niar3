@@ -8,6 +8,7 @@ import {
   NotePencilIcon,
   PlusIcon,
   XIcon,
+  CalendarCheckIcon,
 } from "@phosphor-icons/react";
 import { useWorkspaceUser } from "@/contexts/WorkspaceContext";
 import { MasonryModal } from "@/components/MasonryModal";
@@ -211,11 +212,14 @@ export function WorkspaceCalendar() {
                           onRemove={() => removeNote(year, month, d, idx)}
                         >
                           <div
-                            className={`min-w-0 cursor-pointer truncate rounded px-2 py-0.5 text-left text-xs font-medium text-white transition-opacity hover:opacity-90 ${getNoteBg(item.color)}`}
+                            className={`min-w-0 cursor-pointer rounded px-2 py-0.5 text-left text-xs font-medium text-white transition-opacity hover:opacity-90 ${getNoteBg(item.color)} ${item.isSchedule ? "flex items-center gap-1" : ""}`}
                           >
-                            {item.text.length > 12
-                              ? `${item.text.slice(0, 10)}…`
-                              : item.text}
+                            {item.isSchedule && (
+                              <CalendarCheckIcon size={12} weight="bold" className="shrink-0" />
+                            )}
+                            <span className="truncate">
+                              {item.text}
+                            </span>
                           </div>
                         </NotePopover>
                       ))}
@@ -335,10 +339,14 @@ export function WorkspaceCalendar() {
                                   />
                                 </div>
                                 <p className="mt-1.5 flex items-center gap-2 text-sm text-white">
-                                  <span
-                                    className={`h-2 w-2 shrink-0 rounded-full ${getNoteBg(item.color)}`}
-                                    aria-hidden
-                                  />
+                                  {item.isSchedule ? (
+                                    <CalendarCheckIcon size={14} weight="bold" className="shrink-0 text-white" />
+                                  ) : (
+                                    <span
+                                      className={`h-2 w-2 shrink-0 rounded-full ${getNoteBg(item.color)}`}
+                                      aria-hidden
+                                    />
+                                  )}
                                   {item.text}
                                 </p>
                               </div>
