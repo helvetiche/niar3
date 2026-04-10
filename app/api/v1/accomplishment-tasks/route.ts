@@ -47,8 +47,8 @@ export async function GET(request: Request) {
     return applySecurityHeaders(
       NextResponse.json(
         { error: "Failed to load accomplishment tasks" },
-        { status: 500 },
-      ),
+        { status: 500 }
+      )
     );
   }
 }
@@ -66,10 +66,7 @@ export async function POST(request: Request) {
     const rawBody = await request.json();
     // Sanitize text inputs
     body = {
-      label:
-        typeof rawBody.label === "string"
-          ? stripHtml(rawBody.label)
-          : undefined,
+      label: typeof rawBody.label === "string" ? stripHtml(rawBody.label) : undefined,
       designation:
         typeof rawBody.designation === "string"
           ? stripHtml(rawBody.designation)
@@ -87,14 +84,12 @@ export async function POST(request: Request) {
       details: { reason: "invalid-json-body" },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Invalid JSON body" }, { status: 400 }),
+      NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
     );
   }
 
   const label =
-    typeof body.label === "string"
-      ? body.label.trim().slice(0, MAX_LABEL_LENGTH)
-      : "";
+    typeof body.label === "string" ? body.label.trim().slice(0, MAX_LABEL_LENGTH) : "";
   if (!label) {
     await logAuditTrailEntry({
       uid: user.uid,
@@ -107,7 +102,7 @@ export async function POST(request: Request) {
       details: { reason: "missing-label" },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Task label is required" }, { status: 400 }),
+      NextResponse.json({ error: "Task label is required" }, { status: 400 })
     );
   }
 
@@ -144,8 +139,8 @@ export async function POST(request: Request) {
     return applySecurityHeaders(
       NextResponse.json(
         { error: "Failed to create accomplishment task" },
-        { status: 500 },
-      ),
+        { status: 500 }
+      )
     );
   }
 }

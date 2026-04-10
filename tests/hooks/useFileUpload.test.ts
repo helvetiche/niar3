@@ -45,10 +45,7 @@ describe("useFileUpload", () => {
     global.XMLHttpRequest = MockXMLHttpRequest as unknown as typeof XMLHttpRequest;
 
     const formData = new FormData();
-    const uploadPromise = result.current.uploadWithProgress(
-      "/api/upload",
-      formData
-    );
+    const uploadPromise = result.current.uploadWithProgress("/api/upload", formData);
 
     // Simulate progress event
     const progressHandler = mockXHR.upload.addEventListener.mock.calls.find(

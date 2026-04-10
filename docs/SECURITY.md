@@ -5,6 +5,7 @@
 If you discover a security vulnerability, please email security@niatools.example.com instead of using the issue tracker.
 
 Please include:
+
 - Description of the vulnerability
 - Steps to reproduce
 - Potential impact
@@ -15,24 +16,28 @@ We will respond within 48 hours and provide a timeline for fixes.
 ## Security Measures
 
 ### Authentication
+
 - Firebase session cookies (HttpOnly, Secure, SameSite=Strict)
 - 5-day session expiry
 - Server-side verification on every request
 - Role-based access control (RBAC)
 
 ### Rate Limiting
+
 - Distributed rate limiting with Upstash Redis
 - Different limits per endpoint type
 - IP-based identification
 - Automatic blocking on abuse
 
 ### Input Validation
+
 - Zod schemas for all inputs
 - File type and size validation
 - Filename sanitization
 - SQL injection prevention
 
 ### Security Headers
+
 - Content-Security-Policy (strict)
 - X-Frame-Options: DENY
 - X-Content-Type-Options: nosniff
@@ -41,17 +46,20 @@ We will respond within 48 hours and provide a timeline for fixes.
 - Permissions-Policy
 
 ### CSRF Protection
+
 - Token-based CSRF protection
 - SameSite cookies
 - Origin validation
 
 ### Data Protection
+
 - No sensitive data in logs
 - Error message sanitization
 - Encrypted data at rest (Firebase)
 - TLS 1.3 in transit
 
 ### Audit Trail
+
 - All actions logged
 - Immutable audit records
 - User attribution
@@ -66,6 +74,7 @@ We will respond within 48 hours and provide a timeline for fixes.
 ## Security Best Practices
 
 ### For Developers
+
 - Never commit secrets
 - Use environment variables
 - Validate all inputs
@@ -74,6 +83,7 @@ We will respond within 48 hours and provide a timeline for fixes.
 - Keep dependencies updated
 
 ### For Users
+
 - Use strong passwords
 - Enable 2FA (when available)
 - Keep browser updated
@@ -83,9 +93,11 @@ We will respond within 48 hours and provide a timeline for fixes.
 ## Known Security Considerations
 
 ### CSP Inline Scripts
+
 Currently using 'unsafe-inline' for scripts in production. Plan to migrate to nonces.
 
 ### Rate Limiting in Development
+
 Rate limiting is disabled in development. Enable for testing before production deployment.
 
 ## Security Updates
@@ -102,11 +114,13 @@ Security updates are released as soon as possible after discovery. Subscribe to 
 ## Third-Party Security
 
 ### Dependencies
+
 - Regular security audits
 - Automated dependency updates
 - Vulnerability scanning
 
 ### Services
+
 - Firebase (Google Cloud)
 - Upstash (Redis)
 - Vercel (Hosting)

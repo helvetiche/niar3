@@ -27,19 +27,13 @@ export function hasPermission(user: AuthUser, required: Permission): boolean {
 /**
  * Check if user has any of the required permissions.
  */
-export function hasAnyPermission(
-  user: AuthUser,
-  required: Permission[],
-): boolean {
+export function hasAnyPermission(user: AuthUser, required: Permission[]): boolean {
   return required.length === 0 || required.some((p) => hasPermission(user, p));
 }
 
 /**
  * Check if user has all required permissions.
  */
-export function hasAllPermissions(
-  user: AuthUser,
-  required: Permission[],
-): boolean {
+export function hasAllPermissions(user: AuthUser, required: Permission[]): boolean {
   return required.every((p) => hasPermission(user, p));
 }

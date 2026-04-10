@@ -17,18 +17,14 @@ import {
 const getTemplatePath = (): string => {
   const candidates = [
     path.join(process.cwd(), /*turbopackIgnore: true*/ "data", "template.xlsx"),
-    path.join(
-      process.cwd(),
-      /*turbopackIgnore: true*/ "public",
-      "template.xlsx",
-    ),
+    path.join(process.cwd(), /*turbopackIgnore: true*/ "public", "template.xlsx"),
   ];
 
   for (const candidate of candidates) {
     if (existsSync(/*turbopackIgnore: true*/ candidate)) return candidate;
   }
   throw new Error(
-    `Template not found. Add template.xlsx in data/ or public/, or upload a template file.`,
+    `Template not found. Add template.xlsx in data/ or public/, or upload a template file.`
   );
 };
 
@@ -69,7 +65,7 @@ function formatFilename(
   landOwnerLast: string,
   landOwnerFirst: string,
   farmerLast: string,
-  farmerFirst: string,
+  farmerFirst: string
 ): string {
   const ownerName = buildFullName(landOwnerLast, landOwnerFirst);
   const farmerName = buildFullName(farmerLast, farmerFirst);
@@ -88,7 +84,7 @@ function formatFilename(
  */
 function extractProfileData(
   lotGroup: LotGroup,
-  options?: GenerateProfileOptions,
+  options?: GenerateProfileOptions
 ): ProfileData {
   const firstRow = lotGroup.rows[0];
 
@@ -107,9 +103,7 @@ function extractProfileData(
 /**
  * Load workbook from template buffer or file
  */
-async function loadWorkbook(
-  templateBuffer?: Buffer,
-): Promise<XlsxPopulate.Workbook> {
+async function loadWorkbook(templateBuffer?: Buffer): Promise<XlsxPopulate.Workbook> {
   return templateBuffer
     ? await XlsxPopulate.fromDataAsync(templateBuffer)
     : await XlsxPopulate.fromFileAsync(getTemplatePath());
@@ -118,36 +112,15 @@ async function loadWorkbook(
 /**
  * Populate account details in the workbook
  */
-function populateAccountDetails(
-  sheet: XlsxPopulate.Sheet,
-  data: ProfileData,
-): void {
+function populateAccountDetails(sheet: XlsxPopulate.Sheet, data: ProfileData): void {
   setCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE, data.lotCode);
   setCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.DIVISION, data.division);
-  sheet
-    .cell(EXCEL_CELLS.ACC_DETAILS.DIVISION)
-    .style("horizontalAlignment", "left");
+  sheet.cell(EXCEL_CELLS.ACC_DETAILS.DIVISION).style("horizontalAlignment", "left");
   setCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.NAME_OF_IA, data.nameOfIA);
-  setCellValue(
-    sheet,
-    EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME,
-    data.landOwnerFirst,
-  );
-  setCellValue(
-    sheet,
-    EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME,
-    data.landOwnerLast,
-  );
-  setCellValue(
-    sheet,
-    EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME,
-    data.farmerFirst,
-  );
-  setCellValue(
-    sheet,
-    EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME,
-    data.farmerLast,
-  );
+  setCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME, data.landOwnerFirst);
+  setCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME, data.landOwnerLast);
+  setCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME, data.farmerFirst);
+  setCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME, data.farmerLast);
 }
 
 /**
@@ -167,9 +140,7 @@ function populateCropData(sheet: XlsxPopulate.Sheet, lotGroup: LotGroup): void {
 /**
  * Convert workbook to buffer
  */
-async function workbookToBuffer(
-  workbook: XlsxPopulate.Workbook,
-): Promise<Buffer> {
+async function workbookToBuffer(workbook: XlsxPopulate.Workbook): Promise<Buffer> {
   const output = await workbook.outputAsync();
   return Buffer.isBuffer(output) ? output : Buffer.from(output as ArrayBuffer);
 }
@@ -180,7 +151,7 @@ async function workbookToBuffer(
 export const generateProfileBuffer = async (
   lotGroup: LotGroup,
   queueNumber: number,
-  options?: GenerateProfileOptions,
+  options?: GenerateProfileOptions
 ): Promise<{ buffer: Buffer; filename: string }> => {
   const workbook = await loadWorkbook(options?.templateBuffer);
   const profileData = extractProfileData(lotGroup, options);
@@ -199,7 +170,7 @@ export const generateProfileBuffer = async (
     profileData.landOwnerLast,
     profileData.landOwnerFirst,
     profileData.farmerLast,
-    profileData.farmerFirst,
+    profileData.farmerFirst
   );
 
   return { buffer, filename };

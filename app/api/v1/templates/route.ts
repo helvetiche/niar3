@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       details: { reason: "invalid-scope", scope: scopeRaw },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Invalid scope" }, { status: 400 }),
+      NextResponse.json({ error: "Invalid scope" }, { status: 400 })
     );
   }
   const scope = isScope(scopeRaw) ? scopeRaw : undefined;
@@ -78,7 +78,7 @@ export async function GET(request: Request) {
       errorMessage: "Failed to list templates",
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Failed to list templates" }, { status: 500 }),
+      NextResponse.json({ error: "Failed to list templates" }, { status: 500 })
     );
   }
 }
@@ -106,10 +106,7 @@ export async function POST(request: Request) {
         details: { reason: "missing-file" },
       });
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "Template file is required" },
-          { status: 400 },
-        ),
+        NextResponse.json({ error: "Template file is required" }, { status: 400 })
       );
     }
 
@@ -128,8 +125,8 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: uploadValidation.message },
-          { status: uploadValidation.status },
-        ),
+          { status: uploadValidation.status }
+        )
       );
     }
     if (!isScope(scope)) {
@@ -144,7 +141,7 @@ export async function POST(request: Request) {
         details: { reason: "invalid-scope", scope },
       });
       return applySecurityHeaders(
-        NextResponse.json({ error: "Invalid template scope" }, { status: 400 }),
+        NextResponse.json({ error: "Invalid template scope" }, { status: 400 })
       );
     }
 
@@ -154,8 +151,7 @@ export async function POST(request: Request) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const contentType =
-      file.type ||
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+      file.type || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     await uploadBufferToStorage(storagePath, buffer, contentType);
     const saved = await createTemplateRecord(
@@ -170,7 +166,7 @@ export async function POST(request: Request) {
         contentType,
         sizeBytes: file.size,
       },
-      user.uid,
+      user.uid
     );
 
     await logAuditTrailEntry({
@@ -202,7 +198,7 @@ export async function POST(request: Request) {
       errorMessage: "Failed to save template",
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Failed to save template" }, { status: 500 }),
+      NextResponse.json({ error: "Failed to save template" }, { status: 500 })
     );
   }
 }

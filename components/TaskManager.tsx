@@ -53,13 +53,13 @@ export type TaskManagerProps = {
   onRequestClose?: () => void;
 };
 
-export function TaskManager({
-  variant = "page",
-  onRequestClose,
-}: TaskManagerProps) {
+export function TaskManager({ variant = "page", onRequestClose }: TaskManagerProps) {
   const isDrawer = variant === "drawer";
-  const { data: schedules = [], error: schedulesError, isLoading: schedulesLoading } =
-    useAllSchedulesForTaskManager();
+  const {
+    data: schedules = [],
+    error: schedulesError,
+    isLoading: schedulesLoading,
+  } = useAllSchedulesForTaskManager();
   const {
     data: completions = [],
     error: completionsError,
@@ -77,17 +77,13 @@ export function TaskManager({
 
   const completionByPeriodKey = useMemo(
     () => buildCompletionLookup(completions),
-    [completions],
+    [completions]
   );
 
   const schedulesWithCompletion: ScheduleWithCompletion[] = useMemo(() => {
     return schedules.map((schedule) => {
       const period = getCurrentPeriod(schedule.deadline.type);
-      const periodKey = completionPeriodKey(
-        schedule.id,
-        period.start,
-        period.end,
-      );
+      const periodKey = completionPeriodKey(schedule.id, period.start, period.end);
       const completion = completionByPeriodKey.get(periodKey);
       const isOptimistic = optimisticKeys.has(periodKey);
       const currentPeriodCompleted = isOptimistic ? !completion : !!completion;
@@ -102,17 +98,17 @@ export function TaskManager({
 
   const activeSchedules = useMemo(
     () => schedulesWithCompletion.filter((s) => s.status === "active"),
-    [schedulesWithCompletion],
+    [schedulesWithCompletion]
   );
 
   const inactiveSchedules = useMemo(
     () => schedulesWithCompletion.filter((s) => s.status === "inactive"),
-    [schedulesWithCompletion],
+    [schedulesWithCompletion]
   );
 
   const doneThisPeriodCount = useMemo(
     () => activeSchedules.filter((s) => s.currentPeriodCompleted).length,
-    [activeSchedules],
+    [activeSchedules]
   );
 
   const filteredSchedules = useMemo(() => {
@@ -125,7 +121,7 @@ export function TaskManager({
         schedule.title.toLowerCase().includes(query) ||
         (schedule.description || "").toLowerCase().includes(query) ||
         schedule.personAssigned.toLowerCase().includes(query) ||
-        schedule.personEmail.toLowerCase().includes(query),
+        schedule.personEmail.toLowerCase().includes(query)
     );
   }, [activeSchedules, searchQuery]);
 
@@ -147,11 +143,7 @@ export function TaskManager({
       e?.preventDefault();
 
       const period = getCurrentPeriod(schedule.deadline.type);
-      const periodKey = completionPeriodKey(
-        schedule.id,
-        period.start,
-        period.end,
-      );
+      const periodKey = completionPeriodKey(schedule.id, period.start, period.end);
 
       if (optimisticKeys.has(periodKey)) {
         return;
@@ -181,11 +173,11 @@ export function TaskManager({
             return;
           }
           await apiDelete<{ ok: boolean }>(
-            `/api/v1/completions/${encodeURIComponent(completion.id)}`,
+            `/api/v1/completions/${encodeURIComponent(completion.id)}`
           );
           await mutateCompletions(
             (prev) => (prev ?? []).filter((c) => c.id !== completion.id),
-            { revalidate: false },
+            { revalidate: false }
           );
         } else {
           const { completion } = await apiPost<{
@@ -196,10 +188,9 @@ export function TaskManager({
             periodEnd: period.end,
             deadlineType: schedule.deadline.type,
           });
-          await mutateCompletions(
-            (prev) => [...(prev ?? []), completion],
-            { revalidate: false },
-          );
+          await mutateCompletions((prev) => [...(prev ?? []), completion], {
+            revalidate: false,
+          });
         }
       } catch (err) {
         console.error("Toggle completion failed:", err);
@@ -207,12 +198,12 @@ export function TaskManager({
         clearOptimistic();
       }
     },
-    [completionByPeriodKey, mutateCompletions, optimisticKeys],
+    [completionByPeriodKey, mutateCompletions, optimisticKeys]
   );
 
   const handleCheckboxKeyDown = (
     e: React.KeyboardEvent,
-    schedule: ScheduleWithCompletion,
+    schedule: ScheduleWithCompletion
   ) => {
     if (e.key !== "Enter" && e.key !== " ") {
       return;
@@ -318,10 +309,7 @@ export function TaskManager({
               }`}
             >
               <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
-                <ListChecksIcon
-                  size={isDrawer ? 18 : 20}
-                  className="text-white"
-                />
+                <ListChecksIcon size={isDrawer ? 18 : 20} className="text-white" />
               </span>
               Task Manager
             </h2>
@@ -482,11 +470,15 @@ export function TaskManager({
                       <button
                         type="button"
                         onClick={() =>
-                          setExpandedType(expandedType === group.type ? null : group.type)
+                          setExpandedType(
+                            expandedType === group.type ? null : group.type
+                          )
                         }
                         className="flex w-full items-center justify-between p-3 transition hover:bg-emerald-800/50"
                       >
-                        <span className="text-sm font-medium text-white">{group.label}</span>
+                        <span className="text-sm font-medium text-white">
+                          {group.label}
+                        </span>
                         <div className="flex items-center gap-2">
                           <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-emerald-900">
                             {group.tasks.length}
@@ -505,7 +497,7 @@ export function TaskManager({
                         </div>
                       ) : null}
                     </div>
-                  ),
+                  )
                 )}
               </div>
             ) : null}
@@ -547,7 +539,9 @@ export function TaskManager({
             {selectedTask ? (
               <div className="space-y-4">
                 <div className="rounded-lg border border-emerald-700 bg-emerald-950/50 p-4">
-                  <h4 className="text-base font-medium text-white">{selectedTask.title}</h4>
+                  <h4 className="text-base font-medium text-white">
+                    {selectedTask.title}
+                  </h4>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -565,7 +559,9 @@ export function TaskManager({
                 </div>
                 {selectedTask.description ? (
                   <div>
-                    <p className="mb-1 text-xs font-medium text-white/70">Description</p>
+                    <p className="mb-1 text-xs font-medium text-white/70">
+                      Description
+                    </p>
                     <p className="rounded-lg border border-emerald-700/60 bg-emerald-950/30 p-3 text-sm text-white/85">
                       {selectedTask.description}
                     </p>
@@ -573,10 +569,15 @@ export function TaskManager({
                 ) : null}
                 <div className="rounded-lg border border-emerald-700/60 bg-emerald-950/30 p-3">
                   <div className="flex gap-3">
-                    <UserIcon size={18} className="mt-0.5 flex-shrink-0 text-white/70" />
+                    <UserIcon
+                      size={18}
+                      className="mt-0.5 flex-shrink-0 text-white/70"
+                    />
                     <div className="min-w-0">
                       <p className="text-xs text-white/60">Assigned to</p>
-                      <p className="text-sm text-white">{selectedTask.personAssigned}</p>
+                      <p className="text-sm text-white">
+                        {selectedTask.personAssigned}
+                      </p>
                       <div className="mt-2 flex items-center gap-2 text-xs text-white/60">
                         <EnvelopeIcon size={14} />
                         <span className="truncate">{selectedTask.personEmail}</span>

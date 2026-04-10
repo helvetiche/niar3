@@ -14,10 +14,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Validate inputs
     if (!ifrFiles || ifrFiles.length === 0) {
-      return NextResponse.json(
-        { error: "No IFR files provided" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No IFR files provided" }, { status: 400 });
     }
 
     if (!consolidatedFile) {
@@ -33,9 +30,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(result);
   } catch (error) {
     logger.error("IFR Checker error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

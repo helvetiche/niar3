@@ -12,9 +12,7 @@ export function useCsrfToken(): string | null {
     if (typeof document === "undefined") return null;
 
     const cookies = document.cookie.split(";");
-    const csrfCookie = cookies.find((c) =>
-      c.trim().startsWith("__csrf-token="),
-    );
+    const csrfCookie = cookies.find((c) => c.trim().startsWith("__csrf-token="));
 
     return csrfCookie ? csrfCookie.split("=")[1] : null;
   });
@@ -27,7 +25,7 @@ export function useCsrfToken(): string | null {
  */
 export function addCsrfHeader(
   headers: Record<string, string>,
-  token: string | null,
+  token: string | null
 ): Record<string, string> {
   if (!token) return headers;
   return {

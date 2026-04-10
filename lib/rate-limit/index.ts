@@ -32,7 +32,7 @@ export const apiRateLimit = redis
       redis,
       limiter: Ratelimit.slidingWindow(
         RATE_LIMIT_API_REQUESTS,
-        `${RATE_LIMIT_API_WINDOW_SECONDS} s`,
+        `${RATE_LIMIT_API_WINDOW_SECONDS} s`
       ),
       analytics: true,
       prefix: "rl:api",
@@ -47,7 +47,7 @@ export const authRateLimit = redis
       redis,
       limiter: Ratelimit.slidingWindow(
         RATE_LIMIT_AUTH_REQUESTS,
-        `${RATE_LIMIT_AUTH_WINDOW_SECONDS} s`,
+        `${RATE_LIMIT_AUTH_WINDOW_SECONDS} s`
       ),
       analytics: true,
       prefix: "rl:auth",
@@ -62,7 +62,7 @@ export const publicRateLimit = redis
       redis,
       limiter: Ratelimit.slidingWindow(
         RATE_LIMIT_PUBLIC_REQUESTS,
-        `${RATE_LIMIT_PUBLIC_WINDOW_SECONDS} s`,
+        `${RATE_LIMIT_PUBLIC_WINDOW_SECONDS} s`
       ),
       analytics: true,
       prefix: "rl:public",
@@ -77,7 +77,7 @@ export const heavyOperationRateLimit = redis
       redis,
       limiter: Ratelimit.slidingWindow(
         RATE_LIMIT_HEAVY_REQUESTS,
-        `${RATE_LIMIT_HEAVY_WINDOW_SECONDS} s`,
+        `${RATE_LIMIT_HEAVY_WINDOW_SECONDS} s`
       ),
       analytics: true,
       prefix: "rl:heavy",

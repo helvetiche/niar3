@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/auth";
-import {
-  applySecurityHeaders,
-  secureFileResponse,
-} from "@/lib/security-headers";
+import { applySecurityHeaders, secureFileResponse } from "@/lib/security-headers";
 import { mergeExcelBuffers, mergePdfBuffers } from "@/lib/merge-files";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 import { validateUploads } from "@/lib/upload-limits";
@@ -132,8 +129,8 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: "Invalid merge mode. Use pdf or excel." },
-          { status: 400 },
-        ),
+          { status: 400 }
+        )
       );
     }
 
@@ -151,14 +148,14 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: "Please upload at least two files to merge." },
-          { status: 400 },
-        ),
+          { status: 400 }
+        )
       );
     }
 
     const uploadValidation = validateUploads(
       files,
-      modeValue === "pdf" ? pdfUploadLimits : excelUploadLimits,
+      modeValue === "pdf" ? pdfUploadLimits : excelUploadLimits
     );
     if (!uploadValidation.ok) {
       await logAuditTrailEntry({
@@ -174,18 +171,17 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: uploadValidation.message },
-          { status: uploadValidation.status },
-        ),
+          { status: uploadValidation.status }
+        )
       );
     }
 
-    const fileName =
-      typeof fileNameValue === "string" ? fileNameValue : undefined;
+    const fileName = typeof fileNameValue === "string" ? fileNameValue : undefined;
     const inputFiles = await Promise.all(
       files.map(async (file) => ({
         fileName: file.name,
         buffer: Buffer.from(await file.arrayBuffer()),
-      })),
+      }))
     );
 
     if (modeValue === "pdf") {
@@ -244,15 +240,13 @@ export async function POST(request: Request) {
     });
 
     return secureFileResponse(buffer, {
-      contentType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: outputName,
       extraHeaders: { "X-Merged-Count": String(mergedSheetCount) },
     });
   } catch (error) {
     logger.error("[api/merge-files POST]", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to merge files";
+    const message = error instanceof Error ? error.message : "Failed to merge files";
     const isClientSafeError =
       message.includes("Invalid PDF page order") ||
       message.includes("PDF page order") ||
@@ -270,8 +264,8 @@ export async function POST(request: Request) {
     return applySecurityHeaders(
       NextResponse.json(
         { error: isClientSafeError ? message : "Failed to merge files." },
-        { status: 500 },
-      ),
+        { status: 500 }
+      )
     );
   }
 }

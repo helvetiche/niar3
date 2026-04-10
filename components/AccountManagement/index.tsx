@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  createAccount,
-  updateAccount,
-  deleteAccount,
-} from "@/lib/api/accounts";
+import { createAccount, updateAccount, deleteAccount } from "@/lib/api/accounts";
 import {
   UsersThreeIcon,
   ShieldCheckIcon,
@@ -24,20 +20,12 @@ import { AVAILABLE_TOOLS, ALL_TOOLS } from "./constants";
 import type { AccountUser } from "@/types/account";
 
 export function AccountManagement() {
-  const {
-    accounts,
-    setAccounts,
-    loading,
-    currentPage,
-    totalPages,
-    loadAccounts,
-  } = useAccounts();
+  const { accounts, setAccounts, loading, currentPage, totalPages, loadAccounts } =
+    useAccounts();
   const formHook = useAccountForm();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState<AccountUser | null>(
-    null,
-  );
+  const [deletingAccount, setDeletingAccount] = useState<AccountUser | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,16 +37,13 @@ export function AccountManagement() {
 
     try {
       setIsDeleting(true);
-      setAccounts((prev) =>
-        prev.filter((acc) => acc.uid !== deletingAccount.uid),
-      );
+      setAccounts((prev) => prev.filter((acc) => acc.uid !== deletingAccount.uid));
       await deleteAccount(deletingAccount.uid);
       toast.success("Account deleted");
       setDeletingAccount(null);
       await loadAccounts(currentPage);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Something went wrong";
+      const message = error instanceof Error ? error.message : "Something went wrong";
       toast.error(message);
       await loadAccounts(currentPage);
     } finally {
@@ -92,25 +77,19 @@ export function AccountManagement() {
 
     try {
       setIsCreating(true);
-      const displayName = [
-        formHook.firstName,
-        formHook.middleName,
-        formHook.lastName,
-      ]
+      const displayName = [formHook.firstName, formHook.middleName, formHook.lastName]
         .filter(Boolean)
         .join(" ");
 
       if (formHook.editingAccountId) {
         const optimisticUpdate = accounts.find(
-          (a) => a.uid === formHook.editingAccountId,
+          (a) => a.uid === formHook.editingAccountId
         );
         if (optimisticUpdate) {
           setAccounts((prev) =>
             prev.map((acc) =>
-              acc.uid === formHook.editingAccountId
-                ? { ...acc, displayName }
-                : acc,
-            ),
+              acc.uid === formHook.editingAccountId ? { ...acc, displayName } : acc
+            )
           );
         }
 
@@ -137,8 +116,7 @@ export function AccountManagement() {
 
       await loadAccounts(1);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Something went wrong";
+      const message = error instanceof Error ? error.message : "Something went wrong";
       toast.error(message);
       await loadAccounts(currentPage);
     } finally {
@@ -196,13 +174,12 @@ export function AccountManagement() {
               </span>
             </div>
             <p className="mt-2 hidden text-justify text-sm text-white/85 lg:block">
-              Create, manage, and control user accounts across the system.
-              Assign roles, manage permissions, and monitor account status.
-              Super admins have full control over user access and can create
-              accounts for employees with specific role assignments. This
-              centralized management ensures secure access control and
-              streamlined user administration for field teams across all
-              divisions.
+              Create, manage, and control user accounts across the system. Assign roles,
+              manage permissions, and monitor account status. Super admins have full
+              control over user access and can create accounts for employees with
+              specific role assignments. This centralized management ensures secure
+              access control and streamlined user administration for field teams across
+              all divisions.
             </p>
           </div>
           <button

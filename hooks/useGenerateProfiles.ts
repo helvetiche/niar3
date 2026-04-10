@@ -22,11 +22,11 @@ export function useGenerateProfiles() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [zipName, setZipName] = useState(defaultZipName);
   const [billingUnitFolderName, setBillingUnitFolderName] = useState(
-    defaultBillingUnitFolderName,
+    defaultBillingUnitFolderName
   );
-  const [sourceFolderNames, setSourceFolderNames] = useState<
-    Record<string, string>
-  >({});
+  const [sourceFolderNames, setSourceFolderNames] = useState<Record<string, string>>(
+    {}
+  );
   const [isGenerating, setIsGenerating] = useState(false);
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [isOverlayOpaque, setIsOverlayOpaque] = useState(false);
@@ -135,9 +135,7 @@ export function useGenerateProfiles() {
         sourceFolderNames,
       });
       const outputName = zipName.trim() || defaultZipName;
-      const filename = outputName.endsWith(".zip")
-        ? outputName
-        : `${outputName}.zip`;
+      const filename = outputName.endsWith(".zip") ? outputName : `${outputName}.zip`;
       downloadBlob(blob, filename);
 
       toast.success("Billing Unit ZIP has been downloaded.");
@@ -146,9 +144,7 @@ export function useGenerateProfiles() {
       await wait(OVERLAY_OPAQUE_MS);
       await hideOverlay(OVERLAY_FADE_MS);
     } catch (error) {
-      toast.error(
-        getErrorMessage(error, ERROR_MESSAGES.FAILED_GENERATE_BILLING_UNITS),
-      );
+      toast.error(getErrorMessage(error, ERROR_MESSAGES.FAILED_GENERATE_BILLING_UNITS));
       stopTimer();
       await hideOverlay(OVERLAY_ERROR_FADE_MS);
     } finally {

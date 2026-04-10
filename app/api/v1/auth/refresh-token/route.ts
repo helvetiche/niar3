@@ -16,17 +16,14 @@ export async function POST(request: Request) {
     const auth = getAdminAuth();
     const userRecord = await auth.getUser(uid);
 
-    const customToken = await auth.createCustomToken(
-      uid,
-      userRecord.customClaims,
-    );
+    const customToken = await auth.createCustomToken(uid, userRecord.customClaims);
 
     return NextResponse.json({ customToken });
   } catch (error) {
     logger.error("Error creating custom token:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
-      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
+      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }
 }

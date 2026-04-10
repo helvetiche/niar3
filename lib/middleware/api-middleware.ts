@@ -16,25 +16,19 @@ interface ApiHandlerOptions {
 export async function withApiMiddleware(
   request: Request,
   handler: (request: Request) => Promise<Response>,
-  options: ApiHandlerOptions = { requireAuth: true, requireCsrf: true },
+  options: ApiHandlerOptions = { requireAuth: true, requireCsrf: true }
 ): Promise<Response> {
   try {
     // Apply CSRF protection for state-changing operations
-    if (
-      options.requireCsrf &&
-      request.method !== "GET" &&
-      request.method !== "HEAD"
-    ) {
+    if (options.requireCsrf && request.method !== "GET" && request.method !== "HEAD") {
       const isValidCsrf = await verifyCsrfToken(request);
       if (!isValidCsrf) {
         const { error, statusCode } = createErrorResponse(
           "CSRF_TOKEN_INVALID",
           "Invalid or missing CSRF token",
-          403,
+          403
         );
-        return applySecurityHeaders(
-          NextResponse.json(error, { status: statusCode }),
-        );
+        return applySecurityHeaders(NextResponse.json(error, { status: statusCode }));
       }
     }
 
@@ -53,16 +47,15 @@ export async function withApiMiddleware(
     return applySecurityHeaders(response);
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
-       
       console.error("[API Middleware] Error:", error);
     }
     const { error: errorResponse, statusCode } = createErrorResponse(
       "INTERNAL_SERVER_ERROR",
       "An unexpected error occurred",
-      500,
+      500
     );
     return applySecurityHeaders(
-      NextResponse.json(errorResponse, { status: statusCode }),
+      NextResponse.json(errorResponse, { status: statusCode })
     );
   }
 }

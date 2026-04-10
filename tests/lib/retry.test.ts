@@ -27,9 +27,9 @@ describe("withRetry", () => {
   it("should throw after max attempts", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("ECONNRESET"));
 
-    await expect(
-      withRetry(fn, { maxAttempts: 3, delayMs: 10 }),
-    ).rejects.toThrow("ECONNRESET");
+    await expect(withRetry(fn, { maxAttempts: 3, delayMs: 10 })).rejects.toThrow(
+      "ECONNRESET"
+    );
 
     expect(fn).toHaveBeenCalledTimes(3);
   });
@@ -37,9 +37,9 @@ describe("withRetry", () => {
   it("should not retry non-retryable errors", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("Invalid input"));
 
-    await expect(
-      withRetry(fn, { maxAttempts: 3, delayMs: 10 }),
-    ).rejects.toThrow("Invalid input");
+    await expect(withRetry(fn, { maxAttempts: 3, delayMs: 10 })).rejects.toThrow(
+      "Invalid input"
+    );
 
     expect(fn).toHaveBeenCalledTimes(1);
   });

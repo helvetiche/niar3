@@ -8,6 +8,16 @@ export type AccomplishmentTaskDesignation =
   | "Engineer A"
   | "Administrative Aide";
 
+/** Position / designation options for reports and saved tasks. */
+export const ACCOMPLISHMENT_TASK_DESIGNATIONS: AccomplishmentTaskDesignation[] = [
+  "SWRFT",
+  "WRFOB",
+  "Senior Engineer A",
+  "Senior Engineer B",
+  "Engineer A",
+  "Administrative Aide",
+];
+
 export type AccomplishmentTask = {
   id: string;
   label: string;
@@ -15,17 +25,14 @@ export type AccomplishmentTask = {
   createdAt: number;
 };
 
-export const fetchAccomplishmentTasks = async (): Promise<
-  AccomplishmentTask[]
-> => {
+export const fetchAccomplishmentTasks = async (): Promise<AccomplishmentTask[]> => {
   const res = await fetch("/api/v1/accomplishment-tasks", {
     credentials: "include",
   });
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(
-      (data as { error?: string }).error ??
-        "Failed to load accomplishment tasks",
+      (data as { error?: string }).error ?? "Failed to load accomplishment tasks"
     );
   }
   return res.json();
@@ -33,7 +40,7 @@ export const fetchAccomplishmentTasks = async (): Promise<
 
 export const createAccomplishmentTask = async (
   label: string,
-  designation: AccomplishmentTaskDesignation = "SWRFT",
+  designation: AccomplishmentTaskDesignation = "SWRFT"
 ): Promise<AccomplishmentTask> => {
   const res = await fetch("/api/v1/accomplishment-tasks", {
     method: "POST",
@@ -48,15 +55,13 @@ export const createAccomplishmentTask = async (
   return res.json();
 };
 
-export const deleteAccomplishmentTask = async (
-  taskId: string,
-): Promise<void> => {
+export const deleteAccomplishmentTask = async (taskId: string): Promise<void> => {
   const res = await fetch(
     `/api/v1/accomplishment-tasks/${encodeURIComponent(taskId)}`,
     {
       method: "DELETE",
       credentials: "include",
-    },
+    }
   );
   if (!res.ok) {
     const data = (await res.json().catch(() => ({}))) as { error?: string };

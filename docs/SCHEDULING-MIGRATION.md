@@ -5,6 +5,7 @@ Guide for migrating from the old scheduling system to the new nia-reminder-based
 ## 🔄 What Changed?
 
 ### Old System
+
 - Manual reminder checking
 - No caching (high Firestore reads)
 - Basic timezone handling
@@ -12,6 +13,7 @@ Guide for migrating from the old scheduling system to the new nia-reminder-based
 - No idempotency protection
 
 ### New System
+
 - Automated cron-based reminders
 - Intelligent caching (95% fewer reads)
 - Proper Philippine timezone (UTC+8) handling
@@ -51,6 +53,7 @@ docs/
 ### 1. Email Function Signature
 
 **Old:**
+
 ```typescript
 sendScheduleReminder(
   to: string,
@@ -63,6 +66,7 @@ sendScheduleReminder(
 ```
 
 **New (Recommended):**
+
 ```typescript
 sendReminderEmail(
   schedule: Schedule,
@@ -75,6 +79,7 @@ sendReminderEmail(
 ### 2. Deadline Calculation
 
 **Old:**
+
 ```typescript
 // From lib/schedule-helpers.ts
 calculateNextDeadline(
@@ -85,6 +90,7 @@ calculateNextDeadline(
 ```
 
 **New:**
+
 ```typescript
 // From lib/deadline-calculator.ts
 calculateNextDeadline(
@@ -95,6 +101,7 @@ calculateNextDeadline(
 ```
 
 **Migration:** The new function has better timezone handling. Update imports:
+
 ```typescript
 // Old
 import { calculateNextDeadline } from "@/lib/schedule-helpers";
@@ -106,6 +113,7 @@ import { calculateNextDeadline } from "@/lib/deadline-calculator";
 ### 3. New Schedule Types
 
 The system now supports:
+
 - `hourly` - Every N hours
 - `per-minute` - Every N minutes (for testing)
 
@@ -116,11 +124,13 @@ Update your UI to support these new types if needed.
 ### Step 1: Verify Environment Variables
 
 Add to `.env.local`:
+
 ```env
 CRON_SECRET=your-secret-key-here
 ```
 
 Verify existing:
+
 ```env
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=465
@@ -133,11 +143,13 @@ EMAIL_APP_PASSWORD=your-app-password
 #### A. Update Email Imports
 
 Find all files using email functions:
+
 ```bash
 grep -r "sendScheduleReminder" app/ components/ lib/
 ```
 
 Update to use new function:
+
 ```typescript
 // Old
 import { sendScheduleReminder } from "@/lib/email";
@@ -172,16 +184,17 @@ curl -X POST http://localhost:3000/api/v1/schedules/sync-cache \
 ```
 
 Or add a UI button:
+
 ```typescript
 const syncCache = async () => {
-  const response = await fetch('/api/v1/schedules/sync-cache', {
-    method: 'POST',
+  const response = await fetch("/api/v1/schedules/sync-cache", {
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
   const data = await response.json();
-  console.log('Cache synced:', data);
+  console.log("Cache synced:", data);
 };
 ```
 
@@ -190,6 +203,7 @@ const syncCache = async () => {
 #### Option A: Vercel Cron
 
 Update `vercel.json`:
+
 ```json
 {
   "crons": [
@@ -204,6 +218,7 @@ Update `vercel.json`:
 #### Option B: External Cron
 
 Set up at cron-job.org or similar:
+
 - URL: `https://your-domain.com/api/v1/cron/send-reminders?secret=YOUR_SECRET`
 - Schedule: `* * * * *` (every minute)
 
@@ -285,6 +300,7 @@ export function ScheduleCacheManager() {
 After migration, you should see:
 
 **scheduleCache** (1 document)
+
 ```
 upcomingReminders/
   reminders: [...]
@@ -293,6 +309,7 @@ upcomingReminders/
 ```
 
 **sentReminders** (multiple documents)
+
 ```
 schedule123_2024-03-26/
   scheduleId: "schedule123"
@@ -304,6 +321,7 @@ schedule123_2024-03-26/
 ```
 
 **cronLogs** (multiple documents)
+
 ```
 log456/
   timestamp: 2024-03-26T10:15:00Z
@@ -317,6 +335,7 @@ log456/
 ### 2. Monitor Cron Execution
 
 Check logs:
+
 ```bash
 # Vercel
 vercel logs --follow
@@ -335,6 +354,7 @@ vercel logs --follow
 ### Issue: Cache not syncing
 
 **Solution:**
+
 ```bash
 # Check Firestore permissions
 # Verify authentication token
@@ -344,6 +364,7 @@ vercel logs --follow
 ### Issue: Cron not running
 
 **Solution:**
+
 ```bash
 # Verify CRON_SECRET is correct
 # Check Vercel cron dashboard
@@ -353,6 +374,7 @@ vercel logs --follow
 ### Issue: Emails not sending
 
 **Solution:**
+
 ```bash
 # Verify email config
 # Check EMAIL_APP_PASSWORD (not regular password)
@@ -362,6 +384,7 @@ vercel logs --follow
 ### Issue: Duplicate emails
 
 **Solution:**
+
 ```bash
 # Check sentReminders collection
 # Verify only one cron instance is running
@@ -371,12 +394,14 @@ vercel logs --follow
 ## 📊 Performance Comparison
 
 ### Before Migration
+
 - Firestore reads: ~40 per minute
 - Daily reads: ~57,600
 - Monthly reads: ~1,728,000
 - Cost: Higher
 
 ### After Migration
+
 - Firestore reads: ~1 per minute (cache)
 - Daily reads: ~1,440
 - Monthly reads: ~43,200
@@ -391,6 +416,7 @@ If you need to rollback:
    - Or disable external cron
 
 2. **Revert Code Changes**
+
    ```bash
    git revert <commit-hash>
    ```
@@ -426,6 +452,7 @@ If you need to rollback:
 ## 🆘 Support
 
 If you encounter issues:
+
 1. Check the troubleshooting section above
 2. Review Firestore cronLogs for errors
 3. Test manually with `/api/v1/cron/test`

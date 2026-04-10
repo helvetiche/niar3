@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  CheckCircleIcon,
-  ClockCountdownIcon,
-  WrenchIcon,
-} from "@phosphor-icons/react";
+import { CheckCircleIcon, ClockCountdownIcon, WrenchIcon } from "@phosphor-icons/react";
 
 interface ProcessingOverlayProps {
   isVisible: boolean;
@@ -53,9 +49,7 @@ export function ProcessingOverlay({
 
         <div className="mt-3 flex items-center justify-between text-sm text-white/90">
           <p>
-            {isFinalizing
-              ? "Finalizing and preparing download..."
-              : "Please wait..."}
+            {isFinalizing ? "Finalizing and preparing download..." : "Please wait..."}
           </p>
           <p className="inline-flex items-center gap-1 tabular-nums font-medium">
             <ClockCountdownIcon size={14} />

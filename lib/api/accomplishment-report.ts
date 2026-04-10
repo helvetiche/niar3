@@ -23,7 +23,7 @@ export type GenerateAccomplishmentReportResult = {
 };
 
 export const generateAccomplishmentReport = async (
-  payload: GenerateAccomplishmentReportPayload,
+  payload: GenerateAccomplishmentReportPayload
 ): Promise<GenerateAccomplishmentReportResult> => {
   const formData = new FormDataBuilder()
     .append("templateId", payload.templateId.trim())
@@ -54,7 +54,7 @@ export const generateAccomplishmentReport = async (
   const blob = await response.blob();
   const fileName = getFileNameFromContentDisposition(
     response.headers.get("Content-Disposition"),
-    "Accomplishment Report.xlsx",
+    "Accomplishment Report.xlsx"
   );
 
   return { blob, fileName };

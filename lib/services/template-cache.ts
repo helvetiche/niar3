@@ -21,10 +21,7 @@ export function getCachedTemplates(scope: string): StoredTemplate[] | null {
   return entry.data;
 }
 
-export function setCachedTemplates(
-  scope: string,
-  templates: StoredTemplate[],
-): void {
+export function setCachedTemplates(scope: string, templates: StoredTemplate[]): void {
   cache.set(scope, {
     data: templates,
     timestamp: Date.now(),

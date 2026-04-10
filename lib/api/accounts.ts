@@ -6,7 +6,7 @@ import type {
 
 export async function fetchAccounts(
   page = 1,
-  limit = 8,
+  limit = 8
 ): Promise<{
   accounts: AccountUser[];
   pagination: {
@@ -40,7 +40,7 @@ export async function fetchAccounts(
 }
 
 export async function createAccount(
-  request: CreateAccountRequest,
+  request: CreateAccountRequest
 ): Promise<AccountUser> {
   const response = await fetch("/api/v1/accounts", {
     method: "POST",
@@ -61,7 +61,7 @@ export async function createAccount(
 
 export async function updateAccount(
   uid: string,
-  request: UpdateAccountRequest,
+  request: UpdateAccountRequest
 ): Promise<AccountUser> {
   const response = await fetch(`/api/v1/accounts/${uid}`, {
     method: "PATCH",

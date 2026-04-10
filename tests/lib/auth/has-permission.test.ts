@@ -104,10 +104,7 @@ describe("hasAnyPermission", () => {
     };
 
     expect(
-      hasAnyPermission(user, [
-        PERMISSIONS.WORKSPACE_READ,
-        PERMISSIONS.USERS_WRITE,
-      ]),
+      hasAnyPermission(user, [PERMISSIONS.WORKSPACE_READ, PERMISSIONS.USERS_WRITE])
     ).toBe(true);
   });
 
@@ -123,10 +120,7 @@ describe("hasAnyPermission", () => {
     };
 
     expect(
-      hasAnyPermission(user, [
-        PERMISSIONS.USERS_WRITE,
-        PERMISSIONS.USERS_DELETE,
-      ]),
+      hasAnyPermission(user, [PERMISSIONS.USERS_WRITE, PERMISSIONS.USERS_DELETE])
     ).toBe(false);
   });
 
@@ -162,10 +156,7 @@ describe("hasAllPermissions", () => {
     };
 
     expect(
-      hasAllPermissions(user, [
-        PERMISSIONS.WORKSPACE_READ,
-        PERMISSIONS.WORKSPACE_WRITE,
-      ]),
+      hasAllPermissions(user, [PERMISSIONS.WORKSPACE_READ, PERMISSIONS.WORKSPACE_WRITE])
     ).toBe(true);
   });
 
@@ -181,10 +172,7 @@ describe("hasAllPermissions", () => {
     };
 
     expect(
-      hasAllPermissions(user, [
-        PERMISSIONS.WORKSPACE_READ,
-        PERMISSIONS.WORKSPACE_WRITE,
-      ]),
+      hasAllPermissions(user, [PERMISSIONS.WORKSPACE_READ, PERMISSIONS.WORKSPACE_WRITE])
     ).toBe(false);
   });
 

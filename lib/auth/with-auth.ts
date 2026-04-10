@@ -20,10 +20,9 @@ export type WithAuthOptions = {
  */
 export async function withAuth(
   request: Request,
-  options?: Permission | WithAuthOptions,
+  options?: Permission | WithAuthOptions
 ): Promise<{ user: AuthUser } | NextResponse> {
-  const permission =
-    typeof options === "string" ? options : options?.permission;
+  const permission = typeof options === "string" ? options : options?.permission;
   const action = typeof options === "object" ? options?.action : undefined;
 
   const result = await getSession();
@@ -43,10 +42,7 @@ export async function withAuth(
       });
     }
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Unauthorized", code: result.error },
-        { status: 401 },
-      ),
+      NextResponse.json({ error: "Unauthorized", code: result.error }, { status: 401 })
     );
   }
 
@@ -77,8 +73,8 @@ export async function withAuth(
     return applySecurityHeaders(
       NextResponse.json(
         { error: "Forbidden", requiredPermission: permission },
-        { status: 403 },
-      ),
+        { status: 403 }
+      )
     );
   }
 

@@ -6,7 +6,7 @@ import type { AuthUser } from "@/types/auth";
 type ApiHandler<T = unknown> = (
   request: Request,
   user: AuthUser,
-  context?: T,
+  context?: T
 ) => Promise<NextResponse>;
 
 export function withApiAuth<T = unknown>(handler: ApiHandler<T>) {

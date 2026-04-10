@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { consolidateIFR } from "@/lib/consolidate-ifr";
-import {
-  applySecurityHeaders,
-  secureFileResponse,
-} from "@/lib/security-headers";
+import { applySecurityHeaders, secureFileResponse } from "@/lib/security-headers";
 import { withAuth } from "@/lib/auth";
 import { withHeavyOperationRateLimit } from "@/lib/rate-limit/with-api-rate-limit";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
@@ -51,10 +48,7 @@ export async function POST(request: NextRequest) {
         details: { reason: "missing-template" },
       });
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "Template file is required" },
-          { status: 400 },
-        ),
+        NextResponse.json({ error: "Template file is required" }, { status: 400 })
       );
     }
 
@@ -71,11 +65,9 @@ export async function POST(request: NextRequest) {
       const file = formData.get(`landProfile_${fileIndex}`) as File;
       if (!file) break;
 
-      const divisionNumber = formData.get(
-        `divisionNumber_${fileIndex}`,
-      ) as string;
+      const divisionNumber = formData.get(`divisionNumber_${fileIndex}`) as string;
       const irrigationAssociation = formData.get(
-        `irrigationAssociation_${fileIndex}`,
+        `irrigationAssociation_${fileIndex}`
       ) as string;
 
       const arrayBuffer = await file.arrayBuffer();
@@ -103,8 +95,8 @@ export async function POST(request: NextRequest) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: "At least one IFR file is required" },
-          { status: 400 },
-        ),
+          { status: 400 }
+        )
       );
     }
 
@@ -148,8 +140,7 @@ export async function POST(request: NextRequest) {
         allErrors.push(...errors);
         allWarnings.push(...warnings);
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : "Unknown error";
+        const errorMsg = error instanceof Error ? error.message : "Unknown error";
         allErrors.push(`Error processing ${file.fileName}: ${errorMsg}`);
       }
     }
@@ -170,8 +161,8 @@ export async function POST(request: NextRequest) {
           {
             error: "Consolidation failed",
           },
-          { status: 500 },
-        ),
+          { status: 500 }
+        )
       );
     }
 
@@ -192,11 +183,11 @@ export async function POST(request: NextRequest) {
     // Encode to base64 to handle special characters
     response.headers.set(
       "X-Errors",
-      Buffer.from(JSON.stringify(allErrors)).toString("base64"),
+      Buffer.from(JSON.stringify(allErrors)).toString("base64")
     );
     response.headers.set(
       "X-Warnings",
-      Buffer.from(JSON.stringify(allWarnings)).toString("base64"),
+      Buffer.from(JSON.stringify(allWarnings)).toString("base64")
     );
 
     await logAuditTrailEntry({
@@ -233,8 +224,8 @@ export async function POST(request: NextRequest) {
         {
           error: "Internal server error",
         },
-        { status: 500 },
-      ),
+        { status: 500 }
+      )
     );
   }
 }

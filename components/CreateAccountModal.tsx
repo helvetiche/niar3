@@ -54,8 +54,7 @@ export function CreateAccountModal({
       onAccountCreated(newAccount);
       resetForm();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Server is broken";
+      const message = error instanceof Error ? error.message : "Server is broken";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -80,16 +79,11 @@ export function CreateAccountModal({
       {(close) => (
         <div className="rounded-2xl border border-white/20 bg-emerald-950 p-6 shadow-2xl">
           <h3 className="text-lg font-medium text-white">Create New Account</h3>
-          <p className="mt-1 text-sm text-white/70">
-            Add a new user to the system
-          </p>
+          <p className="mt-1 text-sm text-white/70">Add a new user to the system</p>
 
           <div className="mt-5 space-y-4">
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-white"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-white">
                 Email
               </label>
               <input
@@ -140,10 +134,7 @@ export function CreateAccountModal({
             </div>
 
             <div>
-              <label
-                htmlFor="role"
-                className="block text-sm font-medium text-white"
-              >
+              <label htmlFor="role" className="block text-sm font-medium text-white">
                 Role
               </label>
               <select

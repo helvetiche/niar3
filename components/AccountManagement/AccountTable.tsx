@@ -114,17 +114,11 @@ export function AccountTable({
               ) : (
                 <>
                   {accounts.map((account) => (
-                    <tr
-                      key={account.uid}
-                      className="transition hover:bg-white/5"
-                    >
+                    <tr key={account.uid} className="transition hover:bg-white/5">
                       <td className="border-r border-white/10 px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-sm font-semibold text-white">
-                            {getUserInitials(
-                              account.displayName,
-                              account.email,
-                            )}
+                            {getUserInitials(account.displayName, account.email)}
                           </div>
                           <span className="truncate text-sm font-medium text-white">
                             {getDisplayName(account.displayName, account.email)}
@@ -150,12 +144,9 @@ export function AccountTable({
                       </td>
                       <td className="border-r border-white/10 px-4 py-3">
                         <div className="flex flex-wrap gap-1">
-                          {account.permissions &&
-                          account.permissions.length > 0 ? (
+                          {account.permissions && account.permissions.length > 0 ? (
                             account.permissions.map((permId) => {
-                              const tool = AVAILABLE_TOOLS.find(
-                                (t) => t.id === permId,
-                              );
+                              const tool = AVAILABLE_TOOLS.find((t) => t.id === permId);
                               if (!tool) return null;
                               const Icon = tool.icon;
                               return (
@@ -209,21 +200,11 @@ export function AccountTable({
                     length: Math.max(0, 8 - accounts.length),
                   }).map((_, idx) => (
                     <tr key={`empty-${idx}`} className="h-[57px]">
-                      <td className="border-r border-white/10 px-4 py-3">
-                        &nbsp;
-                      </td>
-                      <td className="border-r border-white/10 px-4 py-3">
-                        &nbsp;
-                      </td>
-                      <td className="border-r border-white/10 px-4 py-3">
-                        &nbsp;
-                      </td>
-                      <td className="border-r border-white/10 px-4 py-3">
-                        &nbsp;
-                      </td>
-                      <td className="border-r border-white/10 px-4 py-3">
-                        &nbsp;
-                      </td>
+                      <td className="border-r border-white/10 px-4 py-3">&nbsp;</td>
+                      <td className="border-r border-white/10 px-4 py-3">&nbsp;</td>
+                      <td className="border-r border-white/10 px-4 py-3">&nbsp;</td>
+                      <td className="border-r border-white/10 px-4 py-3">&nbsp;</td>
+                      <td className="border-r border-white/10 px-4 py-3">&nbsp;</td>
                       <td className="px-4 py-3">&nbsp;</td>
                     </tr>
                   ))}
@@ -289,9 +270,7 @@ export function AccountTable({
                     <div className="mt-3 flex flex-wrap gap-1">
                       {account.permissions && account.permissions.length > 0 ? (
                         account.permissions.map((permId) => {
-                          const tool = AVAILABLE_TOOLS.find(
-                            (t) => t.id === permId,
-                          );
+                          const tool = AVAILABLE_TOOLS.find((t) => t.id === permId);
                           if (!tool) return null;
                           const Icon = tool.icon;
                           return (
@@ -305,16 +284,12 @@ export function AccountTable({
                               }`}
                             >
                               <Icon size={10} weight="fill" />
-                              <span className="hidden sm:inline">
-                                {tool.name}
-                              </span>
+                              <span className="hidden sm:inline">{tool.name}</span>
                             </span>
                           );
                         })
                       ) : (
-                        <span className="text-xs text-white/50">
-                          No permissions
-                        </span>
+                        <span className="text-xs text-white/50">No permissions</span>
                       )}
                     </div>
                     <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/10 pt-3">

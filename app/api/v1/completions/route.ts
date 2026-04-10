@@ -48,15 +48,14 @@ export async function GET(request: NextRequest) {
     });
 
     completions.sort(
-      (a, b) =>
-        new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime(),
+      (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
     );
 
     return applySecurityHeaders(NextResponse.json({ completions }));
   } catch (err) {
     logger.error("[api/completions GET]", err);
     return applySecurityHeaders(
-      NextResponse.json({ error: "Failed to load completions" }, { status: 500 }),
+      NextResponse.json({ error: "Failed to load completions" }, { status: 500 })
     );
   }
 }
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
     body = createBodySchema.parse(raw);
   } catch {
     return applySecurityHeaders(
-      NextResponse.json({ error: "Invalid request body" }, { status: 400 }),
+      NextResponse.json({ error: "Invalid request body" }, { status: 400 })
     );
   }
 
@@ -85,14 +84,14 @@ export async function POST(request: NextRequest) {
 
     if (!scheduleDoc.exists) {
       return applySecurityHeaders(
-        NextResponse.json({ error: "Schedule not found" }, { status: 404 }),
+        NextResponse.json({ error: "Schedule not found" }, { status: 404 })
       );
     }
 
     const scheduleData = scheduleDoc.data();
     if (scheduleData?.userId !== user.uid) {
       return applySecurityHeaders(
-        NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+        NextResponse.json({ error: "Forbidden" }, { status: 403 })
       );
     }
 
@@ -108,8 +107,8 @@ export async function POST(request: NextRequest) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: "Task already completed for this period" },
-          { status: 409 },
-        ),
+          { status: 409 }
+        )
       );
     }
 
@@ -132,12 +131,9 @@ export async function POST(request: NextRequest) {
       periodStart,
       periodEnd,
       deadlineType: deadlineType as ScheduleDeadlineType,
-      scheduleTitle:
-        typeof scheduleData.title === "string" ? scheduleData.title : "",
+      scheduleTitle: typeof scheduleData.title === "string" ? scheduleData.title : "",
       scheduleDescription:
-        typeof scheduleData.description === "string"
-          ? scheduleData.description
-          : "",
+        typeof scheduleData.description === "string" ? scheduleData.description : "",
       personAssigned: assignedName,
       personEmail: assignedEmail,
       ...(notes !== undefined && notes !== "" ? { notes } : {}),
@@ -147,12 +143,12 @@ export async function POST(request: NextRequest) {
     const created: TaskCompletion = { id: docRef.id, ...completion };
 
     return applySecurityHeaders(
-      NextResponse.json({ completion: created }, { status: 201 }),
+      NextResponse.json({ completion: created }, { status: 201 })
     );
   } catch (err) {
     logger.error("[api/completions POST]", err);
     return applySecurityHeaders(
-      NextResponse.json({ error: "Failed to save completion" }, { status: 500 }),
+      NextResponse.json({ error: "Failed to save completion" }, { status: 500 })
     );
   }
 }

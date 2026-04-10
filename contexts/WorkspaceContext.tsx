@@ -43,7 +43,7 @@ export function WorkspaceProvider({
   children: ReactNode;
 }) {
   const [selectedTab, setSelectedTab] = useState<WorkspaceTab>("hub");
-  
+
   const handleSetSelectedTab = useCallback((tab: WorkspaceTab) => {
     setSelectedTab((current) => {
       if (tab === current) return current;
@@ -69,15 +69,13 @@ export function WorkspaceProvider({
 
 export function useWorkspaceTab() {
   const ctx = useContext(WorkspaceContext);
-  if (!ctx)
-    throw new Error("useWorkspaceTab must be used within WorkspaceProvider");
+  if (!ctx) throw new Error("useWorkspaceTab must be used within WorkspaceProvider");
   return ctx;
 }
 
 export function useWorkspaceUser() {
   const ctx = useContext(WorkspaceContext);
-  if (!ctx)
-    throw new Error("useWorkspaceUser must be used within WorkspaceProvider");
+  if (!ctx) throw new Error("useWorkspaceUser must be used within WorkspaceProvider");
   return ctx.user;
 }
 

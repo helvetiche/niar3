@@ -67,9 +67,7 @@ export function useBackgroundJob(options: UseBackgroundJobOptions) {
           window.clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
-        onError?.(
-          error instanceof Error ? error.message : "Failed to poll job",
-        );
+        onError?.(error instanceof Error ? error.message : "Failed to poll job");
       }
     };
 

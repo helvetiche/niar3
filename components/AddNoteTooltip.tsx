@@ -46,8 +46,7 @@ export function AddNoteTooltip({
         <div className="min-w-0 flex-1 space-y-1">
           <p className="font-semibold text-white">Add note or reminder</p>
           <p className="text-justify text-xs leading-relaxed text-white/95">
-            Click to store tasks, events, or anything you need to remember for
-            this day.
+            Click to store tasks, events, or anything you need to remember for this day.
           </p>
         </div>
       </div>

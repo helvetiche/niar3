@@ -15,15 +15,30 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
 } from "@phosphor-icons/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { MasonryModal } from "@/components/MasonryModal";
 import type { Schedule, ScheduleDeadline, ReminderDate } from "@/types/schedule";
-import { calculateNextDeadline, calculateReminderDate } from "@/lib/deadline-calculator";
+import {
+  calculateNextDeadline,
+  calculateReminderDate,
+} from "@/lib/deadline-calculator";
+import {
+  buildScheduleReminderEmailHtml,
+  buildScheduleReminderEmailSubject,
+} from "@/lib/schedule-reminder-email-html";
 import { formatDeadline, formatReminder } from "@/lib/schedule-helpers";
 import { useWorkspaceUser } from "@/contexts/WorkspaceContext";
 import { useSchedules } from "@/hooks/useSchedules";
 
-const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAYS_OF_WEEK = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 const SCHEDULE_FORM_DEADLINE_TYPES = ["daily", "weekly", "monthly"] as const;
 
@@ -39,25 +54,29 @@ const populateFormFromSchedule = (
     setDayOfMonth: (v: number) => void;
     setReminderDaysBefore: (v: number) => void;
     setReminderTime: (v: string) => void;
-  },
+  }
 ) => {
   const { deadline, reminderDate } = schedule;
   setters.setTitle(schedule.title);
   setters.setDescription(schedule.description ?? "");
   setters.setStatus(schedule.status === "inactive" ? "inactive" : "active");
   setters.setDeadlineType(
-    SCHEDULE_FORM_DEADLINE_TYPES.includes(deadline.type as (typeof SCHEDULE_FORM_DEADLINE_TYPES)[number])
+    SCHEDULE_FORM_DEADLINE_TYPES.includes(
+      deadline.type as (typeof SCHEDULE_FORM_DEADLINE_TYPES)[number]
+    )
       ? (deadline.type as "daily" | "weekly" | "monthly")
-      : "daily",
+      : "daily"
   );
   setters.setDeadlineTime(deadline.time ?? "17:00");
   setters.setDayOfWeek(typeof deadline.dayOfWeek === "number" ? deadline.dayOfWeek : 1);
   setters.setDayOfMonth(
-    typeof deadline.dayOfMonth === "number" ? Math.min(31, Math.max(1, deadline.dayOfMonth)) : 1,
+    typeof deadline.dayOfMonth === "number"
+      ? Math.min(31, Math.max(1, deadline.dayOfMonth))
+      : 1
   );
   if (reminderDate.type === "relative") {
     setters.setReminderDaysBefore(
-      typeof reminderDate.daysBefore === "number" ? reminderDate.daysBefore : 1,
+      typeof reminderDate.daysBefore === "number" ? reminderDate.daysBefore : 1
     );
     setters.setReminderTime(reminderDate.time ?? "08:00");
   } else {
@@ -89,19 +108,30 @@ export function Schedules() {
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [schedulePendingDelete, setSchedulePendingDelete] = useState<Schedule | null>(null);
+  const [schedulePendingDelete, setSchedulePendingDelete] = useState<Schedule | null>(
+    null
+  );
   const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<"active" | "inactive">("active");
-  const [deadlineType, setDeadlineType] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [deadlineType, setDeadlineType] = useState<"daily" | "weekly" | "monthly">(
+    "daily"
+  );
   const [deadlineTime, setDeadlineTime] = useState("17:00");
   const [dayOfWeek, setDayOfWeek] = useState(1);
   const [dayOfMonth, setDayOfMonth] = useState(1);
   const [reminderDaysBefore, setReminderDaysBefore] = useState(1);
   const [reminderTime, setReminderTime] = useState("08:00");
+  const [emailPreviewAssetOrigin, setEmailPreviewAssetOrigin] = useState<string | null>(
+    null
+  );
+
+  useEffect(() => {
+    setEmailPreviewAssetOrigin(window.location.origin);
+  }, []);
 
   // Live countdown timer
   useEffect(() => {
@@ -146,6 +176,54 @@ export function Schedules() {
       status,
     };
   };
+
+  const scheduleEmailPreviewHtml = useMemo(() => {
+    if (!isScheduleFormOpen) return "";
+    const email = user.email;
+    const deadline: ScheduleDeadline = {
+      type: deadlineType,
+      time: deadlineTime,
+      ...(deadlineType === "weekly" && { dayOfWeek }),
+      ...(deadlineType === "monthly" && { dayOfMonth }),
+    };
+    const reminderDate: ReminderDate = {
+      type: "relative",
+      daysBefore: reminderDaysBefore,
+      time: reminderTime,
+    };
+    const previewSchedule: Schedule = {
+      id: editingScheduleId ?? "preview",
+      userId: user.uid,
+      title: title.trim() || "Your schedule title",
+      description: description.trim(),
+      deadline,
+      reminderDate,
+      personAssigned: email ? email.split("@")[0] : "Your name",
+      personEmail: email ?? "you@example.com",
+      status,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const nextDeadline = calculateNextDeadline(previewSchedule.deadline, new Date());
+    return buildScheduleReminderEmailHtml(previewSchedule, nextDeadline, {
+      assetBaseUrl: emailPreviewAssetOrigin ?? undefined,
+    });
+  }, [
+    isScheduleFormOpen,
+    editingScheduleId,
+    emailPreviewAssetOrigin,
+    user.uid,
+    user.email,
+    title,
+    description,
+    deadlineType,
+    deadlineTime,
+    dayOfWeek,
+    dayOfMonth,
+    reminderDaysBefore,
+    reminderTime,
+    status,
+  ]);
 
   const handleOpenAddSchedule = () => {
     resetForm();
@@ -206,7 +284,10 @@ export function Schedules() {
         mutate();
       }
     } catch (error) {
-      console.error(isEdit ? "Failed to update schedule:" : "Failed to add schedule:", error);
+      console.error(
+        isEdit ? "Failed to update schedule:" : "Failed to add schedule:",
+        error
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -267,7 +348,8 @@ export function Schedules() {
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
             <EnvelopeIcon size={12} className="text-white" />
-            {pagination?.totalItems ?? 0} Schedule{(pagination?.totalItems ?? 0) !== 1 ? "s" : ""}
+            {pagination?.totalItems ?? 0} Schedule
+            {(pagination?.totalItems ?? 0) !== 1 ? "s" : ""}
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
             <ClockIcon size={12} className="text-white" />
@@ -391,21 +473,39 @@ export function Schedules() {
                       </td>
                       <td className="max-w-0 min-w-0 border-r border-emerald-700/50 px-4 py-3 align-top">
                         {(() => {
-                          let nextDeadline = calculateNextDeadline(schedule.deadline, currentTime);
-                          let nextReminder = calculateReminderDate(schedule.reminderDate, nextDeadline);
-                          
+                          let nextDeadline = calculateNextDeadline(
+                            schedule.deadline,
+                            currentTime
+                          );
+                          let nextReminder = calculateReminderDate(
+                            schedule.reminderDate,
+                            nextDeadline
+                          );
+
                           let attempts = 0;
                           while (nextReminder <= currentTime && attempts < 10) {
-                            const nextDeadlineTime = new Date(nextDeadline.getTime() + 60000);
-                            nextDeadline = calculateNextDeadline(schedule.deadline, nextDeadlineTime);
-                            nextReminder = calculateReminderDate(schedule.reminderDate, nextDeadline);
+                            const nextDeadlineTime = new Date(
+                              nextDeadline.getTime() + 60000
+                            );
+                            nextDeadline = calculateNextDeadline(
+                              schedule.deadline,
+                              nextDeadlineTime
+                            );
+                            nextReminder = calculateReminderDate(
+                              schedule.reminderDate,
+                              nextDeadline
+                            );
                             attempts++;
                           }
-                          
+
                           const diffMs = nextReminder.getTime() - currentTime.getTime();
                           const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-                          const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                          const hours = Math.floor(
+                            (diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+                          );
+                          const minutes = Math.floor(
+                            (diffMs % (1000 * 60 * 60)) / (1000 * 60)
+                          );
                           const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
 
                           return (
@@ -485,9 +585,15 @@ export function Schedules() {
           </div>
         ) : (
           <div className="py-12 text-center">
-            <CalendarIcon size={48} weight="duotone" className="mx-auto mb-4 text-white/40" />
+            <CalendarIcon
+              size={48}
+              weight="duotone"
+              className="mx-auto mb-4 text-white/40"
+            />
             <p className="text-sm text-white/70">
-              {search ? "No schedules found" : "No schedules yet. Click Add Schedule to get started."}
+              {search
+                ? "No schedules found"
+                : "No schedules yet. Click Add Schedule to get started."}
             </p>
           </div>
         )}
@@ -497,9 +603,9 @@ export function Schedules() {
       {pagination && pagination.totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between border-t border-emerald-700/50 pt-4">
           <p className="text-xs text-white/60">
-            Showing {((pagination.page - 1) * pagination.itemsPerPage) + 1} to{" "}
-            {Math.min(pagination.page * pagination.itemsPerPage, pagination.totalItems)} of{" "}
-            {pagination.totalItems} schedules
+            Showing {(pagination.page - 1) * pagination.itemsPerPage + 1} to{" "}
+            {Math.min(pagination.page * pagination.itemsPerPage, pagination.totalItems)}{" "}
+            of {pagination.totalItems} schedules
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -555,7 +661,7 @@ export function Schedules() {
                 <XIcon size={20} weight="bold" />
               </button>
             </div>
-            
+
             <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-2">
               <div>
                 <label className="mb-2 block text-sm font-medium text-white">
@@ -700,6 +806,28 @@ export function Schedules() {
                   ))}
                 </div>
               </div>
+
+              <div className="rounded-xl border border-white/30 bg-black/20 p-4">
+                <p className="mb-1 text-xs font-medium uppercase tracking-wider text-white/60">
+                  Email preview
+                </p>
+                <p className="mb-3 text-xs text-white/80">
+                  <span className="font-medium text-white">Subject:</span>{" "}
+                  {buildScheduleReminderEmailSubject(
+                    title.trim() || "Your schedule title"
+                  )}
+                </p>
+                <iframe
+                  title="Reminder email preview"
+                  aria-label="Live preview of the reminder email layout recipients receive"
+                  className="h-[min(380px,52vh)] w-full min-h-[240px] rounded-lg border border-emerald-700/60 bg-[#064e3b]"
+                  srcDoc={scheduleEmailPreviewHtml}
+                />
+                <p className="mt-2 text-xs leading-relaxed text-white/50">
+                  Same HTML as the automated reminder. The deadline shown is the next
+                  occurrence from your deadline settings above.
+                </p>
+              </div>
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
@@ -822,10 +950,15 @@ export function Schedules() {
                 />
               </div>
               <div>
-                <h3 id="schedule-delete-dialog-title" className="text-lg font-medium text-white">
+                <h3
+                  id="schedule-delete-dialog-title"
+                  className="text-lg font-medium text-white"
+                >
                   Delete schedule?
                 </h3>
-                <p className="mt-0.5 text-xs text-red-200/80">This action cannot be undone</p>
+                <p className="mt-0.5 text-xs text-red-200/80">
+                  This action cannot be undone
+                </p>
               </div>
             </div>
             <p className="mt-4 text-sm text-white/90">

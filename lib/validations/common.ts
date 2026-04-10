@@ -29,18 +29,13 @@ export const passwordSchema = z
 
 export const weakPasswordSchema = z.string().min(6).max(128); // For login (don't validate complexity)
 
-export const stringSchema = z
-  .string()
-  .max(10_000, "String exceeds maximum length");
+export const stringSchema = z.string().max(10_000, "String exceeds maximum length");
 
 export const slugSchema = z
   .string()
   .min(1)
   .max(100)
-  .regex(
-    /^[a-z0-9-]+$/,
-    "Slug must be lowercase alphanumeric and hyphens only",
-  );
+  .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric and hyphens only");
 
 export const urlSchema = z.string().url().max(2048);
 

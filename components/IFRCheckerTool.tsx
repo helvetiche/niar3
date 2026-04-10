@@ -52,8 +52,8 @@ export default function IFRCheckerTool() {
               Upload IFR Files (Source Data)
             </h3>
             <p className="mt-1 text-sm text-white/80">
-              Upload one or more Excel files (.xlsx or .xls) containing the
-              original IFR data.
+              Upload one or more Excel files (.xlsx or .xls) containing the original IFR
+              data.
             </p>
           </div>
 
@@ -106,12 +106,10 @@ export default function IFRCheckerTool() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Upload Consolidated File
-            </h3>
+            <h3 className="text-lg font-medium text-white">Upload Consolidated File</h3>
             <p className="mt-1 text-sm text-white/80">
-              Upload the consolidated Excel file that you want to validate
-              against the IFR source data.
+              Upload the consolidated Excel file that you want to validate against the
+              IFR source data.
             </p>
           </div>
 
@@ -157,9 +155,7 @@ export default function IFRCheckerTool() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Review & Validate
-            </h3>
+            <h3 className="text-lg font-medium text-white">Review & Validate</h3>
             <p className="mt-1 text-sm text-white/80">
               Review your files and run the validation check.
             </p>
@@ -169,8 +165,7 @@ export default function IFRCheckerTool() {
             <h4 className="mb-3 text-sm font-medium text-white">Summary</h4>
             <div className="space-y-2 text-sm text-white/90">
               <p>
-                <span className="text-white/70">IFR Files:</span>{" "}
-                {ifrFiles.length}
+                <span className="text-white/70">IFR Files:</span> {ifrFiles.length}
               </p>
               <p>
                 <span className="text-white/70">Consolidated File:</span>{" "}
@@ -230,8 +225,8 @@ export default function IFRCheckerTool() {
                     Perfect Match!
                   </div>
                   <p className="mt-2 text-white/80">
-                    The consolidated file matches the IFR data perfectly. No
-                    issues found.
+                    The consolidated file matches the IFR data perfectly. No issues
+                    found.
                   </p>
                 </div>
               ) : (
@@ -259,7 +254,7 @@ export default function IFRCheckerTool() {
                             value={severityFilter}
                             onChange={(e) =>
                               handleSeverityFilterChange(
-                                e.target.value as "all" | "error" | "warning",
+                                e.target.value as "all" | "error" | "warning"
                               )
                             }
                             className="bg-transparent text-sm text-white focus:outline-none"
@@ -273,9 +268,7 @@ export default function IFRCheckerTool() {
                           <FunnelIcon size={16} className="text-white/70" />
                           <select
                             value={fieldFilter}
-                            onChange={(e) =>
-                              handleFieldFilterChange(e.target.value)
-                            }
+                            onChange={(e) => handleFieldFilterChange(e.target.value)}
                             className="bg-transparent text-sm text-white focus:outline-none"
                           >
                             <option value="all">All Fields</option>
@@ -289,8 +282,8 @@ export default function IFRCheckerTool() {
                       </div>
                     </div>
                     <p className="mt-2 text-xs text-white/60">
-                      Showing {paginatedIssues.length} of{" "}
-                      {filteredIssues.length} issue(s)
+                      Showing {paginatedIssues.length} of {filteredIssues.length}{" "}
+                      issue(s)
                       {filteredIssues.length !== result.issues.length &&
                         ` (filtered from ${result.issues.length} total)`}
                     </p>
@@ -329,10 +322,7 @@ export default function IFRCheckerTool() {
                         <tbody>
                           {paginatedIssues.length === 0 ? (
                             <tr>
-                              <td
-                                colSpan={7}
-                                className="p-8 text-center text-white/60"
-                              >
+                              <td colSpan={7} className="p-8 text-center text-white/60">
                                 No issues match your search criteria
                               </td>
                             </tr>
@@ -457,8 +447,8 @@ export default function IFRCheckerTool() {
           </span>
         </div>
         <p className="mt-2 text-sm text-white/85">
-          Validate consolidated files against source IFR data and identify
-          discrepancies automatically.
+          Validate consolidated files against source IFR data and identify discrepancies
+          automatically.
         </p>
       </div>
 

@@ -55,22 +55,19 @@ const geminiJsonSchema = z.object({
       z.object({
         name: z.string(),
         totalArea: z.union([z.number(), z.string()]),
-      }),
+      })
     )
     .default([]),
 });
 
-const parseGeminiJsonResponse = (
-  rawText: string,
-): z.infer<typeof geminiJsonSchema> => {
+const parseGeminiJsonResponse = (rawText: string): z.infer<typeof geminiJsonSchema> => {
   const cleaned = rawText
     .replace(/```json\n?/gi, "")
     .replace(/```\n?/g, "")
     .trim();
 
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-  if (!jsonMatch)
-    throw new Error("AI response parsing failed: no JSON object found.");
+  if (!jsonMatch) throw new Error("AI response parsing failed: no JSON object found.");
 
   const parsed = JSON.parse(jsonMatch[0]) as unknown;
   return geminiJsonSchema.parse(parsed);
@@ -78,9 +75,7 @@ const parseGeminiJsonResponse = (
 
 const generateContentWithQuotaGuard = async (
   model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
-  parts: Array<
-    { inlineData: { mimeType: string; data: string } } | { text: string }
-  >,
+  parts: Array<{ inlineData: { mimeType: string; data: string } } | { text: string }>
 ): Promise<Awaited<ReturnType<typeof model.generateContent>>> => {
   try {
     return await model.generateContent(parts);
@@ -90,7 +85,7 @@ const generateContentWithQuotaGuard = async (
       const retryMs = parseRetryDelayMs(message);
       const retrySeconds = Math.ceil(retryMs / 1000);
       throw new Error(
-        `Gemini API quota/rate limit reached. Please retry in about ${String(retrySeconds)} seconds.`,
+        `Gemini API quota/rate limit reached. Please retry in about ${String(retrySeconds)} seconds.`
       );
     }
     throw error;
@@ -98,7 +93,7 @@ const generateContentWithQuotaGuard = async (
 };
 
 const buildGeminiPrompt = (
-  originalPageNumber: number,
+  originalPageNumber: number
 ): string => `You are extracting irrigation summary data from a PDF.
 
 Task:
@@ -124,7 +119,7 @@ Rules:
 
 const extractSinglePagePdf = async (
   sourceBuffer: Buffer,
-  pageNumber: number,
+  pageNumber: number
 ): Promise<Buffer> => {
   const sourcePdf = await PDFDocument.load(sourceBuffer);
   const pageCount = sourcePdf.getPageCount();
@@ -132,7 +127,7 @@ const extractSinglePagePdf = async (
 
   if (resolvedPage < 1 || resolvedPage > pageCount) {
     throw new Error(
-      `Requested page ${String(pageNumber)} is out of range. This PDF has ${String(pageCount)} page(s).`,
+      `Requested page ${String(pageNumber)} is out of range. This PDF has ${String(pageCount)} page(s).`
     );
   }
 
@@ -145,12 +140,9 @@ const extractSinglePagePdf = async (
 
 const extractFromSinglePdf = async (
   model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
-  file: LipaSourceFile,
+  file: LipaSourceFile
 ): Promise<ExtractedFileResult> => {
-  const onePagePdfBuffer = await extractSinglePagePdf(
-    file.buffer,
-    file.pageNumber,
-  );
+  const onePagePdfBuffer = await extractSinglePagePdf(file.buffer, file.pageNumber);
 
   const result = await generateContentWithQuotaGuard(model, [
     {
@@ -202,12 +194,12 @@ const toScannedFile = (entry: ExtractedFileResult): LipaScannedFile => {
 };
 
 export const scanLipaSourceFile = async (
-  file: LipaSourceFile,
+  file: LipaSourceFile
 ): Promise<LipaScannedFile> => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "GEMINI_API_KEY is missing. Please set it in environment variables.",
+      "GEMINI_API_KEY is missing. Please set it in environment variables."
     );
   }
 
@@ -218,7 +210,7 @@ export const scanLipaSourceFile = async (
 };
 
 const mergeDivisionAssociations = (
-  entries: ExtractedFileResult[],
+  entries: ExtractedFileResult[]
 ): {
   divisions: LipaDivision[];
   extractedAssociations: number;
@@ -258,12 +250,10 @@ const mergeDivisionAssociations = (
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
       const total = Number(
-        irrigators
-          .reduce((sum, item) => sum + item.totalPlantedArea, 0)
-          .toFixed(2),
+        irrigators.reduce((sum, item) => sum + item.totalPlantedArea, 0).toFixed(2)
       );
       return { divisionName, irrigators, total };
-    },
+    }
   );
 
   return { divisions, extractedAssociations };
@@ -287,7 +277,7 @@ export const buildLipaReportData = async ({
   estimatedCostUsd: number;
 }> => {
   const scannedFiles = await Promise.all(
-    inputFiles.map((file) => scanLipaSourceFile(file)),
+    inputFiles.map((file) => scanLipaSourceFile(file))
   );
   return buildLipaReportDataFromScannedFiles({
     scannedFiles,
@@ -323,22 +313,15 @@ export const buildLipaReportDataFromScannedFiles = ({
     totalTokens: item.totalTokens,
   }));
 
-  const { divisions, extractedAssociations } =
-    mergeDivisionAssociations(extracted);
+  const { divisions, extractedAssociations } = mergeDivisionAssociations(extracted);
   if (extractedAssociations === 0) {
     throw new Error(
-      "No irrigation association data could be extracted from the uploaded PDFs.",
+      "No irrigation association data could be extracted from the uploaded PDFs."
     );
   }
 
-  const inputTokens = extracted.reduce(
-    (sum, file) => sum + file.inputTokens,
-    0,
-  );
-  const outputTokens = extracted.reduce(
-    (sum, file) => sum + file.outputTokens,
-    0,
-  );
+  const inputTokens = extracted.reduce((sum, file) => sum + file.inputTokens, 0);
+  const outputTokens = extracted.reduce((sum, file) => sum + file.outputTokens, 0);
   const estimatedCostUsd =
     (inputTokens / 1_000_000) * geminiPricingPerMillionTokens.input +
     (outputTokens / 1_000_000) * geminiPricingPerMillionTokens.output;
@@ -346,9 +329,8 @@ export const buildLipaReportDataFromScannedFiles = ({
     extracted.length > 0
       ? Number(
           (
-            extracted.reduce((sum, file) => sum + file.confidence, 0) /
-            extracted.length
-          ).toFixed(2),
+            extracted.reduce((sum, file) => sum + file.confidence, 0) / extracted.length
+          ).toFixed(2)
         )
       : 0;
 

@@ -17,9 +17,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export function useAccomplishmentReportTool() {
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [fullName, setFullName] = useState("");
-  const [selectedMonths, setSelectedMonths] = useState<number[]>([
-    ...ALL_MONTHS,
-  ]);
+  const [selectedMonths, setSelectedMonths] = useState<number[]>([...ALL_MONTHS]);
   const [includeFirstHalf, setIncludeFirstHalf] = useState(false);
   const [includeSecondHalf, setIncludeSecondHalf] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,7 +46,7 @@ export function useAccomplishmentReportTool() {
   } = useAccomplishmentTasks();
 
   const { data: accomplishmentReportTemplates = [] } = useTemplates(
-    "accomplishment-report",
+    "accomplishment-report"
   );
 
   // Auto-select the first template when templates are loaded
@@ -210,12 +208,10 @@ export function useAccomplishmentReportTool() {
         selectedMonths.length * (includeFirstHalf ? 1 : 0) +
         selectedMonths.length * (includeSecondHalf ? 1 : 0);
       toast.success(
-        `Downloaded merged accomplishment report with ${String(count)} period sheet(s).`,
+        `Downloaded merged accomplishment report with ${String(count)} period sheet(s).`
       );
     } catch (error) {
-      toast.error(
-        getErrorMessage(error, "Failed to generate accomplishment report."),
-      );
+      toast.error(getErrorMessage(error, "Failed to generate accomplishment report."));
     } finally {
       stopTimer();
       await hideOverlay(300);
@@ -226,9 +222,7 @@ export function useAccomplishmentReportTool() {
   const canProceedToStep = (step: number): boolean => {
     if (step === 0) return !!fullName.trim();
     if (step === 2)
-      return (
-        selectedMonths.length > 0 && (includeFirstHalf || includeSecondHalf)
-      );
+      return selectedMonths.length > 0 && (includeFirstHalf || includeSecondHalf);
     return true;
   };
 

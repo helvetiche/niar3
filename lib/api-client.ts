@@ -26,7 +26,7 @@ interface FetchOptions extends RequestInit {
  */
 export async function apiCall<T = unknown>(
   url: string,
-  options: FetchOptions = {},
+  options: FetchOptions = {}
 ): Promise<T> {
   const method = options.method?.toUpperCase() || "GET";
   const headers = { ...options.headers };
@@ -52,8 +52,7 @@ export async function apiCall<T = unknown>(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(
-      error?.error?.message ||
-        `HTTP ${response.status}: ${response.statusText}`,
+      error?.error?.message || `HTTP ${response.status}: ${response.statusText}`
     );
   }
 

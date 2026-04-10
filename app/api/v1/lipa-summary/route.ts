@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth";
-import {
-  applySecurityHeaders,
-  secureFileResponse,
-} from "@/lib/security-headers";
+import { applySecurityHeaders, secureFileResponse } from "@/lib/security-headers";
 import { buildLipaReportData } from "@/lib/lipa-summary";
 import { generateLipaReportWorkbook } from "@/lib/lipa-report-generator";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
@@ -20,7 +17,7 @@ const fileMappingSchema = z.object({
 });
 
 const parseMappings = (
-  raw: FormDataEntryValue | null,
+  raw: FormDataEntryValue | null
 ): z.infer<typeof fileMappingSchema>[] => {
   if (typeof raw !== "string" || !raw.trim()) {
     throw new Error("File division mapping is required.");
@@ -85,8 +82,8 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: "Please upload at least one PDF file." },
-          { status: 400 },
-        ),
+          { status: 400 }
+        )
       );
     }
 
@@ -105,8 +102,8 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: uploadValidation.message },
-          { status: uploadValidation.status },
-        ),
+          { status: uploadValidation.status }
+        )
       );
     }
 
@@ -128,28 +125,22 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           {
-            error:
-              "Each uploaded file must have a mapped division and page number.",
+            error: "Each uploaded file must have a mapped division and page number.",
           },
-          { status: 400 },
-        ),
+          { status: 400 }
+        )
       );
     }
 
     const fileByIndex = files.map((file, index) => ({ file, index }));
     const mappingByIndex = new Map(
-      mappings.map((mapping) => [mapping.fileIndex, mapping]),
+      mappings.map((mapping) => [mapping.fileIndex, mapping])
     );
 
     const inputFiles = await Promise.all(
       fileByIndex.map(async ({ file, index }) => {
-        if (
-          !file.type.includes("pdf") &&
-          !file.name.toLowerCase().endsWith(".pdf")
-        ) {
-          throw new Error(
-            `Only PDF files are supported. Invalid file: ${file.name}`,
-          );
+        if (!file.type.includes("pdf") && !file.name.toLowerCase().endsWith(".pdf")) {
+          throw new Error(`Only PDF files are supported. Invalid file: ${file.name}`);
         }
         const mapping = mappingByIndex.get(index);
         if (!mapping || !mapping.divisionName.trim()) {
@@ -165,7 +156,7 @@ export async function POST(request: Request) {
           pageNumber: mapping.pageNumber,
           buffer: Buffer.from(await file.arrayBuffer()),
         };
-      }),
+      })
     );
 
     const title = typeof titleRaw === "string" ? titleRaw.trim() : "";
@@ -202,8 +193,7 @@ export async function POST(request: Request) {
     });
 
     return secureFileResponse(buffer, {
-      contentType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: outputName,
       extraHeaders: {
         "X-Scanned-Files": String(data.scannedFiles),
@@ -215,9 +205,7 @@ export async function POST(request: Request) {
   } catch (error) {
     logger.error("[api/lipa-summary POST]", error);
     const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to generate LIPA summary report";
+      error instanceof Error ? error.message : "Failed to generate LIPA summary report";
     const lower = message.toLowerCase();
     const isQuotaOrRateLimit =
       lower.includes("quota") ||
@@ -260,8 +248,8 @@ export async function POST(request: Request) {
               : isQuotaOrRateLimit
                 ? 429
                 : 500,
-        },
-      ),
+        }
+      )
     );
   }
 }

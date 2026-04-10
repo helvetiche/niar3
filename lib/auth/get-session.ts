@@ -6,8 +6,7 @@ import type { AuthUser } from "@/types/auth";
 const SESSION_COOKIE = "__session";
 
 export async function getSession(): Promise<
-  | { user: AuthUser }
-  | { user: null; error: "no-token" | "invalid-token" | "expired" }
+  { user: AuthUser } | { user: null; error: "no-token" | "invalid-token" | "expired" }
 > {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;

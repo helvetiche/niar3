@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-export type ScheduleWidgetType = 
+export type ScheduleWidgetType =
   | "nearest-deadline"
   | "tasks-this-week"
   | "tasks-this-month";
@@ -31,10 +31,40 @@ export type QuickAccomplishmentWidget = {
   type: "quick-accomplishment";
 };
 
+export type QuickMergeFilesWidget = {
+  id: string;
+  type: "quick-merge-files";
+};
+
+export type QuickBillingUnitWidget = {
+  id: string;
+  type: "quick-billing-unit";
+};
+
+export type QuickConsolidateIfrWidget = {
+  id: string;
+  type: "quick-consolidate-ifr";
+};
+
 export type Widget =
   | ScheduleWidget
   | PriorityWidget
-  | QuickAccomplishmentWidget;
+  | QuickAccomplishmentWidget
+  | QuickMergeFilesWidget
+  | QuickBillingUnitWidget
+  | QuickConsolidateIfrWidget;
+
+const SINGLETON_QUICK_WIDGET_TYPES = [
+  "quick-accomplishment",
+  "quick-merge-files",
+  "quick-billing-unit",
+  "quick-consolidate-ifr",
+] as const;
+
+const isSingletonQuickWidgetType = (
+  type: string
+): type is (typeof SINGLETON_QUICK_WIDGET_TYPES)[number] =>
+  (SINGLETON_QUICK_WIDGET_TYPES as readonly string[]).includes(type);
 
 type WidgetSidebarContextValue = {
   isOpen: boolean;
@@ -76,17 +106,30 @@ function parseStoredWidgets(raw: string): Widget[] {
     if (!Array.isArray(parsed)) return [];
     const out: Widget[] = [];
     let priorityKept = false;
-    let quickAccomplishmentKept = false;
+    const quickSingletonSeen = new Set<string>();
     for (const item of parsed) {
       if (!item || typeof item !== "object") continue;
       const rec = item as Record<string, unknown>;
-      if (rec.type === "quick-accomplishment" && typeof rec.id === "string") {
-        if (quickAccomplishmentKept) continue;
-        quickAccomplishmentKept = true;
-        out.push({ id: rec.id, type: "quick-accomplishment" });
+      const t = rec.type;
+      if (typeof t === "string" && isSingletonQuickWidgetType(t)) {
+        if (typeof rec.id !== "string" || quickSingletonSeen.has(t)) continue;
+        quickSingletonSeen.add(t);
+        if (t === "quick-accomplishment") {
+          out.push({ id: rec.id, type: "quick-accomplishment" });
+        } else if (t === "quick-merge-files") {
+          out.push({ id: rec.id, type: "quick-merge-files" });
+        } else if (t === "quick-billing-unit") {
+          out.push({ id: rec.id, type: "quick-billing-unit" });
+        } else if (t === "quick-consolidate-ifr") {
+          out.push({ id: rec.id, type: "quick-consolidate-ifr" });
+        }
         continue;
       }
-      if (rec.type === "priority" && typeof rec.id === "string" && typeof rec.scheduleId === "string") {
+      if (
+        rec.type === "priority" &&
+        typeof rec.id === "string" &&
+        typeof rec.scheduleId === "string"
+      ) {
         if (priorityKept) continue;
         priorityKept = true;
         out.push({ id: rec.id, type: "priority", scheduleId: rec.scheduleId });
@@ -155,11 +198,8 @@ export function WidgetSidebarProvider({ children }: { children: ReactNode }) {
       let next: Widget[];
       if (widget.type === "priority") {
         next = [...prev.filter((w) => w.type !== "priority"), widget];
-      } else if (widget.type === "quick-accomplishment") {
-        next = [
-          ...prev.filter((w) => w.type !== "quick-accomplishment"),
-          widget,
-        ];
+      } else if (isSingletonQuickWidgetType(widget.type)) {
+        next = [...prev.filter((w) => w.type !== widget.type), widget];
       } else {
         next = [...prev, widget];
       }
@@ -177,11 +217,11 @@ export function WidgetSidebarProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const contextValue = useMemo(
-    () => ({ 
-      isOpen, 
+    () => ({
+      isOpen,
       widgets,
-      toggleSidebar, 
-      openSidebar, 
+      toggleSidebar,
+      openSidebar,
       closeSidebar,
       addWidget,
       removeWidget,

@@ -17,7 +17,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const router = useRouter();
   const { overlayRef, panelRef, closeWithAnimation } = useModalAnimation(
     isOpen,
-    onClose,
+    onClose
   );
   const [view, setView] = useState<ModalView>("login");
   const [error, setError] = useState<string | null>(null);
@@ -59,9 +59,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               <h3 className="text-base font-semibold text-white">
                 {view === "login" ? "Login" : "Reset password"}
               </h3>
-              <p className="text-xs text-white/70">
-                NIA Region 3 — Employee Portal
-              </p>
+              <p className="text-xs text-white/70">NIA Region 3 — Employee Portal</p>
             </div>
           </div>
           <button
@@ -80,9 +78,9 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
         </p>
         {view === "forgot-password" && (
           <p className="mb-4 text-xs text-white/60">
-            After submitting, you&apos;ll receive the reset link at the email
-            you provide. If you don&apos;t see it within a few minutes, check
-            your spam or junk folder—it may have been filtered there.
+            After submitting, you&apos;ll receive the reset link at the email you
+            provide. If you don&apos;t see it within a few minutes, check your spam or
+            junk folder—it may have been filtered there.
           </p>
         )}
 
@@ -96,9 +94,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               const email = (
                 form.querySelector("#email") as HTMLInputElement
               )?.value?.trim();
-              const password = (
-                form.querySelector("#password") as HTMLInputElement
-              )?.value;
+              const password = (form.querySelector("#password") as HTMLInputElement)
+                ?.value;
               if (!email || !password) {
                 setError("Please enter email and password.");
                 return;
@@ -112,11 +109,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
                 await signOut(auth);
 
-                const cred = await signInWithEmailAndPassword(
-                  auth,
-                  email,
-                  password,
-                );
+                const cred = await signInWithEmailAndPassword(auth, email, password);
 
                 await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -135,8 +128,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 router.push("/workspace");
               } catch (err) {
                 const code = (err as { code?: string }).code ?? "";
-                const msg =
-                  err instanceof Error ? err.message : "Sign in failed";
+                const msg = err instanceof Error ? err.message : "Sign in failed";
                 if (
                   code.startsWith("auth/") &&
                   (code.includes("invalid-credential") ||

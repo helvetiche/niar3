@@ -48,8 +48,7 @@ export function GenerateProfilesToolStepped() {
           <div>
             <h3 className="text-lg font-medium text-white">Upload IFR</h3>
             <p className="mt-1 text-sm text-white/80">
-              Upload one or more Excel files (.xlsx or .xls) containing IFR
-              data.
+              Upload one or more Excel files (.xlsx or .xls) containing IFR data.
             </p>
           </div>
 
@@ -102,9 +101,7 @@ export function GenerateProfilesToolStepped() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Configure File Mappings
-            </h3>
+            <h3 className="text-lg font-medium text-white">Configure File Mappings</h3>
             <p className="mt-1 text-sm text-white/80">
               Set folder names for each uploaded file.
             </p>
@@ -156,9 +153,7 @@ export function GenerateProfilesToolStepped() {
                           <input
                             type="text"
                             value={folderName}
-                            onChange={(e) =>
-                              updateFolderName(fileKey, e.target.value)
-                            }
+                            onChange={(e) => updateFolderName(fileKey, e.target.value)}
                             placeholder="Enter division folder name"
                             className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-1 focus:ring-white"
                           />
@@ -179,9 +174,7 @@ export function GenerateProfilesToolStepped() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Review & Generate
-            </h3>
+            <h3 className="text-lg font-medium text-white">Review & Generate</h3>
             <p className="mt-1 text-sm text-white/80">
               Review your configuration and generate the billing units.
             </p>
@@ -212,8 +205,8 @@ export function GenerateProfilesToolStepped() {
                     </td>
                     <td className="p-3 text-white">
                       {selectedTemplateId
-                        ? ifrTemplates.find((t) => t.id === selectedTemplateId)
-                            ?.name || "Auto-selected"
+                        ? ifrTemplates.find((t) => t.id === selectedTemplateId)?.name ||
+                          "Auto-selected"
                         : "Auto-selected"}
                     </td>
                   </tr>
@@ -221,9 +214,7 @@ export function GenerateProfilesToolStepped() {
                     <td className="border-r border-white/20 p-3 text-white/70">
                       ZIP Name
                     </td>
-                    <td className="p-3 text-white">
-                      {zipName || defaultZipName}
-                    </td>
+                    <td className="p-3 text-white">{zipName || defaultZipName}</td>
                   </tr>
                   <tr>
                     <td className="border-r border-white/20 p-3 text-white/70">

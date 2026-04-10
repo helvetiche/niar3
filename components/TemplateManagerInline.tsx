@@ -51,10 +51,7 @@ export function TemplateManagerInline({
       setTemplates(items);
 
       // Validate current selection
-      if (
-        selectedTemplateId &&
-        !items.some((t) => t.id === selectedTemplateId)
-      ) {
+      if (selectedTemplateId && !items.some((t) => t.id === selectedTemplateId)) {
         onSelectedTemplateIdChange("");
         window.localStorage.removeItem(getTemplateStorageKey(scope));
         return;
@@ -63,7 +60,7 @@ export function TemplateManagerInline({
       // Auto-select if nothing is selected
       if (!selectedTemplateId && items.length > 0) {
         const savedTemplateId = window.localStorage.getItem(
-          getTemplateStorageKey(scope),
+          getTemplateStorageKey(scope)
         );
         const defaultId =
           savedTemplateId && items.some((t) => t.id === savedTemplateId)
@@ -72,9 +69,7 @@ export function TemplateManagerInline({
         onSelectedTemplateIdChange(defaultId);
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to load templates.",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to load templates.");
     } finally {
       setIsLoading(false);
     }
@@ -164,7 +159,7 @@ export function TemplateManagerInline({
         file: editFile,
       });
       setTemplates((previous) =>
-        previous.map((item) => (item.id === updated.id ? updated : item)),
+        previous.map((item) => (item.id === updated.id ? updated : item))
       );
       cancelEdit();
       toast.success("Template updated.");
@@ -328,9 +323,7 @@ export function TemplateManagerInline({
                 ref={uploadInputRef}
                 type="file"
                 accept=".xlsx,.xls"
-                onChange={(event) =>
-                  setUploadFile(event.target.files?.[0] ?? null)
-                }
+                onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)}
                 className="block w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white file:mr-3 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-emerald-900 hover:file:bg-emerald-50"
               />
               <button

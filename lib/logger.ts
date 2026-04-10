@@ -47,7 +47,7 @@ function sendToExternalLogger(entry: LogEntry): void {
       }
     } else {
       // Fallback to structured console logging
-       
+
       console[entry.level](JSON.stringify(entry));
     }
   }
@@ -66,7 +66,6 @@ declare global {
 export const logger = {
   debug: (...args: unknown[]) => {
     if (isDevelopment) {
-       
       console.debug("[debug]", ...args);
     }
   },
@@ -74,7 +73,6 @@ export const logger = {
   info: (...args: unknown[]) => {
     const entry = formatLogEntry("info", args);
     if (isDevelopment) {
-       
       console.info("[info]", ...args);
     } else {
       sendToExternalLogger(entry);
@@ -84,7 +82,6 @@ export const logger = {
   warn: (...args: unknown[]) => {
     const entry = formatLogEntry("warn", args);
     if (isDevelopment) {
-       
       console.warn("[warn]", ...args);
     }
     sendToExternalLogger(entry);
@@ -93,7 +90,6 @@ export const logger = {
   error: (...args: unknown[]) => {
     const entry = formatLogEntry("error", args);
     if (isDevelopment) {
-       
       console.error("[error]", ...args);
     }
     sendToExternalLogger(entry);

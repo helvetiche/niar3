@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       errorMessage: "Failed to load profile",
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Failed to load profile" }, { status: 500 }),
+      NextResponse.json({ error: "Failed to load profile" }, { status: 500 })
     );
   }
 }
@@ -67,7 +67,7 @@ export async function PUT(request: Request) {
       details: { reason: "invalid-json-body" },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Invalid JSON body" }, { status: 400 }),
+      NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
     );
   }
   const MAX_NAME_LENGTH = 100;
@@ -80,8 +80,7 @@ export async function PUT(request: Request) {
   const middle = trimField(body.middle, MAX_NAME_LENGTH);
   const last = trimField(body.last, MAX_NAME_LENGTH);
   const rawBirthday = trimField(body.birthday, MAX_BIRTHDAY_LENGTH);
-  const birthday =
-    rawBirthday && BIRTHDAY_REGEX.test(rawBirthday) ? rawBirthday : "";
+  const birthday = rawBirthday && BIRTHDAY_REGEX.test(rawBirthday) ? rawBirthday : "";
 
   const profile = { first, middle, last, birthday };
   try {
@@ -117,7 +116,7 @@ export async function PUT(request: Request) {
       errorMessage: "Failed to save profile",
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Failed to save profile" }, { status: 500 }),
+      NextResponse.json({ error: "Failed to save profile" }, { status: 500 })
     );
   }
 }

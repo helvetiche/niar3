@@ -50,7 +50,7 @@ export function NotePopover({ note, children, onRemove }: NotePopoverProps) {
     () => () => {
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     },
-    [],
+    []
   );
 
   const popover = isHovered && (
@@ -68,9 +68,7 @@ export function NotePopover({ note, children, onRemove }: NotePopoverProps) {
         </div>
         <div className="min-w-0 flex-1 pt-0.5">
           <p className="text-sm font-medium text-white">{note.text}</p>
-          <p className="mt-0.5 text-xs capitalize text-white/70">
-            {note.color}
-          </p>
+          <p className="mt-0.5 text-xs capitalize text-white/70">{note.color}</p>
         </div>
       </div>
       <div className="border-t border-white/20 p-2">

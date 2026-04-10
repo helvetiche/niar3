@@ -46,9 +46,7 @@ const fetcher = async (url: string): Promise<SchedulesResponse> => {
   return response.json();
 };
 
-export function useSchedules(
-  options: UseSchedulesOptions = {}
-): UseSchedulesReturn {
+export function useSchedules(options: UseSchedulesOptions = {}): UseSchedulesReturn {
   const { initialPage = 1, initialSearch = "", initialStatus = "" } = options;
 
   const [page, setPage] = useState(initialPage);

@@ -38,9 +38,7 @@ export function SourceFileMapping({
           aria-label="Set billing unit folder name"
           value={billingUnitFolderName}
           onChange={(event) =>
-            onBillingUnitFolderNameChange(
-              sanitizeFolderName(event.target.value),
-            )
+            onBillingUnitFolderNameChange(sanitizeFolderName(event.target.value))
           }
           className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
           placeholder={defaultBillingUnitFolderName}
@@ -50,8 +48,7 @@ export function SourceFileMapping({
       <div className="mt-4 space-y-4">
         {files.map((file) => {
           const fileKey = getFileKey(file);
-          const folderName =
-            sourceFolderNames[fileKey] || getBaseName(file.name);
+          const folderName = sourceFolderNames[fileKey] || getBaseName(file.name);
           const profilesFolder =
             billingUnitFolderName.trim() || defaultBillingUnitFolderName;
 
@@ -68,9 +65,7 @@ export function SourceFileMapping({
                   type="text"
                   aria-label={`Set division folder name for ${file.name}`}
                   value={folderName}
-                  onChange={(event) =>
-                    onFolderNameChange(fileKey, event.target.value)
-                  }
+                  onChange={(event) => onFolderNameChange(fileKey, event.target.value)}
                   className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                   placeholder={getBaseName(file.name)}
                 />
@@ -79,9 +74,7 @@ export function SourceFileMapping({
               <div className="mt-3 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs text-white">
                 <p className="font-medium">{folderName || "division"}/</p>
                 <p className="pl-4">{profilesFolder}/</p>
-                <p className="pl-8 text-white/70">
-                  ...generated billing unit files
-                </p>
+                <p className="pl-8 text-white/70">...generated billing unit files</p>
               </div>
             </div>
           );

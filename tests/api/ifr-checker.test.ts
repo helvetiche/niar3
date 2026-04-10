@@ -14,7 +14,14 @@ vi.mock("@/lib/logger", () => ({
 vi.mock("@/lib/services/ifr-checker.service", () => ({
   validateIFRFiles: vi.fn().mockResolvedValue({
     success: true,
-    summary: { totalLots: 0, consolidatedLots: 0, matchingLots: 0, totalIssues: 0, errors: 0, warnings: 0 },
+    summary: {
+      totalLots: 0,
+      consolidatedLots: 0,
+      matchingLots: 0,
+      totalIssues: 0,
+      errors: 0,
+      warnings: 0,
+    },
     issues: [],
   }),
 }));

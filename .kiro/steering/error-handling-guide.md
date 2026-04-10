@@ -27,7 +27,7 @@ safeAsync(async () => {
 const { error, statusCode } = createErrorResponse(
   "INVALID_INPUT",
   "User input validation failed",
-  400,
+  400
 );
 return NextResponse.json(error, { status: statusCode });
 ```
@@ -84,7 +84,7 @@ useEffect(() => {
   return createAsyncEffect(
     () => fetchData(),
     (data) => setData(data),
-    (error) => console.error(error),
+    (error) => console.error(error)
   );
 }, []);
 
@@ -92,7 +92,7 @@ useEffect(() => {
 const handleClick = async () => {
   await handleAsync(
     () => submitForm(),
-    (error) => toast.error("Failed to submit"),
+    (error) => toast.error("Failed to submit")
   );
 };
 ```
@@ -214,7 +214,7 @@ useEffect(() => {
   return createAsyncEffect(
     () => loadAccounts(1),
     () => {}, // onSuccess
-    (error) => console.error("Failed to load accounts:", error),
+    (error) => console.error("Failed to load accounts:", error)
   );
 }, [loadAccounts]);
 ```

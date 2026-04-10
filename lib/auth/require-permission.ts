@@ -9,9 +9,7 @@ import type { Permission } from "@/constants/permissions";
  * Require authenticated user with specific permission.
  * Redirects to /login if not authenticated, /unauthorized if lacking permission.
  */
-export async function requirePermission(
-  permission: Permission,
-): Promise<AuthUser> {
+export async function requirePermission(permission: Permission): Promise<AuthUser> {
   const result = await getSession();
   if (!result.user) {
     redirect("/?login=1");

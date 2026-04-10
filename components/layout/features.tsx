@@ -104,11 +104,7 @@ export function Features() {
             Speed
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm sm:gap-2 sm:px-4 sm:py-1.5 sm:text-sm">
-            <ArrowsClockwiseIcon
-              size={16}
-              weight="duotone"
-              className="shrink-0"
-            />
+            <ArrowsClockwiseIcon size={16} weight="duotone" className="shrink-0" />
             Consistency
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm sm:gap-2 sm:px-4 sm:py-1.5 sm:text-sm">
@@ -117,9 +113,9 @@ export function Features() {
           </span>
         </div>
         <p className="mt-2 w-full text-justify text-sm text-white sm:text-base md:w-1/2">
-          NIA Productivity Tools unifies four capabilities that reduce
-          repetitive work, improve accuracy, accelerate processing, and deliver
-          consistent verified outputs daily.
+          NIA Productivity Tools unifies four capabilities that reduce repetitive work,
+          improve accuracy, accelerate processing, and deliver consistent verified
+          outputs daily.
         </p>
         <div className="mt-8 flex flex-nowrap gap-4 overflow-x-auto pb-2">
           {FEATURES.map((feature) => {
@@ -147,8 +143,7 @@ export function Features() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {feature.tags.map((tag) => {
                       const TagIcon = tag.icon;
-                      const selected =
-                        selectedTags[`${feature.id}:${tag.id}`] ?? false;
+                      const selected = selectedTags[`${feature.id}:${tag.id}`] ?? false;
                       return (
                         <button
                           key={tag.id}
@@ -156,16 +151,10 @@ export function Features() {
                           onClick={() => handleToggleTag(feature.id, tag.id)}
                           aria-pressed={selected}
                           className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-white backdrop-blur-sm transition sm:gap-2 sm:px-4 sm:py-1.5 sm:text-sm ${
-                            selected
-                              ? "bg-white/35"
-                              : "bg-white/20 hover:bg-white/30"
+                            selected ? "bg-white/35" : "bg-white/20 hover:bg-white/30"
                           }`}
                         >
-                          <TagIcon
-                            size={13}
-                            weight="duotone"
-                            className="shrink-0"
-                          />
+                          <TagIcon size={13} weight="duotone" className="shrink-0" />
                           {tag.label}
                         </button>
                       );

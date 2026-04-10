@@ -9,10 +9,7 @@ export function getRoleBadgeColor(role: string): string {
   }
 }
 
-export function getUserInitials(
-  displayName: string | null,
-  email: string,
-): string {
+export function getUserInitials(displayName: string | null, email: string): string {
   if (displayName && displayName.trim()) {
     const parts = displayName.trim().split(/\s+/);
     if (parts.length >= 2) {
@@ -28,10 +25,7 @@ export function getUserInitials(
   return "U";
 }
 
-export function getDisplayName(
-  displayName: string | null,
-  email: string,
-): string {
+export function getDisplayName(displayName: string | null, email: string): string {
   if (displayName && displayName.trim()) {
     return displayName;
   }

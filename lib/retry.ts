@@ -32,9 +32,7 @@ function isRetryableError(error: unknown, retryableErrors: string[]): boolean {
   const errorString = error instanceof Error ? error.message : String(error);
   const lowerError = errorString.toLowerCase();
 
-  return retryableErrors.some((pattern) =>
-    lowerError.includes(pattern.toLowerCase()),
-  );
+  return retryableErrors.some((pattern) => lowerError.includes(pattern.toLowerCase()));
 }
 
 function delay(ms: number): Promise<void> {
@@ -49,7 +47,7 @@ function delay(ms: number): Promise<void> {
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
-  options?: RetryOptions,
+  options?: RetryOptions
 ): Promise<T> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   let lastError: unknown;
@@ -73,14 +71,11 @@ export async function withRetry<T>(
 
       logger.warn(
         `Attempt ${attempt}/${opts.maxAttempts} failed, retrying in ${currentDelay}ms`,
-        error,
+        error
       );
 
       await delay(currentDelay);
-      currentDelay = Math.min(
-        currentDelay * opts.backoffMultiplier,
-        opts.maxDelayMs,
-      );
+      currentDelay = Math.min(currentDelay * opts.backoffMultiplier, opts.maxDelayMs);
     }
   }
 

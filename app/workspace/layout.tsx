@@ -20,7 +20,9 @@ export default async function WorkspaceLayout({
       <WidgetSidebarProvider>
         <div className="flex bg-emerald-900 min-h-screen">
           <WorkspaceSidebar user={user} />
-          <div className="bg-emerald-900 flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+          <div className="bg-emerald-900 flex min-h-0 min-w-0 flex-1 flex-col">
+            {children}
+          </div>
           <WidgetSidebar />
         </div>
       </WidgetSidebarProvider>

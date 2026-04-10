@@ -12,7 +12,7 @@ const updateQuarterlyBodySchema = z.object({
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ itemId: string }> },
+  { params }: { params: Promise<{ itemId: string }> }
 ): Promise<NextResponse> {
   try {
     const { itemId } = await params;
@@ -22,7 +22,7 @@ export async function PATCH(
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Invalid payload", details: parsed.error.flatten() },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -33,7 +33,7 @@ export async function PATCH(
       year,
       quarter,
       field,
-      value,
+      value
     );
 
     if (!updated) {
@@ -45,7 +45,7 @@ export async function PATCH(
     logger.error("Error updating quarterly data:", error);
     return NextResponse.json(
       { error: "Failed to update quarterly data" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

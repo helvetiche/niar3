@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getCacheStatus } from "@/lib/schedule-cache";
 import { requireAuth } from "@/lib/auth";
 
 /**
  * GET /api/v1/schedules/cache-status
  * Get the current status of the schedule cache
- * 
+ *
  * Returns information about when the cache was last synced and how many
  * schedules are currently cached.
  */
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     // Verify user is authenticated
     await requireAuth();
@@ -39,7 +39,7 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error("Error getting cache status:", error);
-    
+
     return NextResponse.json(
       {
         success: false,

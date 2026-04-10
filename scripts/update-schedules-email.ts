@@ -18,7 +18,9 @@ function initializeFirebaseAdmin() {
 
   if (!projectId || !clientEmail || !privateKey) {
     console.error("Error: Firebase Admin credentials missing.");
-    console.error("Please set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY in .env.local");
+    console.error(
+      "Please set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY in .env.local"
+    );
     process.exit(1);
   }
 
@@ -41,9 +43,7 @@ async function updateSchedulesEmail() {
   console.log(`\n📋 Fetching all schedules to update email to: ${targetEmail}\n`);
 
   try {
-    const schedulesSnapshot = await db
-      .collection("schedules")
-      .get();
+    const schedulesSnapshot = await db.collection("schedules").get();
 
     if (schedulesSnapshot.empty) {
       console.log("No schedules found in the database.");
@@ -57,22 +57,24 @@ async function updateSchedulesEmail() {
 
     schedulesSnapshot.forEach((doc) => {
       const data = doc.data();
-      
+
       // Update the schedule with new email and userId
       batch.update(doc.ref, {
         userId: targetUserId,
         personEmail: targetEmail,
         personAssigned: targetEmail.split("@")[0],
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
-      
+
       updateCount++;
       console.log(`Updating: ${data.title} (${doc.id})`);
     });
 
     await batch.commit();
 
-    console.log(`\n✅ Successfully updated ${updateCount} schedule(s) with email: ${targetEmail}\n`);
+    console.log(
+      `\n✅ Successfully updated ${updateCount} schedule(s) with email: ${targetEmail}\n`
+    );
   } catch (error) {
     console.error("Error updating schedules:", error);
     process.exit(1);

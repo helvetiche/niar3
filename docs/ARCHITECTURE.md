@@ -7,22 +7,26 @@ NIA Tools is a Next.js 16 application built with TypeScript, React 19, and Fireb
 ## Technology Stack
 
 ### Core
+
 - **Next.js 16**: App Router with React Server Components
 - **React 19**: Latest React with concurrent features
 - **TypeScript 5**: Strict mode enabled
 - **Firebase**: Authentication and Realtime Database
 
 ### State Management
+
 - **React Context**: Global workspace state
 - **SWR**: Server state management and caching
 - **Custom Hooks**: Encapsulated business logic
 
 ### Styling
+
 - **Tailwind CSS 4**: Utility-first CSS
 - **Radix UI**: Accessible component primitives
 - **GSAP + Motion**: Animations
 
 ### Data Processing
+
 - **ExcelJS**: Excel file manipulation
 - **PDF-Lib**: PDF generation and merging
 - **JSZip**: File compression
@@ -107,6 +111,7 @@ niatools/
 ### 3. Request Flow
 
 #### API Request Flow
+
 ```
 1. Client Request
    ↓
@@ -132,6 +137,7 @@ niatools/
 ```
 
 #### Page Request Flow
+
 ```
 1. Client Request
    ↓
@@ -157,12 +163,14 @@ niatools/
 ### 1. Authentication Strategy
 
 **Session Cookies over JWT**
+
 - Firebase session cookies (5-day expiry)
 - HttpOnly, Secure, SameSite=Strict
 - Server-side verification on every request
 - No client-side token storage
 
 **Why?**
+
 - More secure (XSS protection)
 - Automatic CSRF protection
 - Simpler client code
@@ -171,12 +179,14 @@ niatools/
 ### 2. Rate Limiting
 
 **Distributed Rate Limiting with Upstash Redis**
+
 - Different limits per endpoint type
 - Sliding window algorithm
 - Client identification via IP
 - Graceful degradation (disabled in dev)
 
 **Limits:**
+
 - Auth: 5 req/60s
 - API: 10 req/10s
 - Heavy: 5 req/60s
@@ -185,12 +195,14 @@ niatools/
 ### 3. File Processing
 
 **Server-Side Processing**
+
 - All file operations on server
 - Streaming for large files
 - Memory-efficient buffers
 - 2GB upload limit
 
 **Why?**
+
 - Security (no client-side code execution)
 - Consistent processing
 - Better error handling
@@ -199,12 +211,14 @@ niatools/
 ### 4. State Management
 
 **Hybrid Approach**
+
 - Server state: SWR (caching, revalidation)
 - Global UI state: React Context
 - Local state: useState
 - Form state: Controlled components
 
 **Why?**
+
 - Simple and maintainable
 - No over-engineering
 - Leverages React 19 features
@@ -218,29 +232,29 @@ niatools/
 Layer 1: Network (Vercel Edge)
   - DDoS protection
   - TLS 1.3
-  
+
 Layer 2: proxy.ts
   - Rate limiting
   - Security headers
-  
+
 Layer 3: Authentication
   - Session verification
   - Role-based access
-  
+
 Layer 4: Authorization
   - Permission checks
   - Resource ownership
-  
+
 Layer 5: Input Validation
   - Zod schemas
   - File validation
   - Sanitization
-  
+
 Layer 6: Output Encoding
   - JSON serialization
   - File headers
   - Error sanitization
-  
+
 Layer 7: Audit Trail
   - All actions logged
   - Immutable records
@@ -249,6 +263,7 @@ Layer 7: Audit Trail
 ### Security Headers
 
 All responses include:
+
 - Content-Security-Policy
 - X-Frame-Options: DENY
 - X-Content-Type-Options: nosniff
@@ -258,7 +273,7 @@ All responses include:
 
 ### CSRF Protection
 
-- Token in cookie (__csrf-token)
+- Token in cookie (\_\_csrf-token)
 - Header validation (x-csrf-token)
 - SameSite=Strict cookies
 - Origin validation

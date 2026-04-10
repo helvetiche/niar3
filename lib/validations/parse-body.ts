@@ -12,16 +12,13 @@ import { applySecurityHeaders } from "@/lib/security-headers";
  */
 export async function parseBody<T extends z.ZodType>(
   request: Request,
-  schema: T,
+  schema: T
 ): Promise<z.infer<T> | NextResponse> {
   let json: unknown;
   try {
     json = await request.json();
   } catch {
-    const response = NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
+    const response = NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     return applySecurityHeaders(response);
   }
   const result = schema.safeParse(json);
@@ -31,7 +28,7 @@ export async function parseBody<T extends z.ZodType>(
         error: "Validation failed",
         details: result.error.flatten().fieldErrors,
       },
-      { status: 400 },
+      { status: 400 }
     );
     return applySecurityHeaders(response);
   }

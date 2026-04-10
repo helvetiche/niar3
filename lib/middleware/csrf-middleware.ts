@@ -8,7 +8,7 @@ import { createErrorResponse } from "@/lib/error-handler";
  */
 export async function withCsrfProtection(
   request: Request,
-  handler: (request: Request) => Promise<Response>,
+  handler: (request: Request) => Promise<Response>
 ): Promise<Response> {
   // Skip CSRF check for GET/HEAD requests
   if (request.method === "GET" || request.method === "HEAD") {
@@ -21,7 +21,7 @@ export async function withCsrfProtection(
     const { error, statusCode } = createErrorResponse(
       "CSRF_TOKEN_INVALID",
       "Invalid or missing CSRF token",
-      403,
+      403
     );
     return NextResponse.json(error, { status: statusCode });
   }

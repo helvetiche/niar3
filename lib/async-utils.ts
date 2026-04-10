@@ -9,7 +9,7 @@
 export function createAsyncEffect<T>(
   asyncFn: () => Promise<T>,
   onSuccess: (result: T) => void,
-  onError?: (error: unknown) => void,
+  onError?: (error: unknown) => void
 ): () => void {
   let cancelled = false;
 
@@ -24,7 +24,6 @@ export function createAsyncEffect<T>(
         if (onError) {
           onError(error);
         } else if (process.env.NODE_ENV === "development") {
-           
           console.error("Async effect error:", error);
         }
       }
@@ -41,7 +40,7 @@ export function createAsyncEffect<T>(
  */
 export async function handleAsync(
   fn: () => Promise<void>,
-  onError?: (error: unknown) => void,
+  onError?: (error: unknown) => void
 ): Promise<void> {
   try {
     await fn();
@@ -49,7 +48,6 @@ export async function handleAsync(
     if (onError) {
       onError(error);
     } else if (process.env.NODE_ENV === "development") {
-       
       console.error("Async handler error:", error);
     }
   }
@@ -62,7 +60,6 @@ export async function handleAsync(
 export function fireAndForget(fn: () => Promise<void>, context?: string): void {
   fn().catch((error) => {
     if (process.env.NODE_ENV === "development") {
-       
       console.error(`[${context || "fire-and-forget"}] Error:`, error);
     }
   });

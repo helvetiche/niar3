@@ -91,11 +91,7 @@ export function Footer() {
                   NIA
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm sm:px-3">
-                  <LightbulbIcon
-                    size={12}
-                    weight="duotone"
-                    className="shrink-0"
-                  />
+                  <LightbulbIcon size={12} weight="duotone" className="shrink-0" />
                   INTERN
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm sm:px-3">

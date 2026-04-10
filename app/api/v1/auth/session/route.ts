@@ -37,8 +37,8 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: "Too many requests. Try again later." },
-          { status: 429 },
-        ),
+          { status: 429 }
+        )
       );
     }
   }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       details: { reason: "invalid-json-body" },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Invalid JSON body" }, { status: 400 }),
+      NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
     );
   }
 
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       details: { reason: "missing-token" },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Token is required" }, { status: 400 }),
+      NextResponse.json({ error: "Token is required" }, { status: 400 })
     );
   }
 
@@ -104,9 +104,7 @@ export async function POST(request: Request) {
       httpStatus: 200,
     });
 
-    return applySecurityHeaders(
-      NextResponse.json({ ok: true, uid: decoded.uid }),
-    );
+    return applySecurityHeaders(NextResponse.json({ ok: true, uid: decoded.uid }));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (
@@ -125,10 +123,7 @@ export async function POST(request: Request) {
         details: { reason: "invalid-or-expired-token" },
       });
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "Invalid or expired token" },
-          { status: 401 },
-        ),
+        NextResponse.json({ error: "Invalid or expired token" }, { status: 401 })
       );
     }
     logger.error("[auth/session]", err);
@@ -142,7 +137,7 @@ export async function POST(request: Request) {
       errorMessage: message,
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Authentication failed" }, { status: 500 }),
+      NextResponse.json({ error: "Authentication failed" }, { status: 500 })
     );
   }
 }
@@ -192,7 +187,7 @@ export async function DELETE(request: Request) {
       errorMessage: message,
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Failed to logout" }, { status: 500 }),
+      NextResponse.json({ error: "Failed to logout" }, { status: 500 })
     );
   }
 }

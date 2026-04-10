@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth";
-import {
-  applySecurityHeaders,
-  secureFileResponse,
-} from "@/lib/security-headers";
+import { applySecurityHeaders, secureFileResponse } from "@/lib/security-headers";
 import { generateLipaReportWorkbook } from "@/lib/lipa-report-generator";
 import {
   buildLipaReportDataFromScannedFiles,
@@ -22,7 +19,7 @@ const scannedFileSchema = z.object({
     z.object({
       name: z.string().min(1),
       totalArea: z.number(),
-    }),
+    })
   ),
   inputTokens: z.number().nonnegative(),
   outputTokens: z.number().nonnegative(),
@@ -88,8 +85,7 @@ export async function POST(request: Request) {
     });
 
     return secureFileResponse(buffer, {
-      contentType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: outputName,
       extraHeaders: {
         "X-Scanned-Files": String(data.scannedFiles),
@@ -101,9 +97,7 @@ export async function POST(request: Request) {
   } catch (error) {
     logger.error("[api/lipa-summary/report POST]", error);
     const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to build LIPA report output";
+      error instanceof Error ? error.message : "Failed to build LIPA report output";
     const isValidationError = error instanceof z.ZodError;
     await logAuditTrailEntry({
       uid: user.uid,
@@ -122,8 +116,8 @@ export async function POST(request: Request) {
             ? "Invalid report payload."
             : "Failed to build LIPA report output.",
         },
-        { status: isValidationError ? 400 : 500 },
-      ),
+        { status: isValidationError ? 400 : 500 }
+      )
     );
   }
 }

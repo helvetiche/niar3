@@ -3,13 +3,17 @@
 import {
   useState,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useCallback,
   useId,
+  useRef,
   type ReactNode,
   type KeyboardEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import {
+  ArrowsMergeIcon,
   CalendarBlankIcon,
   CalendarCheckIcon,
   CaretLeftIcon,
@@ -19,13 +23,17 @@ import {
   ColumnsIcon,
   EnvelopeIcon,
   EyeIcon,
+  FilePdfIcon,
+  FolderOpenIcon,
   LayoutIcon,
   ListChecksIcon,
   MagnifyingGlassIcon,
+  MicrosoftExcelLogoIcon,
   PlusIcon,
   SquaresFourIcon,
   StarIcon,
   TrashIcon,
+  UploadSimpleIcon,
   XIcon,
   CheckIcon,
   FileXlsIcon,
@@ -41,23 +49,33 @@ import { useAllSchedulesForTaskManager } from "@/hooks/useAllSchedulesForTaskMan
 import { useScheduleCompletions } from "@/hooks/useScheduleCompletions";
 import { calculateNextDeadline } from "@/lib/deadline-calculator";
 import { getCurrentPeriod, getPeriodLabel } from "@/lib/period-calculator";
-import {
-  buildCompletionLookup,
-  completionPeriodKey,
-} from "@/lib/task-manager-utils";
+import { buildCompletionLookup, completionPeriodKey } from "@/lib/task-manager-utils";
 import { apiDelete, apiPost } from "@/lib/api-client";
 import type { Schedule, TaskCompletion } from "@/types/schedule";
 import { useTemplates } from "@/hooks/useTemplates";
+import { useAccomplishmentTasks } from "@/hooks/useAccomplishmentTasks";
+import {
+  ACCOMPLISHMENT_TASK_DESIGNATIONS,
+  type AccomplishmentTask,
+  type AccomplishmentTaskDesignation,
+} from "@/lib/api/accomplishment-tasks";
 import { generateAccomplishmentReport } from "@/lib/api/accomplishment-report";
 import { downloadBlob, getErrorMessage } from "@/lib/utils";
 import { MasonryModal } from "@/components/MasonryModal";
 import { TaskAccomplishmentsDrawer } from "@/components/TaskAccomplishmentsDrawer";
+import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
+import { useMergeFiles } from "@/hooks/useMergeFiles";
+import {
+  defaultBillingUnitFolderName,
+  defaultZipName,
+  useGenerateProfiles,
+} from "@/hooks/useGenerateProfiles";
+import { useConsolidateLandProfiles } from "@/hooks/useConsolidateLandProfiles";
+import { getFileKey, sanitizeFolderName } from "@/lib/file-utils";
 
 type WidgetChromeVariant = "sidebar" | "glass";
 
-const ALL_MONTHS_ACCOMPLISHMENT = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-] as const;
+const ALL_MONTHS_ACCOMPLISHMENT = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 
 /** ~14-day horizon: bar fills as the deadline gets closer. */
 const DEADLINE_URGENCY_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -89,11 +107,7 @@ const formatRemainingClock = (timeUntilMs: number): string => {
 };
 
 const nearestDeadlineTitleIcon = (
-  <ClockCountdownIcon
-    className="h-4 w-4 shrink-0"
-    weight="duotone"
-    aria-hidden
-  />
+  <ClockCountdownIcon className="h-4 w-4 shrink-0" weight="duotone" aria-hidden />
 );
 
 const priorityFocusTitleIcon = (
@@ -102,6 +116,18 @@ const priorityFocusTitleIcon = (
 
 const quickAccomplishmentTitleIcon = (
   <FileXlsIcon className="h-3.5 w-3.5 shrink-0" weight="duotone" aria-hidden />
+);
+
+const quickMergeTitleIcon = (
+  <ArrowsMergeIcon className="h-3.5 w-3.5 shrink-0" weight="duotone" aria-hidden />
+);
+
+const quickBillingUnitTitleIcon = (
+  <MagnifyingGlassIcon className="h-3.5 w-3.5 shrink-0" weight="duotone" aria-hidden />
+);
+
+const quickConsolidateIfrTitleIcon = (
+  <FolderOpenIcon className="h-3.5 w-3.5 shrink-0" weight="duotone" aria-hidden />
 );
 
 /** Shared shell: sidebar = solid emerald panel; glass = frosted for modal previews. */
@@ -127,20 +153,15 @@ const ScheduleWidgetChrome = ({
     variant === "glass"
       ? "min-w-0 overflow-hidden rounded-lg border border-white/40 bg-white/10 p-4 shadow-sm backdrop-blur-md"
       : "min-w-0 overflow-hidden rounded-lg border border-emerald-700/60 bg-emerald-800/30 p-4";
-  const trashMuted =
-    variant === "glass" ? "text-white/35" : "text-emerald-300/40";
+  const trashMuted = variant === "glass" ? "text-white/35" : "text-emerald-300/40";
   const trashBtn =
     variant === "glass"
       ? "text-white/60 transition-colors hover:text-red-300"
       : "text-emerald-300/70 transition-colors hover:text-red-400";
   const titleIconWrapClass =
-    variant === "glass"
-      ? "text-emerald-200/95"
-      : "text-emerald-300/90";
+    variant === "glass" ? "text-emerald-200/95" : "text-emerald-300/90";
 
-  const fillClass = fillHeight
-    ? "flex min-h-0 flex-1 flex-col"
-    : "";
+  const fillClass = fillHeight ? "flex min-h-0 flex-1 flex-col" : "";
 
   return (
     <div className={`${shell} ${fillClass}`.trim()}>
@@ -151,9 +172,7 @@ const ScheduleWidgetChrome = ({
           }`}
         >
           {titleIcon ? (
-            <span
-              className={`inline-flex shrink-0 items-center ${titleIconWrapClass}`}
-            >
+            <span className={`inline-flex shrink-0 items-center ${titleIconWrapClass}`}>
               {titleIcon}
             </span>
           ) : null}
@@ -221,14 +240,10 @@ const NearestDeadlineWidgetCard = ({
     variant === "glass"
       ? "border border-white/45 bg-white/10"
       : "border border-emerald-600/55 bg-emerald-950/60";
-  const trackInnerClass =
-    variant === "glass" ? "bg-white/10" : "bg-emerald-950/80";
-  const fillClass =
-    variant === "glass" ? "bg-emerald-400" : "bg-emerald-400";
+  const trackInnerClass = variant === "glass" ? "bg-white/10" : "bg-emerald-950/80";
+  const fillClass = variant === "glass" ? "bg-emerald-400" : "bg-emerald-400";
 
-  const outerBodyClass = fillHeight
-    ? "flex min-h-0 flex-1 flex-col"
-    : "";
+  const outerBodyClass = fillHeight ? "flex min-h-0 flex-1 flex-col" : "";
   const progressBlockClass = fillHeight
     ? "mt-auto flex min-h-[3.25rem] flex-col justify-end gap-1.5 pt-1"
     : "mt-3 space-y-1.5";
@@ -347,13 +362,10 @@ const PriorityFocusCard = ({
     variant === "glass"
       ? "border border-white/45 bg-white/10"
       : "border border-emerald-600/55 bg-emerald-950/60";
-  const trackInnerClass =
-    variant === "glass" ? "bg-white/10" : "bg-emerald-950/80";
+  const trackInnerClass = variant === "glass" ? "bg-white/10" : "bg-emerald-950/80";
   const fillClass = "bg-amber-400";
 
-  const outerBodyClass = fillHeight
-    ? "flex min-h-0 flex-1 flex-col"
-    : "";
+  const outerBodyClass = fillHeight ? "flex min-h-0 flex-1 flex-col" : "";
   const progressBlockClass = fillHeight
     ? "mt-auto flex min-h-[3.25rem] flex-col justify-end gap-1.5 pt-1"
     : "mt-3 space-y-1.5";
@@ -407,9 +419,17 @@ const PriorityFocusCard = ({
             }
           >
             {periodComplete ? (
-              <CheckCircleIcon className="h-3.5 w-3.5 shrink-0" weight="fill" aria-hidden />
+              <CheckCircleIcon
+                className="h-3.5 w-3.5 shrink-0"
+                weight="fill"
+                aria-hidden
+              />
             ) : (
-              <ListChecksIcon className="h-3.5 w-3.5 shrink-0 opacity-90" weight="duotone" aria-hidden />
+              <ListChecksIcon
+                className="h-3.5 w-3.5 shrink-0 opacity-90"
+                weight="duotone"
+                aria-hidden
+              />
             )}
             <span className="min-w-0 truncate">
               {periodComplete
@@ -435,7 +455,11 @@ const PriorityFocusCard = ({
                   aria-hidden
                 />
               ) : periodComplete ? (
-                <ListChecksIcon className="h-4 w-4 shrink-0" weight="duotone" aria-hidden />
+                <ListChecksIcon
+                  className="h-4 w-4 shrink-0"
+                  weight="duotone"
+                  aria-hidden
+                />
               ) : (
                 <CheckIcon className="h-4 w-4 shrink-0" weight="bold" aria-hidden />
               )}
@@ -539,18 +563,13 @@ const TasksCountWidgetCard = ({
       : "h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent";
   const dueClass =
     variant === "glass" ? "text-xs text-white/75" : "text-xs text-emerald-300/70";
-  const listIntroClass =
-    variant === "glass" ? "text-white/45" : "text-emerald-200/50";
-  const listItemClass =
-    variant === "glass" ? "text-white/85" : "text-emerald-100/90";
-  const moreClass =
-    variant === "glass" ? "text-white/55" : "text-emerald-300/60";
+  const listIntroClass = variant === "glass" ? "text-white/45" : "text-emerald-200/50";
+  const listItemClass = variant === "glass" ? "text-white/85" : "text-emerald-100/90";
+  const moreClass = variant === "glass" ? "text-white/55" : "text-emerald-300/60";
 
-  const countSizeClass =
-    "text-2xl font-semibold tabular-nums text-white";
+  const countSizeClass = "text-2xl font-semibold tabular-nums text-white";
 
-  const PillIcon =
-    taskListScope === "week" ? ListChecksIcon : CalendarBlankIcon;
+  const PillIcon = taskListScope === "week" ? ListChecksIcon : CalendarBlankIcon;
   const TitleIcon = PillIcon;
   const titleIcon = (
     <TitleIcon className="h-4 w-4 shrink-0" weight="duotone" aria-hidden />
@@ -584,11 +603,7 @@ const TasksCountWidgetCard = ({
           </div>
           {count > 0 && taskTitles.length > 0 ? (
             <div
-              className={
-                fillHeight
-                  ? "min-h-0 flex-1 overflow-y-auto pr-0.5"
-                  : "mt-1"
-              }
+              className={fillHeight ? "min-h-0 flex-1 overflow-y-auto pr-0.5" : "mt-1"}
             >
               <p
                 className={`mb-1 text-[10px] font-medium uppercase tracking-wide ${listIntroClass}`}
@@ -688,8 +703,7 @@ function NearestDeadlineWidget({ onRemove }: { onRemove: () => void }) {
   const urgencyPercent = computeDeadlineUrgencyPercent(timeUntil);
   const remainingClock = formatRemainingClock(timeUntil);
 
-  const assigneeEmail =
-    schedule.personEmail.trim() || schedule.personAssigned;
+  const assigneeEmail = schedule.personEmail.trim() || schedule.personAssigned;
 
   return (
     <NearestDeadlineWidgetCard
@@ -708,11 +722,8 @@ function TasksThisWeekWidget({ onRemove }: { onRemove: () => void }) {
   const { schedules, isLoading } = useUpcomingSchedules(100);
   const weekTasks = schedules.filter((s) => s.daysUntil <= 7);
   const tasksThisWeek = weekTasks.length;
-  const dueLabel =
-    tasksThisWeek === 1 ? "task due this week" : "tasks due this week";
-  const taskTitles = weekTasks
-    .slice(0, MAX_TASK_PREVIEW_LINES)
-    .map((s) => s.title);
+  const dueLabel = tasksThisWeek === 1 ? "task due this week" : "tasks due this week";
+  const taskTitles = weekTasks.slice(0, MAX_TASK_PREVIEW_LINES).map((s) => s.title);
   const moreCount = Math.max(0, tasksThisWeek - MAX_TASK_PREVIEW_LINES);
 
   return (
@@ -735,9 +746,7 @@ function TasksThisMonthWidget({ onRemove }: { onRemove: () => void }) {
   const tasksThisMonth = monthTasks.length;
   const dueLabel =
     tasksThisMonth === 1 ? "task due this month" : "tasks due this month";
-  const taskTitles = monthTasks
-    .slice(0, MAX_TASK_PREVIEW_LINES)
-    .map((s) => s.title);
+  const taskTitles = monthTasks.slice(0, MAX_TASK_PREVIEW_LINES).map((s) => s.title);
   const moreCount = Math.max(0, tasksThisMonth - MAX_TASK_PREVIEW_LINES);
 
   return (
@@ -769,9 +778,7 @@ function PriorityFocusWidget({
     mutate: mutateCompletions,
   } = useScheduleCompletions();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [optimisticKeys, setOptimisticKeys] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [optimisticKeys, setOptimisticKeys] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -780,12 +787,12 @@ function PriorityFocusWidget({
 
   const schedule = useMemo(
     () => schedules.find((s) => s.id === scheduleId) ?? null,
-    [schedules, scheduleId],
+    [schedules, scheduleId]
   );
 
   const completionByPeriodKey = useMemo(
     () => buildCompletionLookup(completions),
-    [completions],
+    [completions]
   );
 
   const periodMeta = useMemo(() => {
@@ -807,11 +814,7 @@ function PriorityFocusWidget({
   const handleTogglePeriodComplete = useCallback(async () => {
     if (!schedule || schedule.status !== "active") return;
     const period = getCurrentPeriod(schedule.deadline.type);
-    const periodKey = completionPeriodKey(
-      schedule.id,
-      period.start,
-      period.end,
-    );
+    const periodKey = completionPeriodKey(schedule.id, period.start, period.end);
 
     if (optimisticKeys.has(periodKey)) return;
 
@@ -839,12 +842,11 @@ function PriorityFocusWidget({
           return;
         }
         await apiDelete<{ ok: boolean }>(
-          `/api/v1/completions/${encodeURIComponent(existingCompletion.id)}`,
+          `/api/v1/completions/${encodeURIComponent(existingCompletion.id)}`
         );
         await mutateCompletions(
-          (prev) =>
-            (prev ?? []).filter((c) => c.id !== existingCompletion.id),
-          { revalidate: false },
+          (prev) => (prev ?? []).filter((c) => c.id !== existingCompletion.id),
+          { revalidate: false }
         );
       } else {
         const { completion } = await apiPost<{ completion: TaskCompletion }>(
@@ -854,12 +856,11 @@ function PriorityFocusWidget({
             periodStart: period.start,
             periodEnd: period.end,
             deadlineType: schedule.deadline.type,
-          },
+          }
         );
-        await mutateCompletions(
-          (prev) => [...(prev ?? []), completion],
-          { revalidate: false },
-        );
+        await mutateCompletions((prev) => [...(prev ?? []), completion], {
+          revalidate: false,
+        });
       }
     } catch (err) {
       console.error("Priority widget toggle completion failed:", err);
@@ -871,11 +872,7 @@ function PriorityFocusWidget({
   const nextDeadline = useMemo(() => {
     if (!schedule) return null;
     try {
-      return calculateNextDeadline(
-        schedule.deadline,
-        currentTime,
-        schedule.createdAt,
-      );
+      return calculateNextDeadline(schedule.deadline, currentTime, schedule.createdAt);
     } catch {
       return null;
     }
@@ -908,8 +905,8 @@ function PriorityFocusWidget({
         onRemove={onRemove}
       >
         <p className="py-4 text-center text-xs text-emerald-200/70">
-          This schedule is no longer available. Remove the widget or pick another
-          in Add widget.
+          This schedule is no longer available. Remove the widget or pick another in Add
+          widget.
         </p>
       </ScheduleWidgetChrome>
     );
@@ -932,8 +929,7 @@ function PriorityFocusWidget({
   const timeUntil = nextDeadline.getTime() - currentTime.getTime();
   const urgencyPercent = computeDeadlineUrgencyPercent(timeUntil);
   const remainingClock = formatRemainingClock(timeUntil);
-  const assigneeEmail =
-    schedule.personEmail.trim() || schedule.personAssigned;
+  const assigneeEmail = schedule.personEmail.trim() || schedule.personAssigned;
 
   return (
     <PriorityFocusCard
@@ -954,24 +950,173 @@ function PriorityFocusWidget({
   );
 }
 
-function QuickAccomplishmentSidebarWidget({
-  onRemove,
-}: {
-  onRemove: () => void;
-}) {
+const QUICK_ACCOMPLISHMENT_SUGGESTION_LIMIT = 8;
+
+const QUICK_ACCOMPLISHMENT_SUGGESTIONS_Z = 100;
+
+type QuickAccomplishmentSuggestionPortalRect = {
+  top: number;
+  left: number;
+  width: number;
+  maxHeight: number;
+};
+
+const collectScrollableAncestors = (start: HTMLElement | null): HTMLElement[] => {
+  const list: HTMLElement[] = [];
+  let cur: HTMLElement | null = start?.parentElement ?? null;
+  while (cur) {
+    const st = getComputedStyle(cur);
+    if (
+      /(auto|scroll|overlay)/.test(st.overflowY) ||
+      /(auto|scroll|overlay)/.test(st.overflow) ||
+      /(auto|scroll|overlay)/.test(st.overflowX)
+    ) {
+      list.push(cur);
+    }
+    cur = cur.parentElement;
+  }
+  return list;
+};
+
+function QuickAccomplishmentSidebarWidget({ onRemove }: { onRemove: () => void }) {
   const formId = useId();
-  const { data: templates = [], isLoading: templatesLoading } =
-    useTemplates("accomplishment-report");
+  const taskComboboxRef = useRef<HTMLDivElement>(null);
+  const taskTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const suggestionsPortalRef = useRef<HTMLUListElement>(null);
+  const { data: templates = [], isLoading: templatesLoading } = useTemplates(
+    "accomplishment-report"
+  );
+  const { data: accomplishmentTasks = [] } = useAccomplishmentTasks();
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [fullName, setFullName] = useState("");
+  const [designation, setDesignation] =
+    useState<AccomplishmentTaskDesignation>("SWRFT");
   const [taskText, setTaskText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [taskSuggestionsOpen, setTaskSuggestionsOpen] = useState(false);
+  const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(0);
+  const [suggestionPortalRect, setSuggestionPortalRect] =
+    useState<QuickAccomplishmentSuggestionPortalRect | null>(null);
+
+  const updateSuggestionPortalRect = useCallback(() => {
+    const el = taskTextareaRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const gap = 4;
+    const pad = 8;
+    const belowTop = r.bottom + gap;
+    const spaceBelow = window.innerHeight - belowTop - pad;
+    const maxListPx = 160;
+    const maxHeight = Math.min(maxListPx, Math.max(96, spaceBelow));
+    setSuggestionPortalRect({
+      top: belowTop,
+      left: r.left,
+      width: r.width,
+      maxHeight,
+    });
+  }, []);
 
   useEffect(() => {
     if (templates.length > 0 && !selectedTemplateId) {
       setSelectedTemplateId(templates[0].id);
     }
   }, [templates, selectedTemplateId]);
+
+  const taskQueryTrimmed = taskText.trim();
+  const matchingTasks = useMemo(() => {
+    if (taskQueryTrimmed.length < 1) return [];
+    const q = taskQueryTrimmed.toLowerCase();
+    return accomplishmentTasks
+      .filter((t) => t.label.toLowerCase().includes(q))
+      .slice(0, QUICK_ACCOMPLISHMENT_SUGGESTION_LIMIT);
+  }, [accomplishmentTasks, taskQueryTrimmed]);
+
+  useEffect(() => {
+    setHighlightedSuggestionIndex(0);
+  }, [matchingTasks]);
+
+  useEffect(() => {
+    if (!taskSuggestionsOpen) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (taskComboboxRef.current?.contains(target)) return;
+      if (suggestionsPortalRef.current?.contains(target)) return;
+      setTaskSuggestionsOpen(false);
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [taskSuggestionsOpen]);
+
+  const showTaskSuggestions = taskSuggestionsOpen && matchingTasks.length > 0;
+
+  useLayoutEffect(() => {
+    if (!showTaskSuggestions) {
+      setSuggestionPortalRect(null);
+      return;
+    }
+
+    updateSuggestionPortalRect();
+
+    const textareaEl = taskTextareaRef.current;
+    const scrollParents = collectScrollableAncestors(textareaEl);
+    const onReposition = () => {
+      updateSuggestionPortalRect();
+    };
+
+    const ro =
+      typeof ResizeObserver !== "undefined" && textareaEl
+        ? new ResizeObserver(onReposition)
+        : null;
+    if (textareaEl && ro) {
+      ro.observe(textareaEl);
+    }
+
+    window.addEventListener("resize", onReposition);
+    scrollParents.forEach((node) =>
+      node.addEventListener("scroll", onReposition, { passive: true })
+    );
+
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", onReposition);
+      scrollParents.forEach((node) => node.removeEventListener("scroll", onReposition));
+    };
+  }, [showTaskSuggestions, matchingTasks, updateSuggestionPortalRect]);
+
+  const applyTaskSuggestion = (task: AccomplishmentTask) => {
+    setTaskText(task.label);
+    setDesignation(task.designation);
+    setTaskSuggestionsOpen(false);
+  };
+
+  const handleTaskKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!showTaskSuggestions) {
+      if (event.key === "Escape") {
+        setTaskSuggestionsOpen(false);
+      }
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlightedSuggestionIndex((i) => Math.min(i + 1, matchingTasks.length - 1));
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlightedSuggestionIndex((i) => Math.max(i - 1, 0));
+      return;
+    }
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      const picked = matchingTasks[highlightedSuggestionIndex];
+      if (picked) applyTaskSuggestion(picked);
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setTaskSuggestionsOpen(false);
+    }
+  };
 
   const handleGenerate = async () => {
     const name = fullName.trim();
@@ -985,9 +1130,7 @@ function QuickAccomplishmentSidebarWidget({
       return;
     }
     if (!selectedTemplateId) {
-      toast.error(
-        "No accomplishment template available. Add one in Template Manager.",
-      );
+      toast.error("No accomplishment template available. Add one in Template Manager.");
       return;
     }
 
@@ -997,7 +1140,7 @@ function QuickAccomplishmentSidebarWidget({
         templateId: selectedTemplateId,
         firstName: name,
         lastName: "",
-        designation: "SWRFT",
+        designation,
         months: [...ALL_MONTHS_ACCOMPLISHMENT],
         includeFirstHalf: true,
         includeSecondHalf: true,
@@ -1006,16 +1149,65 @@ function QuickAccomplishmentSidebarWidget({
       downloadBlob(result.blob, result.fileName);
       const periodCount = ALL_MONTHS_ACCOMPLISHMENT.length * 2;
       toast.success(
-        `Downloaded accomplishment report with ${String(periodCount)} period sheets.`,
+        `Downloaded accomplishment report with ${String(periodCount)} period sheets.`
       );
     } catch (err) {
-      toast.error(
-        getErrorMessage(err, "Failed to generate accomplishment report."),
-      );
+      toast.error(getErrorMessage(err, "Failed to generate accomplishment report."));
     } finally {
       setIsGenerating(false);
     }
   };
+
+  const suggestionsListId = `${formId}-task-suggestions`;
+
+  const suggestionListPortal =
+    showTaskSuggestions && suggestionPortalRect && typeof document !== "undefined"
+      ? createPortal(
+          <ul
+            ref={suggestionsPortalRef}
+            id={suggestionsListId}
+            role="listbox"
+            aria-label="Matching saved tasks"
+            style={{
+              position: "fixed",
+              top: suggestionPortalRect.top,
+              left: suggestionPortalRect.left,
+              width: suggestionPortalRect.width,
+              maxHeight: suggestionPortalRect.maxHeight,
+              zIndex: QUICK_ACCOMPLISHMENT_SUGGESTIONS_Z,
+            }}
+            className="overflow-y-auto rounded-lg border border-emerald-600 bg-emerald-950 py-1 shadow-lg shadow-black/50"
+          >
+            {matchingTasks.map((task, index) => {
+              const isActive = index === highlightedSuggestionIndex;
+              return (
+                <li key={task.id} role="presentation">
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    id={`${suggestionsListId}-opt-${task.id}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => applyTaskSuggestion(task)}
+                    onMouseEnter={() => setHighlightedSuggestionIndex(index)}
+                    className={`flex w-full flex-col items-start gap-0.5 px-3 py-2 text-left text-sm transition ${
+                      isActive
+                        ? "bg-emerald-700/80 text-white"
+                        : "text-white/90 hover:bg-emerald-800/80"
+                    }`}
+                  >
+                    <span className="font-medium">{task.label}</span>
+                    <span className="text-[10px] font-normal text-white/60">
+                      {task.designation}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>,
+          document.body
+        )
+      : null;
 
   return (
     <ScheduleWidgetChrome
@@ -1026,8 +1218,8 @@ function QuickAccomplishmentSidebarWidget({
     >
       <div className="flex min-w-0 flex-col gap-3">
         <p className="text-[11px] leading-snug text-emerald-200/75">
-          Jan–Dec, 1st and 2nd half each month. Uses your first available
-          accomplishment template.
+          Jan–Dec, 1st and 2nd half each month. Uses your first available accomplishment
+          template.
         </p>
         {templatesLoading ? (
           <div className="flex justify-center py-4">
@@ -1038,8 +1230,8 @@ function QuickAccomplishmentSidebarWidget({
           </div>
         ) : templates.length === 0 ? (
           <p className="text-center text-xs text-emerald-200/70">
-            No accomplishment report templates yet. Upload one in Template
-            Manager, then try again.
+            No accomplishment report templates yet. Upload one in Template Manager, then
+            try again.
           </p>
         ) : (
           <>
@@ -1062,19 +1254,64 @@ function QuickAccomplishmentSidebarWidget({
             </div>
             <div>
               <label
+                htmlFor={`${formId}-position`}
+                className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-emerald-200/65"
+              >
+                Position
+              </label>
+              <select
+                id={`${formId}-position`}
+                value={designation}
+                onChange={(e) =>
+                  setDesignation(e.target.value as AccomplishmentTaskDesignation)
+                }
+                className="w-full rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                aria-label="Position for the accomplishment report"
+              >
+                {ACCOMPLISHMENT_TASK_DESIGNATIONS.map((opt) => (
+                  <option key={opt} value={opt} className="bg-emerald-950">
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div ref={taskComboboxRef} className="min-w-0">
+              <label
                 htmlFor={`${formId}-task`}
                 className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-emerald-200/65"
               >
                 Task
               </label>
               <textarea
+                ref={taskTextareaRef}
                 id={`${formId}-task`}
+                role="combobox"
                 value={taskText}
-                onChange={(e) => setTaskText(e.target.value)}
+                onChange={(e) => {
+                  setTaskText(e.target.value);
+                  setTaskSuggestionsOpen(true);
+                }}
+                onFocus={() => setTaskSuggestionsOpen(true)}
+                onKeyDown={handleTaskKeyDown}
                 rows={4}
                 placeholder="Describe accomplishments for weekdays in the report…"
+                autoComplete="off"
+                aria-autocomplete="list"
+                aria-expanded={showTaskSuggestions}
+                aria-haspopup="listbox"
+                aria-controls={suggestionsListId}
+                aria-activedescendant={
+                  showTaskSuggestions && matchingTasks[highlightedSuggestionIndex]
+                    ? `${suggestionsListId}-opt-${matchingTasks[highlightedSuggestionIndex].id}`
+                    : undefined
+                }
                 className="w-full resize-y rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
               />
+              <p className="mt-1 text-[10px] text-emerald-200/55">
+                Type to search saved tasks from Task manager. Arrow keys and Enter to
+                pick; Shift+Enter for a new line.
+              </p>
+              {suggestionListPortal}
             </div>
             <button
               type="button"
@@ -1098,6 +1335,525 @@ function QuickAccomplishmentSidebarWidget({
             </button>
           </>
         )}
+      </div>
+    </ScheduleWidgetChrome>
+  );
+}
+
+function QuickMergeSidebarWidget({ onRemove }: { onRemove: () => void }) {
+  const formId = useId();
+  const {
+    fileInputRef,
+    mode,
+    files,
+    isSubmitting,
+    isPreparingPages,
+    defaultFileName,
+    processIncomingFiles,
+    changeMergeMode,
+    executeMerge,
+    setFileName,
+    fileName,
+    clearAll,
+  } = useMergeFiles();
+
+  return (
+    <ScheduleWidgetChrome
+      title="Quick merge files"
+      titleIcon={quickMergeTitleIcon}
+      titleClassName="text-xs"
+      onRemove={onRemove}
+    >
+      <div className="flex min-w-0 flex-col gap-3">
+        <p className="text-[11px] leading-snug text-emerald-200/75">
+          Merge PDFs (page order follows upload) or Excel workbooks into one file. Same
+          behavior as the workspace tool, without the stepper.
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => changeMergeMode("pdf")}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-[11px] font-medium transition ${
+              mode === "pdf"
+                ? "border-emerald-400 bg-emerald-600/50 text-white"
+                : "border-emerald-700 bg-emerald-950/40 text-emerald-100/90 hover:bg-emerald-900/50"
+            }`}
+            aria-pressed={mode === "pdf"}
+            aria-label="Merge PDF files"
+          >
+            <FilePdfIcon className="h-4 w-4 shrink-0" weight="duotone" aria-hidden />
+            PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => changeMergeMode("excel")}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-[11px] font-medium transition ${
+              mode === "excel"
+                ? "border-emerald-400 bg-emerald-600/50 text-white"
+                : "border-emerald-700 bg-emerald-950/40 text-emerald-100/90 hover:bg-emerald-900/50"
+            }`}
+            aria-pressed={mode === "excel"}
+            aria-label="Merge Excel files"
+          >
+            <MicrosoftExcelLogoIcon
+              className="h-4 w-4 shrink-0"
+              weight="duotone"
+              aria-hidden
+            />
+            Excel
+          </button>
+        </div>
+        <input
+          ref={fileInputRef}
+          id={`${formId}-merge-files`}
+          type="file"
+          accept={mode === "pdf" ? ".pdf" : ".xlsx,.xls"}
+          multiple
+          onChange={(e) => void processIncomingFiles(e.target.files)}
+          className="sr-only"
+          aria-label={`Select ${mode === "pdf" ? "PDF" : "Excel"} files to merge`}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            void processIncomingFiles(e.dataTransfer.files);
+          }}
+          className="flex min-h-[4.5rem] w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-emerald-600 bg-emerald-950/40 px-2 py-3 text-center text-[11px] text-emerald-100/90 transition hover:border-emerald-500 hover:bg-emerald-900/40"
+        >
+          <UploadSimpleIcon className="h-5 w-5 text-emerald-200" aria-hidden />
+          <span>Drop files here or tap to browse</span>
+        </button>
+        {isPreparingPages ? (
+          <p className="text-center text-[11px] text-emerald-200/70">
+            Reading PDF pages…
+          </p>
+        ) : null}
+        {files.length > 0 ? (
+          <div className="rounded-lg border border-emerald-700/60 bg-emerald-950/50 p-2">
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-emerald-200/65">
+                {files.length} file{files.length === 1 ? "" : "s"}
+              </span>
+              <button
+                type="button"
+                onClick={() => clearAll()}
+                className="text-[10px] font-medium text-emerald-300 underline-offset-2 hover:text-white hover:underline"
+              >
+                Clear
+              </button>
+            </div>
+            <ul className="max-h-24 space-y-1 overflow-y-auto text-[11px] text-white/90">
+              {files.map((f) => (
+                <li key={`${f.name}-${String(f.size)}`} className="truncate">
+                  {f.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        <div>
+          <label
+            htmlFor={`${formId}-merge-out-name`}
+            className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-emerald-200/65"
+          >
+            Output name
+          </label>
+          <input
+            id={`${formId}-merge-out-name`}
+            type="text"
+            value={fileName}
+            onChange={(e) => setFileName(e.target.value)}
+            placeholder={defaultFileName}
+            className="w-full rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => void executeMerge()}
+          disabled={isSubmitting || isPreparingPages || files.length === 0}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/60 bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSubmitting ? (
+            <span
+              className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white border-t-transparent"
+              aria-hidden
+            />
+          ) : (
+            <DownloadSimpleIcon
+              className="h-4 w-4 shrink-0"
+              weight="bold"
+              aria-hidden
+            />
+          )}
+          {isSubmitting ? "Merging…" : "Merge & download"}
+        </button>
+      </div>
+    </ScheduleWidgetChrome>
+  );
+}
+
+function QuickBillingUnitSidebarWidget({ onRemove }: { onRemove: () => void }) {
+  const formId = useId();
+  const { data: ifrTemplates = [], isLoading: ifrTemplatesLoading } =
+    useTemplates("ifr-scanner");
+  const {
+    fileInputRef,
+    sourceFiles,
+    selectedTemplateId,
+    zipName,
+    billingUnitFolderName,
+    sourceFolderNames,
+    isGenerating,
+    isOverlayVisible,
+    isOverlayOpaque,
+    elapsedSeconds,
+    isFinalizing,
+    handleFileSelection,
+    setBillingUnitFolderName,
+    setZipName,
+    updateFolderName,
+    generateBillingUnits,
+  } = useGenerateProfiles();
+
+  const templateName =
+    ifrTemplates.find((t) => t.id === selectedTemplateId)?.name ??
+    (selectedTemplateId ? "Selected template" : "");
+
+  return (
+    <ScheduleWidgetChrome
+      title="Quick billing unit"
+      titleIcon={quickBillingUnitTitleIcon}
+      titleClassName="text-xs"
+      onRemove={onRemove}
+    >
+      <div className="relative flex min-w-0 flex-col gap-3">
+        <p className="text-[11px] leading-snug text-emerald-200/75">
+          Upload IFR Excel files and generate a billing unit ZIP. Uses the first
+          available Generate Billing Unit template unless you pick another in Template
+          Manager.
+        </p>
+        {ifrTemplatesLoading ? (
+          <div className="flex justify-center py-4">
+            <div
+              className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"
+              aria-hidden
+            />
+          </div>
+        ) : ifrTemplates.length === 0 ? (
+          <p className="text-center text-xs text-emerald-200/70">
+            No IFR scanner templates yet. Add one in Template Manager, then try again.
+          </p>
+        ) : (
+          <>
+            <p className="text-[10px] text-emerald-200/65">
+              Template:{" "}
+              <span className="font-medium text-emerald-100/90">
+                {templateName || "Auto-selected"}
+              </span>
+            </p>
+            <input
+              ref={fileInputRef}
+              id={`${formId}-billing-files`}
+              type="file"
+              accept=".xlsx,.xls"
+              multiple
+              onChange={(e) => handleFileSelection(e.target.files)}
+              className="sr-only"
+              aria-label="Select IFR Excel source files"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleFileSelection(e.dataTransfer.files);
+              }}
+              className="flex min-h-[4.5rem] w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-emerald-600 bg-emerald-950/40 px-2 py-3 text-center text-[11px] text-emerald-100/90 transition hover:border-emerald-500 hover:bg-emerald-900/40"
+            >
+              <UploadSimpleIcon className="h-5 w-5 text-emerald-200" aria-hidden />
+              <span>Drop IFR Excel files or tap to browse</span>
+            </button>
+            {sourceFiles.length > 0 ? (
+              <div className="rounded-lg border border-emerald-700/60 bg-emerald-950/50 p-2">
+                <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-emerald-200/65">
+                  {sourceFiles.length} file{sourceFiles.length === 1 ? "" : "s"}
+                </p>
+                <div className="max-h-28 space-y-2 overflow-y-auto pr-0.5">
+                  {sourceFiles.map((file) => {
+                    const fileKey = getFileKey(file);
+                    const folderName = sourceFolderNames[fileKey] ?? "";
+                    return (
+                      <div
+                        key={fileKey}
+                        className="rounded border border-emerald-800/80 bg-emerald-950/60 p-2"
+                      >
+                        <p className="mb-1 truncate text-[11px] text-white/90">
+                          {file.name}
+                        </p>
+                        <label className="sr-only" htmlFor={`${formId}-fn-${fileKey}`}>
+                          Division folder for {file.name}
+                        </label>
+                        <input
+                          id={`${formId}-fn-${fileKey}`}
+                          type="text"
+                          value={folderName}
+                          onChange={(e) => updateFolderName(fileKey, e.target.value)}
+                          placeholder="Division folder name"
+                          className="w-full rounded border border-emerald-700 bg-emerald-950/80 px-2 py-1 text-[11px] text-white placeholder:text-white/35 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/40"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+            <div>
+              <label
+                htmlFor={`${formId}-billing-folder`}
+                className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-emerald-200/65"
+              >
+                Billing unit folder name
+              </label>
+              <input
+                id={`${formId}-billing-folder`}
+                type="text"
+                value={billingUnitFolderName}
+                onChange={(e) =>
+                  setBillingUnitFolderName(sanitizeFolderName(e.target.value))
+                }
+                placeholder={defaultBillingUnitFolderName}
+                className="w-full rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor={`${formId}-zip-name`}
+                className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-emerald-200/65"
+              >
+                ZIP file name
+              </label>
+              <input
+                id={`${formId}-zip-name`}
+                type="text"
+                value={zipName}
+                onChange={(e) => setZipName(e.target.value)}
+                placeholder={defaultZipName}
+                className="w-full rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => void generateBillingUnits()}
+              disabled={isGenerating || sourceFiles.length === 0 || !selectedTemplateId}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/60 bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <span
+                  className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white border-t-transparent"
+                  aria-hidden
+                />
+              ) : (
+                <DownloadSimpleIcon
+                  className="h-4 w-4 shrink-0"
+                  weight="bold"
+                  aria-hidden
+                />
+              )}
+              {isGenerating ? "Generating…" : "Generate ZIP"}
+            </button>
+          </>
+        )}
+        <ProcessingOverlay
+          isVisible={isOverlayVisible}
+          isOpaque={isOverlayOpaque}
+          isFinalizing={isFinalizing}
+          elapsedSeconds={elapsedSeconds}
+        />
+      </div>
+    </ScheduleWidgetChrome>
+  );
+}
+
+function QuickConsolidateIfrSidebarWidget({ onRemove }: { onRemove: () => void }) {
+  const formId = useId();
+  const { data: consolidationTemplates = [], isLoading: consolidationLoading } =
+    useTemplates("consolidation");
+  const {
+    landProfileInputRef,
+    selectedTemplateId,
+    landProfileFiles,
+    isProcessing,
+    isOverlayVisible,
+    isOverlayOpaque,
+    elapsedSeconds,
+    isFinalizing,
+    handleLandProfileSelection,
+    removeLandProfileFile,
+    handleConsolidate,
+    updateFileDetails,
+  } = useConsolidateLandProfiles();
+
+  const templateName =
+    consolidationTemplates.find((t) => t.id === selectedTemplateId)?.name ??
+    (selectedTemplateId ? "Selected template" : "");
+
+  const canRun =
+    landProfileFiles.length > 0 &&
+    landProfileFiles.every(
+      (f) => f.divisionNumber?.trim() && f.irrigationAssociation?.trim()
+    ) &&
+    Boolean(selectedTemplateId);
+
+  return (
+    <ScheduleWidgetChrome
+      title="Quick consolidate IFR"
+      titleIcon={quickConsolidateIfrTitleIcon}
+      titleClassName="text-xs"
+      onRemove={onRemove}
+    >
+      <div className="relative flex min-w-0 flex-col gap-3">
+        <p className="text-[11px] leading-snug text-emerald-200/75">
+          Upload IFR Excel files and merge them into the shared consolidation template.
+          Division number and irrigation association are required for each file.
+        </p>
+        {consolidationLoading ? (
+          <div className="flex justify-center py-4">
+            <div
+              className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"
+              aria-hidden
+            />
+          </div>
+        ) : consolidationTemplates.length === 0 ? (
+          <p className="text-center text-xs text-emerald-200/70">
+            No consolidation templates yet. Add one in Template Manager, then try again.
+          </p>
+        ) : (
+          <>
+            <p className="text-[10px] text-emerald-200/65">
+              Template:{" "}
+              <span className="font-medium text-emerald-100/90">
+                {templateName || "Auto-selected"}
+              </span>
+            </p>
+            <input
+              ref={landProfileInputRef}
+              id={`${formId}-consolidate-files`}
+              type="file"
+              accept=".xlsx,.xls"
+              multiple
+              onChange={(e) => handleLandProfileSelection(e.target.files)}
+              className="sr-only"
+              aria-label="Select IFR files to consolidate"
+            />
+            <button
+              type="button"
+              onClick={() => landProfileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleLandProfileSelection(e.dataTransfer.files);
+              }}
+              className="flex min-h-[4.5rem] w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-emerald-600 bg-emerald-950/40 px-2 py-3 text-center text-[11px] text-emerald-100/90 transition hover:border-emerald-500 hover:bg-emerald-900/40"
+            >
+              <UploadSimpleIcon className="h-5 w-5 text-emerald-200" aria-hidden />
+              <span>Drop IFR files or tap to browse</span>
+            </button>
+            {landProfileFiles.length > 0 ? (
+              <div className="max-h-40 space-y-2 overflow-y-auto pr-0.5">
+                {landProfileFiles.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-lg border border-emerald-700/60 bg-emerald-950/50 p-2"
+                  >
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <p className="min-w-0 flex-1 truncate text-[11px] text-white/90">
+                        {item.file.name}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => removeLandProfileFile(item.id)}
+                        className="shrink-0 rounded p-0.5 text-emerald-300/80 hover:bg-white/10 hover:text-white"
+                        aria-label={`Remove ${item.file.name}`}
+                      >
+                        <XIcon className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                    </div>
+                    <div className="grid gap-2">
+                      <div>
+                        <label
+                          className="mb-0.5 block text-[9px] font-medium uppercase tracking-wide text-emerald-200/55"
+                          htmlFor={`${formId}-div-${item.id}`}
+                        >
+                          Division no.
+                        </label>
+                        <input
+                          id={`${formId}-div-${item.id}`}
+                          type="text"
+                          value={item.divisionNumber ?? ""}
+                          onChange={(e) =>
+                            updateFileDetails(item.id, "divisionNumber", e.target.value)
+                          }
+                          className="w-full rounded border border-emerald-700 bg-emerald-950/80 px-2 py-1 text-[11px] text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/40"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          className="mb-0.5 block text-[9px] font-medium uppercase tracking-wide text-emerald-200/55"
+                          htmlFor={`${formId}-ia-${item.id}`}
+                        >
+                          Irrigation association
+                        </label>
+                        <input
+                          id={`${formId}-ia-${item.id}`}
+                          type="text"
+                          value={item.irrigationAssociation ?? ""}
+                          onChange={(e) =>
+                            updateFileDetails(
+                              item.id,
+                              "irrigationAssociation",
+                              e.target.value
+                            )
+                          }
+                          className="w-full rounded border border-emerald-700 bg-emerald-950/80 px-2 py-1 text-[11px] text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/40"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void handleConsolidate()}
+              disabled={isProcessing || !canRun}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/60 bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isProcessing ? (
+                <span
+                  className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white border-t-transparent"
+                  aria-hidden
+                />
+              ) : (
+                <DownloadSimpleIcon
+                  className="h-4 w-4 shrink-0"
+                  weight="bold"
+                  aria-hidden
+                />
+              )}
+              {isProcessing ? "Consolidating…" : "Consolidate & download"}
+            </button>
+          </>
+        )}
+        <ProcessingOverlay
+          isVisible={isOverlayVisible}
+          isOpaque={isOverlayOpaque}
+          isFinalizing={isFinalizing}
+          elapsedSeconds={elapsedSeconds}
+        />
       </div>
     </ScheduleWidgetChrome>
   );
@@ -1138,8 +1894,9 @@ function AddWidgetModalScheduleSection({
 
   useEffect(() => {
     if (!isOpen) return;
-    setNow(new Date());
-    const id = window.setInterval(() => setNow(new Date()), 1000);
+    const tick = () => setNow(new Date());
+    const id = window.setInterval(tick, 1000);
+    queueMicrotask(tick);
     return () => window.clearInterval(id);
   }, [isOpen]);
 
@@ -1170,7 +1927,7 @@ function AddWidgetModalScheduleSection({
     if (useMock) {
       const mockUntil = Math.max(
         0,
-        PREVIEW_SAMPLE.nextDeadline.getTime() - now.getTime(),
+        PREVIEW_SAMPLE.nextDeadline.getTime() - now.getTime()
       );
       return (
         <NearestDeadlineWidgetCard
@@ -1200,8 +1957,7 @@ function AddWidgetModalScheduleSection({
       );
     }
     const timeUntil = nearest.nextDeadline.getTime() - now.getTime();
-    const assigneeEmail =
-      nearest.personEmail.trim() || nearest.personAssigned;
+    const assigneeEmail = nearest.personEmail.trim() || nearest.personAssigned;
     return (
       <NearestDeadlineWidgetCard
         taskTitle={nearest.title}
@@ -1285,9 +2041,7 @@ function AddWidgetModalScheduleSection({
             title="Tasks This Week"
             count={weekCount}
             isLoading={isLoading}
-            dueLabel={
-              weekCount === 1 ? "task due this week" : "tasks due this week"
-            }
+            dueLabel={weekCount === 1 ? "task due this week" : "tasks due this week"}
             taskTitles={weekTitles}
             moreCount={weekMore}
             taskListScope="week"
@@ -1309,9 +2063,7 @@ function AddWidgetModalScheduleSection({
             title="Tasks This Month"
             count={monthCount}
             isLoading={isLoading}
-            dueLabel={
-              monthCount === 1 ? "task due this month" : "tasks due this month"
-            }
+            dueLabel={monthCount === 1 ? "task due this month" : "tasks due this month"}
             taskTitles={monthTitles}
             moreCount={monthMore}
             taskListScope="month"
@@ -1342,8 +2094,9 @@ function AddWidgetModalPrioritySection({
 
   useEffect(() => {
     if (!isOpen) return;
-    setNow(new Date());
-    const id = window.setInterval(() => setNow(new Date()), 1000);
+    const tick = () => setNow(new Date());
+    const id = window.setInterval(tick, 1000);
+    queueMicrotask(tick);
     return () => window.clearInterval(id);
   }, [isOpen]);
 
@@ -1352,7 +2105,7 @@ function AddWidgetModalPrioritySection({
       [...schedules]
         .filter((s) => s.status === "active")
         .sort((a, b) => a.title.localeCompare(b.title)),
-    [schedules],
+    [schedules]
   );
 
   const filtered = useMemo(() => {
@@ -1363,13 +2116,13 @@ function AddWidgetModalPrioritySection({
         s.title.toLowerCase().includes(q) ||
         (s.description || "").toLowerCase().includes(q) ||
         s.personAssigned.toLowerCase().includes(q) ||
-        s.personEmail.toLowerCase().includes(q),
+        s.personEmail.toLowerCase().includes(q)
     );
   }, [activeSchedules, search]);
 
   const completionByPeriodKey = useMemo(
     () => buildCompletionLookup(completions),
-    [completions],
+    [completions]
   );
 
   const previewForSchedule = (s: Schedule): ReactNode => {
@@ -1434,7 +2187,7 @@ function AddWidgetModalPrioritySection({
     if (activeSchedules.length === 0) {
       const mockUntil = Math.max(
         0,
-        PREVIEW_SAMPLE.nextDeadline.getTime() - now.getTime(),
+        PREVIEW_SAMPLE.nextDeadline.getTime() - now.getTime()
       );
       return (
         <PriorityFocusCard
@@ -1457,7 +2210,7 @@ function AddWidgetModalPrioritySection({
 
   const handleRowKeyDown = (
     e: KeyboardEvent<HTMLButtonElement>,
-    scheduleId: string,
+    scheduleId: string
   ) => {
     if (e.key !== "Enter" && e.key !== " ") return;
     e.preventDefault();
@@ -1485,9 +2238,9 @@ function AddWidgetModalPrioritySection({
           ) : null}
         </div>
         <p className="mt-2 max-w-3xl text-sm text-white/85">
-          Choose one active schedule to pin in the sidebar. It shows a live countdown
-          to the next deadline, urgency, and whether you have finished it for the
-          current period. Only one priority is kept—picking another replaces it.
+          Choose one active schedule to pin in the sidebar. It shows a live countdown to
+          the next deadline, urgency, and whether you have finished it for the current
+          period. Only one priority is kept—picking another replaces it.
         </p>
       </div>
 
@@ -1570,12 +2323,37 @@ function AddWidgetModalPrioritySection({
   );
 }
 
-function AddWidgetModalQuickAccomplishmentSection({
+const SIDEBAR_QUICK_WIDGET_ORDER = [
+  "quick-accomplishment",
+  "quick-merge-files",
+  "quick-billing-unit",
+  "quick-consolidate-ifr",
+] as const;
+
+function AddWidgetModalQuickToolSection({
+  title,
+  description,
+  chipIcon,
+  chipLabel,
+  cardTitle,
+  cardBody,
   onAdd,
   hasExisting,
+  ariaLabel,
+  headerIcon,
+  cardIcon,
 }: {
+  title: string;
+  description: string;
+  chipIcon: ReactNode;
+  chipLabel: string;
+  cardTitle: string;
+  cardBody: string;
   onAdd: () => void;
   hasExisting: boolean;
+  ariaLabel: string;
+  headerIcon: ReactNode;
+  cardIcon: ReactNode;
 }) {
   const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (e.key !== "Enter" && e.key !== " ") return;
@@ -1588,19 +2366,16 @@ function AddWidgetModalQuickAccomplishmentSection({
       <div className="w-full">
         <h4 className="flex items-center gap-2 text-lg font-medium text-white sm:text-xl">
           <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
-            <FileXlsIcon
-              size={20}
-              className="text-white"
-              weight="duotone"
-              aria-hidden
-            />
+            {headerIcon}
           </span>
-          Quick accomplishment report
+          {title}
         </h4>
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
-            <FileXlsIcon size={12} className="text-white" aria-hidden />
-            Excel · Accomplishment report
+            <span className="inline-flex shrink-0 items-center" aria-hidden>
+              {chipIcon}
+            </span>
+            {chipLabel}
           </span>
           {hasExisting ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/45 bg-amber-500/15 px-3 py-1 text-xs font-medium text-amber-100">
@@ -1608,11 +2383,7 @@ function AddWidgetModalQuickAccomplishmentSection({
             </span>
           ) : null}
         </div>
-        <p className="mt-2 max-w-3xl text-sm text-white/85">
-          Add a compact sidebar form: full name and one task description. Months
-          default to January through December, with first and second half of each
-          month included. The first available accomplishment template is used.
-        </p>
+        <p className="mt-2 max-w-3xl text-sm text-white/85">{description}</p>
       </div>
 
       <button
@@ -1620,21 +2391,16 @@ function AddWidgetModalQuickAccomplishmentSection({
         onClick={onAdd}
         onKeyDown={handleKeyDown}
         className="group flex w-full flex-col rounded-xl border border-white/35 bg-white/10 p-4 text-left shadow-sm backdrop-blur-md transition-all hover:border-white/50 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35 sm:flex-row sm:items-center sm:gap-4"
-        aria-label="Add Quick accomplishment widget to sidebar"
+        aria-label={ariaLabel}
       >
         <div className="flex min-w-0 flex-1 items-start gap-3">
           <span className="inline-flex shrink-0 items-center justify-center rounded-lg border border-white/35 bg-white/10 p-2.5">
-            <FileXlsIcon
-              className="h-6 w-6 text-white"
-              weight="duotone"
-              aria-hidden
-            />
+            {cardIcon}
           </span>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white">Sidebar shortcut</p>
+            <p className="text-sm font-medium text-white">{cardTitle}</p>
             <p className="mt-1 text-xs font-normal leading-snug text-white/80">
-              Generate the full-year workbook from the sidebar with two fields
-              only—no stepper.
+              {cardBody}
             </p>
           </div>
         </div>
@@ -1737,25 +2503,65 @@ export function WidgetSidebar() {
     setIsAddModalOpen(false);
   };
 
+  const handleAddQuickMergeWidget = () => {
+    addWidget({
+      id: `quick-merge-files-${Date.now()}`,
+      type: "quick-merge-files",
+    });
+    setIsAddModalOpen(false);
+  };
+
+  const handleAddQuickBillingUnitWidget = () => {
+    addWidget({
+      id: `quick-billing-unit-${Date.now()}`,
+      type: "quick-billing-unit",
+    });
+    setIsAddModalOpen(false);
+  };
+
+  const handleAddQuickConsolidateIfrWidget = () => {
+    addWidget({
+      id: `quick-consolidate-ifr-${Date.now()}`,
+      type: "quick-consolidate-ifr",
+    });
+    setIsAddModalOpen(false);
+  };
+
   const hasExistingPriority = useMemo(
     () => widgets.some((w) => w.type === "priority"),
-    [widgets],
+    [widgets]
   );
 
   const hasExistingQuickAccomplishment = useMemo(
     () => widgets.some((w) => w.type === "quick-accomplishment"),
-    [widgets],
+    [widgets]
+  );
+
+  const hasExistingQuickMerge = useMemo(
+    () => widgets.some((w) => w.type === "quick-merge-files"),
+    [widgets]
+  );
+
+  const hasExistingQuickBillingUnit = useMemo(
+    () => widgets.some((w) => w.type === "quick-billing-unit"),
+    [widgets]
+  );
+
+  const hasExistingQuickConsolidateIfr = useMemo(
+    () => widgets.some((w) => w.type === "quick-consolidate-ifr"),
+    [widgets]
   );
 
   const orderedWidgets = useMemo(() => {
     const priority = widgets.filter((w) => w.type === "priority");
-    const quickAccomplishment = widgets.filter(
-      (w) => w.type === "quick-accomplishment",
+    const quickOrdered = SIDEBAR_QUICK_WIDGET_ORDER.flatMap((t) =>
+      widgets.filter((w) => w.type === t)
     );
+    const allowedQuick = new Set<string>(SIDEBAR_QUICK_WIDGET_ORDER);
     const rest = widgets.filter(
-      (w) => w.type !== "priority" && w.type !== "quick-accomplishment",
+      (w) => w.type !== "priority" && !allowedQuick.has(w.type)
     );
-    return [...priority, ...quickAccomplishment, ...rest];
+    return [...priority, ...quickOrdered, ...rest];
   }, [widgets]);
 
   if (!isDesktop) {
@@ -1861,6 +2667,30 @@ export function WidgetSidebar() {
                         />
                       );
                     }
+                    if (widget.type === "quick-merge-files") {
+                      return (
+                        <QuickMergeSidebarWidget
+                          key={widget.id}
+                          onRemove={() => removeWidget(widget.id)}
+                        />
+                      );
+                    }
+                    if (widget.type === "quick-billing-unit") {
+                      return (
+                        <QuickBillingUnitSidebarWidget
+                          key={widget.id}
+                          onRemove={() => removeWidget(widget.id)}
+                        />
+                      );
+                    }
+                    if (widget.type === "quick-consolidate-ifr") {
+                      return (
+                        <QuickConsolidateIfrSidebarWidget
+                          key={widget.id}
+                          onRemove={() => removeWidget(widget.id)}
+                        />
+                      );
+                    }
                     if (widget.type === "schedule") {
                       if (widget.scheduleType === "nearest-deadline") {
                         return (
@@ -1894,10 +2724,7 @@ export function WidgetSidebar() {
                     onClick={() => setIsAddModalOpen(true)}
                     className="w-full rounded-lg border-2 border-dashed border-emerald-700/60 bg-emerald-800/20 px-4 py-3 text-sm font-medium text-emerald-300 transition-colors hover:border-emerald-600 hover:bg-emerald-800/30"
                   >
-                    <LayoutIcon
-                      className="mx-auto mb-1 h-5 w-5"
-                      weight="duotone"
-                    />
+                    <LayoutIcon className="mx-auto mb-1 h-5 w-5" weight="duotone" />
                     Add widget
                   </button>
                 </div>
@@ -1955,9 +2782,9 @@ export function WidgetSidebar() {
               </span>
             </div>
             <p className="mt-2 max-w-3xl text-sm text-white/85">
-              Pick a schedule widget for the right sidebar. Each preview below is
-              the same layout you will see after you add it—counts and deadlines
-              stay in sync with your active schedules.
+              Pick a schedule widget for the right sidebar. Each preview below is the
+              same layout you will see after you add it—counts and deadlines stay in
+              sync with your active schedules.
             </p>
           </header>
 
@@ -1973,16 +2800,117 @@ export function WidgetSidebar() {
               hasExistingPriority={hasExistingPriority}
             />
 
-            <AddWidgetModalQuickAccomplishmentSection
+            <AddWidgetModalQuickToolSection
+              title="Quick accomplishment report"
+              description="Add a compact sidebar form: full name, position, and task description. Task text suggests matching entries from Task manager as you type. Months default to January through December, with first and second half of each month included. The first available accomplishment template is used."
+              chipIcon={<FileXlsIcon size={12} className="text-white" aria-hidden />}
+              chipLabel="Excel · Accomplishment report"
+              cardTitle="Sidebar shortcut"
+              cardBody="Generate the full-year workbook from the sidebar without the workspace stepper."
               onAdd={handleAddQuickAccomplishmentWidget}
               hasExisting={hasExistingQuickAccomplishment}
+              ariaLabel="Add Quick accomplishment widget to sidebar"
+              headerIcon={
+                <FileXlsIcon
+                  size={20}
+                  className="text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+              cardIcon={
+                <FileXlsIcon
+                  className="h-6 w-6 text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
             />
 
-            <div className="w-full rounded-lg border border-white/30 bg-white/10 p-4 text-center backdrop-blur-sm">
-              <p className="text-xs font-normal text-white/80">
-                More widget types coming soon
-              </p>
-            </div>
+            <AddWidgetModalQuickToolSection
+              title="Quick merge files"
+              description="Merge PDF or Excel files from the sidebar: choose mode, drop files in order (PDF page order follows upload), set an output name, and download—same engine as Merge Files in the workspace."
+              chipIcon={
+                <ArrowsMergeIcon size={12} className="text-white" aria-hidden />
+              }
+              chipLabel="PDF / Excel · Merge"
+              cardTitle="Sidebar shortcut"
+              cardBody="Compact merge without the stepper; ideal when you already know the mode and files."
+              onAdd={handleAddQuickMergeWidget}
+              hasExisting={hasExistingQuickMerge}
+              ariaLabel="Add Quick merge files widget to sidebar"
+              headerIcon={
+                <ArrowsMergeIcon
+                  size={20}
+                  className="text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+              cardIcon={
+                <ArrowsMergeIcon
+                  className="h-6 w-6 text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+            />
+
+            <AddWidgetModalQuickToolSection
+              title="Quick generate billing unit"
+              description="Upload IFR Excel sources, set per-file division folder names and billing folder name, then generate the ZIP. Uses the first IFR scanner template from Template Manager unless you change it in the full tool."
+              chipIcon={
+                <MagnifyingGlassIcon size={12} className="text-white" aria-hidden />
+              }
+              chipLabel="Excel · Billing unit ZIP"
+              cardTitle="Sidebar shortcut"
+              cardBody="Run Generate Billing Unit from the sidebar with upload, mapping fields, and progress overlay."
+              onAdd={handleAddQuickBillingUnitWidget}
+              hasExisting={hasExistingQuickBillingUnit}
+              ariaLabel="Add Quick billing unit widget to sidebar"
+              headerIcon={
+                <MagnifyingGlassIcon
+                  size={20}
+                  className="text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+              cardIcon={
+                <MagnifyingGlassIcon
+                  className="h-6 w-6 text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+            />
+
+            <AddWidgetModalQuickToolSection
+              title="Quick consolidate IFR"
+              description="Upload IFR Excel files, enter division number and irrigation association for each, and consolidate using the shared template from Template Manager. Filenames may pre-fill details when they match the expected pattern."
+              chipIcon={<FolderOpenIcon size={12} className="text-white" aria-hidden />}
+              chipLabel="Excel · Consolidate IFR"
+              cardTitle="Sidebar shortcut"
+              cardBody="Same consolidation API as Consolidate IFR in the workspace, in a narrow sidebar layout."
+              onAdd={handleAddQuickConsolidateIfrWidget}
+              hasExisting={hasExistingQuickConsolidateIfr}
+              ariaLabel="Add Quick consolidate IFR widget to sidebar"
+              headerIcon={
+                <FolderOpenIcon
+                  size={20}
+                  className="text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+              cardIcon={
+                <FolderOpenIcon
+                  className="h-6 w-6 text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+            />
           </div>
         </section>
       </MasonryModal>

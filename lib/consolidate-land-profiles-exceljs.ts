@@ -22,7 +22,7 @@ export interface LandProfileData {
  */
 export async function extractLandProfileData(
   fileBuffer: Buffer,
-  fileName: string,
+  fileName: string
 ): Promise<LandProfileData | null> {
   try {
     logger.debug(`Extracting from: ${fileName}`);
@@ -38,9 +38,7 @@ export async function extractLandProfileData(
 
     const accDetailsSheet = workbook.getWorksheet(EXCEL_SHEETS.ACC_DETAILS);
     if (!accDetailsSheet) {
-      logger.error(
-        `Sheet "${EXCEL_SHEETS.ACC_DETAILS}" not found in ${fileName}`,
-      );
+      logger.error(`Sheet "${EXCEL_SHEETS.ACC_DETAILS}" not found in ${fileName}`);
       throw new Error(`Sheet "${EXCEL_SHEETS.ACC_DETAILS}" not found`);
     }
 
@@ -76,19 +74,19 @@ export async function extractLandProfileData(
       lotNo: getCellValue(accDetailsSheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE),
       ownerFirstName: getCellValue(
         accDetailsSheet,
-        EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME,
+        EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME
       ),
       ownerLastName: getCellValue(
         accDetailsSheet,
-        EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME,
+        EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME
       ),
       tillerFirstName: getCellValue(
         accDetailsSheet,
-        EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME,
+        EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME
       ),
       tillerLastName: getCellValue(
         accDetailsSheet,
-        EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME,
+        EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME
       ),
       oldAccount: getCellValue(soaSheet, EXCEL_CELLS.SOA.OLD_ACCOUNT),
       area,
@@ -111,7 +109,7 @@ export async function extractLandProfileData(
  */
 export async function consolidateWithExcelJS(
   templateBuffer: Buffer,
-  landProfileFiles: { buffer: Buffer; fileName: string }[],
+  landProfileFiles: { buffer: Buffer; fileName: string }[]
 ): Promise<{ buffer: Buffer; processedCount: number; errors: string[] }> {
   const errors: string[] = [];
   let processedCount = 0;
@@ -149,8 +147,7 @@ export async function consolidateWithExcelJS(
 
         processedCount++;
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : "Unknown error";
+        const errorMsg = error instanceof Error ? error.message : "Unknown error";
         errors.push(`Error processing ${file.fileName}: ${errorMsg}`);
       }
     }

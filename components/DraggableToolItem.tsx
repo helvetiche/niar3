@@ -31,14 +31,8 @@ export function DraggableToolItem({
   onTogglePin,
   onClick,
 }: DraggableToolItemProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id, disabled: !isDragEnabled });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id, disabled: !isDragEnabled });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -90,13 +84,13 @@ export function DraggableToolItem({
         </div>
         {!isCollapsed && (
           <div className="min-w-0 flex-1" suppressHydrationWarning>
-            <p 
+            <p
               suppressHydrationWarning
               className={`text-sm font-medium ${isPinned ? "text-yellow-100" : "text-white"}`}
             >
               {name}
             </p>
-            <p 
+            <p
               suppressHydrationWarning
               className={`mt-0.5 text-xs line-clamp-2 ${
                 isPinned ? "text-yellow-200/70" : "text-emerald-200/80"

@@ -44,9 +44,7 @@ const sanitizeErrorMessage = (value: string): string => {
     .slice(0, MAX_ERROR_MESSAGE_LENGTH)
     .replace(/\/[^\s]+\.[jt]sx?/g, "[redacted]")
     .replace(/at\s+\S+/g, "")
-    .replace(/\b[A-Za-z0-9_-]{20,}\b/g, (m) =>
-      m.length > 32 ? "[redacted]" : m,
-    )
+    .replace(/\b[A-Za-z0-9_-]{20,}\b/g, (m) => (m.length > 32 ? "[redacted]" : m))
     .replace(/\s{2,}/g, " ")
     .trim();
 };
@@ -68,9 +66,7 @@ const isAuditTrailConfigurationError = (error: unknown): boolean => {
 };
 
 const truncateString = (value: string): string =>
-  value.length > MAX_STRING_LENGTH
-    ? `${value.slice(0, MAX_STRING_LENGTH)}...`
-    : value;
+  value.length > MAX_STRING_LENGTH ? `${value.slice(0, MAX_STRING_LENGTH)}...` : value;
 
 const sanitizeValue = (value: unknown, depth = 0): unknown => {
   if (value === null || value === undefined) return null;
@@ -93,7 +89,7 @@ const sanitizeValue = (value: unknown, depth = 0): unknown => {
   if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>).slice(
       0,
-      MAX_OBJECT_KEYS,
+      MAX_OBJECT_KEYS
     );
     const filtered = entries
       .map(([key, item]) => [key, sanitizeValue(item, depth + 1)])
@@ -107,7 +103,7 @@ const sanitizeValue = (value: unknown, depth = 0): unknown => {
 /** Firebase Realtime DB rejects undefined. Strip undefined keys before write. */
 const omitUndefined = <T extends Record<string, unknown>>(obj: T): T => {
   return Object.fromEntries(
-    Object.entries(obj).filter(([, v]) => v !== undefined),
+    Object.entries(obj).filter(([, v]) => v !== undefined)
   ) as T;
 };
 
@@ -122,9 +118,7 @@ const resolveIpAddress = (request?: Request): string | null => {
   return realIp ? truncateString(realIp.trim()) : null;
 };
 
-export async function logAuditTrailEntry(
-  input: LogAuditTrailInput,
-): Promise<void> {
+export async function logAuditTrailEntry(input: LogAuditTrailInput): Promise<void> {
   if (auditTrailState.isDisabled) return;
 
   try {
@@ -150,18 +144,14 @@ export async function logAuditTrailEntry(
       createdAt,
       createdAtIso: new Date(createdAt).toISOString(),
     };
-    if (input.httpStatus !== undefined)
-      rawPayload.httpStatus = input.httpStatus;
+    if (input.httpStatus !== undefined) rawPayload.httpStatus = input.httpStatus;
     if (input.errorMessage?.trim()) {
       rawPayload.errorMessage = sanitizeErrorMessage(
-        truncateString(input.errorMessage),
+        truncateString(input.errorMessage)
       );
     }
     if (input.details) {
-      rawPayload.details = sanitizeValue(input.details) as Record<
-        string,
-        unknown
-      >;
+      rawPayload.details = sanitizeValue(input.details) as Record<string, unknown>;
     }
 
     const payload = omitUndefined(rawPayload);
@@ -172,7 +162,7 @@ export async function logAuditTrailEntry(
       if (!auditTrailState.hasReportedDisabled) {
         auditTrailState.hasReportedDisabled = true;
         logger.warn(
-          "[audit-trail] Disabled because Firebase Realtime Database is not configured correctly.",
+          "[audit-trail] Disabled because Firebase Realtime Database is not configured correctly."
         );
       }
       return;
@@ -183,7 +173,7 @@ export async function logAuditTrailEntry(
 
 export async function getAuditTrailEntries(
   uid: string,
-  limit = 50,
+  limit = 50
 ): Promise<AuditTrailEntry[]> {
   const safeLimit = Number.isFinite(limit)
     ? Math.max(1, Math.min(200, Math.floor(limit)))

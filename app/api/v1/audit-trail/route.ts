@@ -18,10 +18,7 @@ export async function GET(request: Request) {
   } catch (error) {
     logger.error("[api/audit-trail GET]", error);
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Failed to fetch audit trail" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to fetch audit trail" }, { status: 500 })
     );
   }
 }

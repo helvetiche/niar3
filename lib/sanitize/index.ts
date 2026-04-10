@@ -36,7 +36,7 @@ export function sanitizeString(str: string, maxLength = 10_000): string {
  */
 export function sanitizeHtmlInput(
   html: string,
-  options?: sanitizeHtml.IOptions,
+  options?: sanitizeHtml.IOptions
 ): string {
   return sanitizeHtml(html, {
     allowedTags: [

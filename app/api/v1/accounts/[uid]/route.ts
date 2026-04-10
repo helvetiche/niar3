@@ -19,13 +19,12 @@ export const PATCH = withApiAuth(async (req, user, context) => {
   if (!isSuperAdmin(user)) {
     return NextResponse.json(
       { error: "Only super-admins can update accounts" },
-      { status: HTTP_STATUS.FORBIDDEN },
+      { status: HTTP_STATUS.FORBIDDEN }
     );
   }
 
   try {
-    const { uid } = await (context as { params: Promise<{ uid: string }> })
-      .params;
+    const { uid } = await (context as { params: Promise<{ uid: string }> }).params;
     const body = (await req.json()) as UpdateAccountRequest;
     const validated = updateAccountSchema.parse(body);
 
@@ -51,8 +50,7 @@ export const PATCH = withApiAuth(async (req, user, context) => {
       const currentUser = await auth.getUser(uid);
       const currentClaims = currentUser.customClaims || {};
 
-      let permissionsUpdate: { permissions: string[] } | Record<string, never> =
-        {};
+      let permissionsUpdate: { permissions: string[] } | Record<string, never> = {};
       if (validated.permissions !== undefined) {
         permissionsUpdate = {
           permissions: [
@@ -82,14 +80,14 @@ export const PATCH = withApiAuth(async (req, user, context) => {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input data" },
-        { status: HTTP_STATUS.BAD_REQUEST },
+        { status: HTTP_STATUS.BAD_REQUEST }
       );
     }
 
     logger.error("Error updating account:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
-      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
+      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }
 });
@@ -98,13 +96,12 @@ export const DELETE = withApiAuth(async (req, user, context) => {
   if (!isSuperAdmin(user)) {
     return NextResponse.json(
       { error: "Only super-admins can delete accounts" },
-      { status: HTTP_STATUS.FORBIDDEN },
+      { status: HTTP_STATUS.FORBIDDEN }
     );
   }
 
   try {
-    const { uid } = await (context as { params: Promise<{ uid: string }> })
-      .params;
+    const { uid } = await (context as { params: Promise<{ uid: string }> }).params;
     const auth = getAdminAuth();
 
     await auth.deleteUser(uid);
@@ -114,7 +111,7 @@ export const DELETE = withApiAuth(async (req, user, context) => {
     logger.error("Error deleting account:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
-      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
+      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }
 });

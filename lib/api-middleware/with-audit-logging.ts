@@ -17,7 +17,7 @@ interface AuditContext {
 export async function withAuditLogging<T>(
   context: AuditContext,
   auth: AuthResult | null,
-  handler: () => Promise<T>,
+  handler: () => Promise<T>
 ): Promise<T> {
   const uid = auth?.user?.uid;
 
@@ -38,8 +38,7 @@ export async function withAuditLogging<T>(
     return result;
   } catch (error) {
     // Log error
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
     await logAuditTrailEntry({
       uid,
@@ -63,7 +62,7 @@ export async function logRejection(
   context: AuditContext,
   uid: string | undefined,
   httpStatus: number,
-  details: Record<string, unknown>,
+  details: Record<string, unknown>
 ): Promise<void> {
   await logAuditTrailEntry({
     uid,
@@ -82,7 +81,7 @@ export async function logRejection(
  */
 export function createAuditContext(
   request: Request,
-  action: AuditAction,
+  action: AuditAction
 ): AuditContext {
   const url = new URL(request.url);
   return {

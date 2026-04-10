@@ -42,7 +42,7 @@ export async function proxy(request: NextRequest) {
               "Content-Type": "application/json",
               "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)),
             },
-          },
+          }
         );
         return applySecurityHeaders(response);
       }

@@ -51,7 +51,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
               new Response(responseBody, {
                 status: xhr.status,
                 statusText: xhr.statusText,
-              }),
+              })
             );
           } else {
             reject(new Error(`Server error: ${xhr.statusText}`));
@@ -72,7 +72,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
         xhr.send(formData);
       });
     },
-    [onProgress],
+    [onProgress]
   );
 
   const reset = useCallback(() => {

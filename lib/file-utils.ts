@@ -23,7 +23,7 @@ export const getFileKey = (file: File): string =>
 
 export const getUniqueFolderName = (
   rawName: string,
-  seenFolders: Map<string, number>,
+  seenFolders: Map<string, number>
 ): string => {
   const baseName = sanitizeFolderName(rawName) || "division";
   const currentCount = seenFolders.get(baseName) ?? 0;
@@ -33,7 +33,7 @@ export const getUniqueFolderName = (
 };
 
 export const detectDivisionAndIAFromFilename = (
-  fileName: string,
+  fileName: string
 ): { division: string; ia: string } => {
   const baseName = getBaseName(fileName).replace(/_/g, " ").trim();
   const divisionMatch = /\bDIV\.?\s*([0-9]{1,2})\b/i.exec(baseName);
@@ -54,18 +54,13 @@ export const detectDivisionAndIAFromFilename = (
   };
 };
 
-export const ensureXlsxExtension = (
-  value: string,
-  fallback = "output",
-): string => {
+export const ensureXlsxExtension = (value: string, fallback = "output"): string => {
   const cleaned = value
     .replace(/[\\/:*?"<>|]/g, "-")
     .replace(/\s+/g, " ")
     .trim();
   const baseName = cleaned || fallback;
-  return baseName.toLowerCase().endsWith(".xlsx")
-    ? baseName
-    : `${baseName}.xlsx`;
+  return baseName.toLowerCase().endsWith(".xlsx") ? baseName : `${baseName}.xlsx`;
 };
 
 /**
@@ -74,7 +69,7 @@ export const ensureXlsxExtension = (
  */
 export const safeContentDispositionFilename = (
   value: string,
-  fallback = "download",
+  fallback = "download"
 ): string => {
   const sanitized = value
     .replace(/[\x00-\x1F\x7F"\\]/g, "-")

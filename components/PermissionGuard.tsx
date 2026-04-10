@@ -9,11 +9,7 @@ interface PermissionGuardProps {
   fallback?: React.ReactNode;
 }
 
-export function PermissionGuard({
-  toolId,
-  children,
-  fallback,
-}: PermissionGuardProps) {
+export function PermissionGuard({ toolId, children, fallback }: PermissionGuardProps) {
   const { user } = useWorkspaceContext();
 
   // Hub is always accessible
@@ -22,7 +18,7 @@ export function PermissionGuard({
   }
 
   const isSuperAdmin = user.customClaims?.role === "super-admin";
-  
+
   // Super admins have access to everything
   if (isSuperAdmin) {
     return <>{children}</>;
@@ -33,8 +29,7 @@ export function PermissionGuard({
   // Check if user has permission for this tool
   const hasPermission =
     userPermissions.includes(toolId) ||
-    (toolId === "accomplishment-report" &&
-      userPermissions.includes("swrft"));
+    (toolId === "accomplishment-report" && userPermissions.includes("swrft"));
 
   if (!hasPermission) {
     return (
@@ -42,9 +37,7 @@ export function PermissionGuard({
         {fallback || (
           <div className="flex h-full w-full items-center justify-center rounded-2xl border border-rose-700/60 bg-rose-900/20 p-6">
             <div className="text-center">
-              <h2 className="text-xl font-semibold text-white">
-                Access Denied
-              </h2>
+              <h2 className="text-xl font-semibold text-white">Access Denied</h2>
               <p className="mt-2 text-sm text-white/70">
                 You don&apos;t have permission to access this tool.
               </p>

@@ -38,7 +38,7 @@ export async function getProfile(uid: string): Promise<{
  */
 export async function setProfile(
   uid: string,
-  profile: { first: string; middle: string; last: string; birthday: string },
+  profile: { first: string; middle: string; last: string; birthday: string }
 ): Promise<void> {
   const ref = getDb().doc(`users/${uid}/profile/default`);
   await ref.set(profile, { merge: true });
@@ -50,12 +50,9 @@ export async function setProfile(
  * @returns Record of date keys mapped to arrays of note items
  */
 export async function getCalendarNotes(
-  uid: string,
+  uid: string
 ): Promise<Record<string, { text: string; color: string }[]>> {
-  const colRef = getDb()
-    .collection("users")
-    .doc(uid)
-    .collection("calendar_notes");
+  const colRef = getDb().collection("users").doc(uid).collection("calendar_notes");
   const snap = await colRef.get();
   const out: Record<string, { text: string; color: string }[]> = {};
   snap.docs.forEach((d) => {
@@ -75,16 +72,13 @@ export async function getCalendarNotes(
 export async function setCalendarNotesForDate(
   uid: string,
   dateKey: string,
-  items: { text: string; color: string }[],
+  items: { text: string; color: string }[]
 ): Promise<void> {
   const ref = getDb().doc(`users/${uid}/calendar_notes/${dateKey}`);
   await ref.set({ items }, { merge: true });
 }
 
-export type TemplateScope =
-  | "ifr-scanner"
-  | "accomplishment-report"
-  | "consolidation";
+export type TemplateScope = "ifr-scanner" | "accomplishment-report" | "consolidation";
 
 export type StoredTemplate = {
   id: string;
@@ -103,7 +97,7 @@ export type StoredTemplate = {
 const LEGACY_ACCOMPLISHMENT_REPORT_SCOPE = "swrft";
 
 const isPersistedTemplateScope = (
-  value: unknown,
+  value: unknown
 ): value is TemplateScope | typeof LEGACY_ACCOMPLISHMENT_REPORT_SCOPE =>
   value === "ifr-scanner" ||
   value === "accomplishment-report" ||
@@ -111,7 +105,7 @@ const isPersistedTemplateScope = (
   value === "consolidation";
 
 const normalizeTemplateScope = (
-  raw: TemplateScope | typeof LEGACY_ACCOMPLISHMENT_REPORT_SCOPE,
+  raw: TemplateScope | typeof LEGACY_ACCOMPLISHMENT_REPORT_SCOPE
 ): TemplateScope => {
   if (raw === LEGACY_ACCOMPLISHMENT_REPORT_SCOPE) {
     return "accomplishment-report";
@@ -125,7 +119,7 @@ function templateCollection() {
 
 function asStoredTemplate(
   id: string,
-  data: Record<string, unknown> | undefined,
+  data: Record<string, unknown> | undefined
 ): StoredTemplate | null {
   if (!data) return null;
   const scope = data.scope;
@@ -157,9 +151,7 @@ function asStoredTemplate(
   };
 }
 
-export async function listTemplates(
-  scope?: TemplateScope,
-): Promise<StoredTemplate[]> {
+export async function listTemplates(scope?: TemplateScope): Promise<StoredTemplate[]> {
   const collection = templateCollection();
   let snap: QuerySnapshot;
   if (!scope) {
@@ -190,7 +182,7 @@ export async function createTemplateRecord(
     contentType: string;
     sizeBytes: number;
   },
-  uploaderUid: string,
+  uploaderUid: string
 ): Promise<StoredTemplate> {
   const now = Date.now();
   const record: StoredTemplate = {
@@ -205,7 +197,7 @@ export async function createTemplateRecord(
 }
 
 export async function getTemplateRecord(
-  templateId: string,
+  templateId: string
 ): Promise<StoredTemplate | null> {
   const snap = await templateCollection().doc(templateId).get();
   if (!snap.exists) return null;
@@ -220,7 +212,7 @@ export async function updateTemplateRecord(
     contentType?: string;
     sizeBytes?: number;
   },
-  updatedByUid: string,
+  updatedByUid: string
 ): Promise<StoredTemplate | null> {
   const ref = templateCollection().doc(templateId);
   const existing = await ref.get();
@@ -239,10 +231,7 @@ export async function updateTemplateRecord(
   if (typeof updates.contentType === "string" && updates.contentType.trim()) {
     payload.contentType = updates.contentType.trim();
   }
-  if (
-    typeof updates.sizeBytes === "number" &&
-    Number.isFinite(updates.sizeBytes)
-  ) {
+  if (typeof updates.sizeBytes === "number" && Number.isFinite(updates.sizeBytes)) {
     payload.sizeBytes = updates.sizeBytes;
   }
 
@@ -275,9 +264,7 @@ function accomplishmentTasksCollection() {
 }
 
 export async function listAccomplishmentTasks(): Promise<AccomplishmentTask[]> {
-  const snap = await accomplishmentTasksCollection()
-    .orderBy("createdAt", "asc")
-    .get();
+  const snap = await accomplishmentTasksCollection().orderBy("createdAt", "asc").get();
   const validDesignations = [
     "SWRFT",
     "WRFOB",
@@ -290,9 +277,7 @@ export async function listAccomplishmentTasks(): Promise<AccomplishmentTask[]> {
     const d = doc.data();
     const des =
       typeof d.designation === "string" &&
-      validDesignations.includes(
-        d.designation as (typeof validDesignations)[number],
-      )
+      validDesignations.includes(d.designation as (typeof validDesignations)[number])
         ? (d.designation as AccomplishmentTaskDesignation)
         : "SWRFT";
     return {
@@ -306,7 +291,7 @@ export async function listAccomplishmentTasks(): Promise<AccomplishmentTask[]> {
 
 export async function createAccomplishmentTask(
   label: string,
-  designation: AccomplishmentTaskDesignation = "SWRFT",
+  designation: AccomplishmentTaskDesignation = "SWRFT"
 ): Promise<AccomplishmentTask> {
   const trimmed = label.trim();
   if (!trimmed) {
@@ -321,7 +306,7 @@ export async function createAccomplishmentTask(
     "Administrative Aide",
   ] as const;
   const des = validDesignationValues.includes(
-    designation as (typeof validDesignationValues)[number],
+    designation as (typeof validDesignationValues)[number]
   )
     ? designation
     : "SWRFT";

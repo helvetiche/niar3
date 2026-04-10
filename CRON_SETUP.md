@@ -1,18 +1,23 @@
 # Cron Job Setup for Schedule Reminders
 
 ## Overview
+
 The scheduling system automatically sends email reminders based on schedule deadlines using a cron job that runs every minute.
 
 ## Configuration
 
 ### Environment Variables
+
 Add to `.env.local`:
+
 ```env
 CRON_SECRET=887ab87853c3f4884c70aee0086ae4dcb234c0d0839c8d53f971fed854ac92fa
 ```
 
 ### Vercel Deployment
+
 The `vercel.json` file configures the cron job to run every minute:
+
 ```json
 {
   "crons": [
@@ -36,10 +41,12 @@ The `vercel.json` file configures the cron job to run every minute:
 ### GET `/api/v1/cron/send-reminders`
 
 **Authorization**: Requires `CRON_SECRET` via:
+
 - Query parameter: `?secret=YOUR_CRON_SECRET`
 - Authorization header: `Bearer YOUR_CRON_SECRET`
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -65,6 +72,7 @@ The `vercel.json` file configures the cron job to run every minute:
 ## Testing Locally
 
 Test the cron endpoint manually:
+
 ```bash
 curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET"
 ```
@@ -84,6 +92,7 @@ curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET"
 ## Schedule Calculation
 
 The system calculates:
+
 1. **Next Deadline**: Based on deadline type (daily, weekly, monthly, etc.)
 2. **Reminder Time**: X days before deadline at specified time
 3. **Send Window**: If current time is within 5 minutes of reminder time
@@ -91,9 +100,12 @@ The system calculates:
 ## Firestore Collections
 
 ### `schedules`
+
 Stores all schedules with deadline and reminder configurations
 
 ### `remindersSent`
+
 Tracks sent reminders to prevent duplicates:
+
 - Document ID: `{scheduleId}_{YYYY-MM-DD}`
 - Contains: scheduleId, personEmail, sentAt, deadline

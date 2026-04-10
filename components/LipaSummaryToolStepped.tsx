@@ -125,9 +125,7 @@ export function LipaSummaryToolStepped() {
                     <input
                       type="text"
                       value={item.divisionName}
-                      onChange={(e) =>
-                        handleDivisionChange(item.id, e.target.value)
-                      }
+                      onChange={(e) => handleDivisionChange(item.id, e.target.value)}
                       className="w-full rounded border border-white/30 bg-white/5 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
                     />
                   </label>
@@ -138,9 +136,7 @@ export function LipaSummaryToolStepped() {
                     <input
                       type="text"
                       value={item.pageNumber}
-                      onChange={(e) =>
-                        handlePageNumberChange(item.id, e.target.value)
-                      }
+                      onChange={(e) => handlePageNumberChange(item.id, e.target.value)}
                       className="w-full rounded border border-white/30 bg-white/5 px-2 py-1 text-sm text-white focus:border-white focus:outline-none"
                     />
                   </label>
@@ -213,9 +209,7 @@ export function LipaSummaryToolStepped() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Review & Generate
-            </h3>
+            <h3 className="text-lg font-medium text-white">Review & Generate</h3>
             <p className="mt-1 text-sm text-white/80">
               Review your configuration and generate the summary report.
             </p>
@@ -232,8 +226,7 @@ export function LipaSummaryToolStepped() {
                 {title || defaultReportTitle}
               </p>
               <p>
-                <span className="text-white/70">Season:</span>{" "}
-                {season || defaultSeason}
+                <span className="text-white/70">Season:</span> {season || defaultSeason}
               </p>
               <p>
                 <span className="text-white/70">Output Name:</span>{" "}

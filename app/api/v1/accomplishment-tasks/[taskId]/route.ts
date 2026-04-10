@@ -8,7 +8,7 @@ import { logger } from "@/lib/logger";
 /** DELETE /api/v1/accomplishment-tasks/[taskId] - Delete an accomplishment task */
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ taskId: string }> },
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
   const auth = await withAuth(request, {
     action: "accomplishment-tasks.delete",
@@ -29,7 +29,7 @@ export async function DELETE(
       details: { reason: "missing-task-id", taskId },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Task ID is required" }, { status: 400 }),
+      NextResponse.json({ error: "Task ID is required" }, { status: 400 })
     );
   }
 
@@ -61,8 +61,8 @@ export async function DELETE(
     return applySecurityHeaders(
       NextResponse.json(
         { error: "Failed to delete accomplishment task" },
-        { status: 500 },
-      ),
+        { status: 500 }
+      )
     );
   }
 }

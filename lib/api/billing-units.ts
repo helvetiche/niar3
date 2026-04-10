@@ -10,7 +10,7 @@ export type GenerateBillingUnitsOptions = {
 
 export const generateBillingUnitsZip = async (
   sourceFiles: File[],
-  options: GenerateBillingUnitsOptions,
+  options: GenerateBillingUnitsOptions
 ): Promise<Blob> => {
   if (sourceFiles.length === 0) {
     throw new Error("Please upload at least one source Excel file.");
@@ -23,10 +23,7 @@ export const generateBillingUnitsZip = async (
     .build();
 
   if (options.sourceFolderNames) {
-    formData.append(
-      "sourceFolderNames",
-      JSON.stringify(options.sourceFolderNames),
-    );
+    formData.append("sourceFolderNames", JSON.stringify(options.sourceFolderNames));
   }
 
   const response = await fetch("/api/v1/generate-billing-units", {

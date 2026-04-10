@@ -5,10 +5,10 @@ import { requireAuth } from "@/lib/auth";
 /**
  * POST /api/v1/schedules/sync-cache
  * Rebuild the schedule cache for optimized cron job performance
- * 
+ *
  * This endpoint syncs all active schedules to the cache, which dramatically
  * reduces Firestore reads during cron job execution.
- * 
+ *
  * Can be called with CRON_SECRET for automated syncing without auth.
  */
 export async function POST(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const secret = searchParams.get("secret");
     const cronSecret = process.env.CRON_SECRET;
-    
+
     if (secret && cronSecret && secret === cronSecret) {
       // Authorized via secret
       console.log("[SYNC] Authorized via CRON_SECRET");
@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: result.error || "Unable to synchronize schedule cache" 
+        {
+          success: false,
+          error: result.error || "Unable to synchronize schedule cache",
         },
         { status: 500 }
       );
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error syncing schedule cache:", error);
-    
+
     return NextResponse.json(
       {
         success: false,

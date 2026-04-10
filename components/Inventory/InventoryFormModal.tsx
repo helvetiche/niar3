@@ -52,10 +52,10 @@ export function InventoryFormModal({
 }: InventoryFormModalProps) {
   const [name, setName] = useState(initialValues?.name || "");
   const [stockAmount, setStockAmount] = useState<number | "">(
-    initialValues?.stockAmount ?? "",
+    initialValues?.stockAmount ?? ""
   );
   const [selectedUnit, setSelectedUnit] = useState<"box" | "pieces" | "ream">(
-    (initialValues?.unit as "box" | "pieces" | "ream") || "pieces",
+    (initialValues?.unit as "box" | "pieces" | "ream") || "pieces"
   );
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -84,11 +84,7 @@ export function InventoryFormModal({
           <div className="flex items-center justify-between border-b border-white/20 px-6 py-5">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 border border-white/30">
-                <PackageIcon
-                  size={20}
-                  className="text-white"
-                  weight="regular"
-                />
+                <PackageIcon size={20} className="text-white" weight="regular" />
               </div>
               <div>
                 <h2 className="text-base font-medium text-white">
@@ -159,9 +155,7 @@ export function InventoryFormModal({
                   value={stockAmount}
                   onChange={(e) =>
                     setStockAmount(
-                      e.target.value === ""
-                        ? ""
-                        : parseInt(e.target.value) || 0,
+                      e.target.value === "" ? "" : parseInt(e.target.value) || 0
                     )
                   }
                   placeholder="0"

@@ -27,8 +27,8 @@ export function Hero() {
                 <span>Exclusive for NIA O&M Employees</span>
               </div>
               <p className="mt-1 hidden text-xs text-white/90 sm:block">
-                Designed for NIA employees to streamline workflows, automate
-                manual tasks, and boost productivity across the organization.
+                Designed for NIA employees to streamline workflows, automate manual
+                tasks, and boost productivity across the organization.
               </p>
             </div>
             <button
@@ -39,11 +39,7 @@ export function Hero() {
               <span className="hidden sm:flex sm:h-8 sm:w-8 sm:shrink-0 sm:items-center sm:justify-center sm:overflow-hidden sm:rounded-full sm:bg-emerald-900">
                 <UserIcon size={16} weight="fill" className="text-white" />
               </span>
-              <SignInIcon
-                size={16}
-                weight="duotone"
-                className="hidden sm:block"
-              />
+              <SignInIcon size={16} weight="duotone" className="hidden sm:block" />
               <span>Login</span>
             </button>
           </div>
@@ -81,11 +77,7 @@ export function Hero() {
               Speed
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm sm:gap-2 sm:px-4 sm:py-1.5 sm:text-sm">
-              <ChartLineUpIcon
-                size={18}
-                weight="duotone"
-                className="shrink-0"
-              />
+              <ChartLineUpIcon size={18} weight="duotone" className="shrink-0" />
               Efficiency
             </span>
           </div>
@@ -93,17 +85,17 @@ export function Hero() {
             className="text-sm leading-relaxed text-white/90 sm:hidden"
             style={{ fontFamily: "var(--font-jetbrains-mono)" }}
           >
-            Automates manual processes into minute-level results. Streamlines
-            workflows so teams focus on meaningful work.
+            Automates manual processes into minute-level results. Streamlines workflows
+            so teams focus on meaningful work.
           </p>
           <p
             className="hidden text-base leading-relaxed text-white/90 text-justify sm:block md:text-lg"
             style={{ fontFamily: "var(--font-jetbrains-mono)" }}
           >
-            A NIA-based tool that automates manual processes, transforming
-            hour-long tasks into minute-level results. Designed to streamline
-            workflows, reduce repetitive effort, and help teams focus on
-            meaningful, high-value work every day.
+            A NIA-based tool that automates manual processes, transforming hour-long
+            tasks into minute-level results. Designed to streamline workflows, reduce
+            repetitive effort, and help teams focus on meaningful, high-value work every
+            day.
           </p>
         </div>
         <header className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
@@ -117,11 +109,7 @@ export function Hero() {
               <span className="hidden sm:flex sm:h-7 sm:w-7 sm:shrink-0 sm:items-center sm:justify-center sm:overflow-hidden sm:rounded-full sm:bg-white/15 sm:backdrop-blur-sm">
                 <UserIcon size={14} weight="fill" className="text-white" />
               </span>
-              <SignInIcon
-                size={16}
-                weight="duotone"
-                className="hidden sm:block"
-              />
+              <SignInIcon size={16} weight="duotone" className="hidden sm:block" />
               <span>Login</span>
             </button>
             <h2 className="text-base font-semibold tracking-tight text-white sm:text-right sm:text-lg md:text-xl">

@@ -139,6 +139,7 @@ Add to `vercel.json`:
 #### Option B: External Cron Service (Cron-job.org, EasyCron, etc.)
 
 Set up a cron job to hit:
+
 ```
 https://your-domain.com/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET
 ```
@@ -160,7 +161,9 @@ curl http://localhost:3000/api/v1/schedules/cache-status \
 ## 📊 Firestore Collections
 
 ### schedules
+
 Main collection for schedule data:
+
 ```typescript
 {
   id: string;
@@ -178,7 +181,9 @@ Main collection for schedule data:
 ```
 
 ### scheduleCache
+
 Performance cache (single document):
+
 ```typescript
 {
   reminders: CachedReminder[];
@@ -188,7 +193,9 @@ Performance cache (single document):
 ```
 
 ### sentReminders
+
 Idempotency tracking:
+
 ```typescript
 {
   scheduleId: string;
@@ -201,7 +208,9 @@ Idempotency tracking:
 ```
 
 ### cronLogs
+
 Execution history:
+
 ```typescript
 {
   timestamp: Date;
@@ -217,6 +226,7 @@ Execution history:
 ## 🔧 Key Functions
 
 ### Deadline Calculator
+
 ```typescript
 calculateNextDeadline(deadline, referenceDate, createdAt): Date
 calculateReminderDate(reminderDate, deadlineDate): Date
@@ -224,6 +234,7 @@ shouldSendReminder(reminderDate, currentDate): boolean
 ```
 
 ### Reminder Tracker
+
 ```typescript
 hasReminderBeenSent(scheduleId, date, granularity): Promise<boolean>
 markReminderAsSent(scheduleId, date, metadata, granularity): Promise<void>
@@ -231,6 +242,7 @@ cleanupOldReminders(): Promise<number>
 ```
 
 ### Schedule Cache
+
 ```typescript
 syncScheduleCache(): Promise<{success, count, error?}>
 getCachedSchedules(): Promise<CachedReminder[]>
@@ -238,6 +250,7 @@ getCacheStatus(): Promise<{exists, lastSynced?, scheduleCount?}>
 ```
 
 ### Email System
+
 ```typescript
 sendReminderEmail(schedule, deadlineDate): Promise<SendReminderResult>
 verifyEmailConfig(): Promise<{valid, error?}>
@@ -268,16 +281,19 @@ verifyEmailConfig(): Promise<{valid, error?}>
 ## 🐛 Debugging
 
 ### Check Cache Status
+
 ```bash
 curl http://localhost:3000/api/v1/schedules/cache-status
 ```
 
 ### Manually Trigger Cron
+
 ```bash
 curl http://localhost:3000/api/v1/cron/test
 ```
 
 ### View Cron Logs
+
 Check Firestore `cronLogs` collection for execution history.
 
 ### Common Issues

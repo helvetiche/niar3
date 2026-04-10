@@ -31,7 +31,7 @@ export const refreshSessionCookie = async (): Promise<void> => {
  * Execute a fetch request with automatic session refresh on 401
  */
 export const fetchWithSessionRefresh = async (
-  requestFn: () => Promise<Response>,
+  requestFn: () => Promise<Response>
 ): Promise<Response> => {
   let response = await requestFn();
 
@@ -48,7 +48,7 @@ export const fetchWithSessionRefresh = async (
  */
 export const getFileNameFromContentDisposition = (
   value: string | null,
-  fallback: string,
+  fallback: string
 ): string => {
   if (!value) return fallback;
 
@@ -114,7 +114,7 @@ export class FormDataBuilder {
  */
 export const handleApiError = async (
   response: Response,
-  defaultMessage: string,
+  defaultMessage: string
 ): Promise<never> => {
   const data = await response.json().catch(() => ({}));
   throw new Error((data as { error?: string }).error ?? defaultMessage);

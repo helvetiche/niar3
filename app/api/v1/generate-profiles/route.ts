@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import JSZip from "jszip";
-import {
-  applySecurityHeaders,
-  secureFileResponse,
-} from "@/lib/security-headers";
+import { applySecurityHeaders, secureFileResponse } from "@/lib/security-headers";
 import { withAuth } from "@/lib/auth";
 import { parseExcelFile } from "@/lib/excelParser";
 import { processMastersList } from "@/lib/mastersListProcessor";
@@ -30,13 +27,12 @@ const templateUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_SINGLE;
 
 const parseTextMap = (
   value: FormDataEntryValue | null,
-  transformer: (input: string) => string,
+  transformer: (input: string) => string
 ): Record<string, string> => {
   if (typeof value !== "string" || !value.trim()) return {};
   try {
     const parsed = JSON.parse(value) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-      return {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
 
     const map: Record<string, string> = {};
     Object.entries(parsed as Record<string, unknown>).forEach(([key, raw]) => {
@@ -80,27 +76,19 @@ export async function POST(request: Request) {
     const template = formData.get("template");
     const templateId = formData.get("templateId");
     const billingUnitFolderNameRaw =
-      formData.get("billingUnitFolderName") ??
-      formData.get("profileFolderName");
+      formData.get("billingUnitFolderName") ?? formData.get("profileFolderName");
     const sourceFolderNamesRaw = formData.get("sourceFolderNames");
 
     const billingUnitFolderName =
-      typeof billingUnitFolderNameRaw === "string" &&
-      billingUnitFolderNameRaw.trim()
+      typeof billingUnitFolderNameRaw === "string" && billingUnitFolderNameRaw.trim()
         ? sanitizeFolderName(billingUnitFolderNameRaw)
         : "billing unit";
-    const sourceFolderNames = parseTextMap(
-      sourceFolderNamesRaw,
-      sanitizeFolderName,
-    );
+    const sourceFolderNames = parseTextMap(sourceFolderNamesRaw, sanitizeFolderName);
 
     const sourceFiles =
       files.length > 0 ? files : singleFile instanceof File ? [singleFile] : [];
 
-    const sourceUploadValidation = validateUploads(
-      sourceFiles,
-      sourceUploadLimits,
-    );
+    const sourceUploadValidation = validateUploads(sourceFiles, sourceUploadLimits);
     if (!sourceUploadValidation.ok) {
       await logAuditTrailEntry({
         uid: user.uid,
@@ -115,8 +103,8 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: sourceUploadValidation.message },
-          { status: sourceUploadValidation.status },
-        ),
+          { status: sourceUploadValidation.status }
+        )
       );
     }
 
@@ -134,8 +122,8 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: ERROR_MESSAGES.NO_SOURCE_FILES },
-          { status: HTTP_STATUS.BAD_REQUEST },
-        ),
+          { status: HTTP_STATUS.BAD_REQUEST }
+        )
       );
     }
     if (
@@ -155,17 +143,14 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: ERROR_MESSAGES.MISSING_TEMPLATE },
-          { status: HTTP_STATUS.BAD_REQUEST },
-        ),
+          { status: HTTP_STATUS.BAD_REQUEST }
+        )
       );
     }
 
     let templateBuffer: Buffer;
     if (template instanceof File) {
-      const templateValidation = validateUploads(
-        [template],
-        templateUploadLimits,
-      );
+      const templateValidation = validateUploads([template], templateUploadLimits);
       if (!templateValidation.ok) {
         await logAuditTrailEntry({
           uid: user.uid,
@@ -180,8 +165,8 @@ export async function POST(request: Request) {
         return applySecurityHeaders(
           NextResponse.json(
             { error: templateValidation.message },
-            { status: templateValidation.status },
-          ),
+            { status: templateValidation.status }
+          )
         );
       }
       templateBuffer = Buffer.from(await template.arrayBuffer());
@@ -204,19 +189,17 @@ export async function POST(request: Request) {
         return applySecurityHeaders(
           NextResponse.json(
             { error: ERROR_MESSAGES.TEMPLATE_NOT_FOUND },
-            { status: HTTP_STATUS.NOT_FOUND },
-          ),
+            { status: HTTP_STATUS.NOT_FOUND }
+          )
         );
       }
-      templateBuffer = await downloadBufferFromStorage(
-        savedTemplate.storagePath,
-      );
+      templateBuffer = await downloadBufferFromStorage(savedTemplate.storagePath);
     } else {
       return applySecurityHeaders(
         NextResponse.json(
           { error: ERROR_MESSAGES.MISSING_TEMPLATE },
-          { status: HTTP_STATUS.BAD_REQUEST },
-        ),
+          { status: HTTP_STATUS.BAD_REQUEST }
+        )
       );
     }
 
@@ -237,9 +220,8 @@ export async function POST(request: Request) {
       }
 
       const divisionFolderName = getUniqueFolderName(
-        sourceFolderNames[getFileKey(sourceFile)] ??
-          getBaseName(sourceFile.name),
-        seenDivisionFolders,
+        sourceFolderNames[getFileKey(sourceFile)] ?? getBaseName(sourceFile.name),
+        seenDivisionFolders
       );
       const divisionFolder = zip.folder(divisionFolderName);
       if (!divisionFolder) {
@@ -247,11 +229,11 @@ export async function POST(request: Request) {
       }
 
       const profilesFolder = divisionFolder.folder(
-        billingUnitFolderName || "billing unit",
+        billingUnitFolderName || "billing unit"
       );
       if (!profilesFolder) {
         throw new Error(
-          `Unable to create folder: ${divisionFolderName}/${billingUnitFolderName}`,
+          `Unable to create folder: ${divisionFolderName}/${billingUnitFolderName}`
         );
       }
 
@@ -260,15 +242,11 @@ export async function POST(request: Request) {
       const sourceIA = detected.ia ?? "IA";
 
       for (const [index, lotGroup] of lotGroups.entries()) {
-        const { buffer, filename } = await generateProfileBuffer(
-          lotGroup,
-          index + 1,
-          {
-            division: sourceDivision,
-            nameOfIA: sourceIA,
-            templateBuffer,
-          },
-        );
+        const { buffer, filename } = await generateProfileBuffer(lotGroup, index + 1, {
+          division: sourceDivision,
+          nameOfIA: sourceIA,
+          templateBuffer,
+        });
         profilesFolder.file(filename, buffer);
         totalGeneratedProfiles += 1;
       }
@@ -288,8 +266,8 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: ERROR_MESSAGES.NO_LOT_RECORDS },
-          { status: HTTP_STATUS.BAD_REQUEST },
-        ),
+          { status: HTTP_STATUS.BAD_REQUEST }
+        )
       );
     }
 
@@ -319,10 +297,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     logger.error("[api/generate-profiles POST]", error);
-    const message = getErrorMessage(
-      error,
-      ERROR_MESSAGES.FAILED_GENERATE_PROFILES,
-    );
+    const message = getErrorMessage(error, ERROR_MESSAGES.FAILED_GENERATE_PROFILES);
     await logAuditTrailEntry({
       uid: user.uid,
       action: "generate-profiles.post",
@@ -336,8 +311,8 @@ export async function POST(request: Request) {
     return applySecurityHeaders(
       NextResponse.json(
         { error: ERROR_MESSAGES.FAILED_GENERATE_PROFILES },
-        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
-      ),
+        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+      )
     );
   }
 }

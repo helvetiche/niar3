@@ -17,16 +17,12 @@ import { WorkspaceCalendar } from "@/components/WorkspaceCalendar";
 import { Schedules } from "@/components/Schedules";
 import { TaskManager } from "@/components/TaskManager";
 import { PermissionGuard } from "@/components/PermissionGuard";
-import {
-  useWorkspaceTab,
-  type WorkspaceTab,
-} from "@/contexts/WorkspaceContext";
+import { useWorkspaceTab, type WorkspaceTab } from "@/contexts/WorkspaceContext";
 
 const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   hub: {
     name: "HUB",
-    description:
-      "Central workspace hub for quick access to all productivity tools.",
+    description: "Central workspace hub for quick access to all productivity tools.",
   },
   "template-manager": {
     name: "TEMPLATE MANAGER",

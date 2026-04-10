@@ -39,9 +39,7 @@ const hasAllowedType = (file: File, limits: UploadLimits): boolean => {
   const mimeAllowed =
     !allowedMimeSubstrings ||
     allowedMimeSubstrings.length === 0 ||
-    allowedMimeSubstrings.some((value) =>
-      file.type.toLowerCase().includes(value),
-    );
+    allowedMimeSubstrings.some((value) => file.type.toLowerCase().includes(value));
 
   if (
     (!allowedExtensions || allowedExtensions.length === 0) &&
@@ -55,7 +53,7 @@ const hasAllowedType = (file: File, limits: UploadLimits): boolean => {
 
 export const validateUploads = (
   files: File[],
-  limits: UploadLimits,
+  limits: UploadLimits
 ): UploadValidationResult => {
   if (files.length === 0) {
     return {

@@ -52,8 +52,7 @@ export function EditAccountModal({
       toast.success("Account updated successfully");
       onClose();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Server is broken";
+      const message = error instanceof Error ? error.message : "Server is broken";
       toast.error(message);
       onAccountUpdated(account);
     } finally {
@@ -79,9 +78,7 @@ export function EditAccountModal({
 
           <div className="mt-5 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-white">Email</label>
               <input
                 type="email"
                 value={account.email}
@@ -136,10 +133,7 @@ export function EditAccountModal({
                 disabled={isSubmitting}
                 className="h-4 w-4 rounded border-white/20 bg-emerald-900/30 text-emerald-600 focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
               />
-              <label
-                htmlFor="edit-disabled"
-                className="text-sm font-medium text-white"
-              >
+              <label htmlFor="edit-disabled" className="text-sm font-medium text-white">
                 Disable account
               </label>
             </div>

@@ -26,7 +26,7 @@ const withExtension = (name: string, extension: ".xlsx"): string =>
 
 const createUniqueSheetName = (
   desiredName: string,
-  takenNames: Set<string>,
+  takenNames: Set<string>
 ): string => {
   const safeBase =
     desiredName
@@ -93,7 +93,7 @@ const pruneEmpty = (value: unknown): unknown => {
 
 const copyWorksheet = (
   sourceSheet: ExcelJS.Worksheet,
-  targetSheet: ExcelJS.Worksheet,
+  targetSheet: ExcelJS.Worksheet
 ): void => {
   targetSheet.state = sourceSheet.state;
   targetSheet.properties =
@@ -119,8 +119,7 @@ const copyWorksheet = (
     const targetRow = targetSheet.getRow(rowNumber);
     if (row.height !== undefined) targetRow.height = row.height;
     if (row.hidden !== undefined) targetRow.hidden = row.hidden;
-    if (row.outlineLevel !== undefined)
-      targetRow.outlineLevel = row.outlineLevel;
+    if (row.outlineLevel !== undefined) targetRow.outlineLevel = row.outlineLevel;
 
     row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
       const targetCell = targetRow.getCell(colNumber);
@@ -187,21 +186,14 @@ export const mergeExcelBuffers = async ({
     await workbook.xlsx.load(bufferForLoad);
     const customPageName = excelPageNames?.[fileIndex]?.trim() ?? "";
 
-    for (
-      let sheetIndex = 0;
-      sheetIndex < workbook.worksheets.length;
-      sheetIndex += 1
-    ) {
+    for (let sheetIndex = 0; sheetIndex < workbook.worksheets.length; sheetIndex += 1) {
       const sourceSheet = workbook.worksheets[sheetIndex];
       const desiredSheetName = customPageName
         ? workbook.worksheets.length === 1
           ? customPageName
           : `${customPageName} ${String(sheetIndex + 1)}`
         : sourceSheet.name;
-      const uniqueSheetName = createUniqueSheetName(
-        desiredSheetName,
-        usedSheetNames,
-      );
+      const uniqueSheetName = createUniqueSheetName(desiredSheetName, usedSheetNames);
       const targetSheet = mergedWorkbook.addWorksheet(uniqueSheetName);
       copyWorksheet(sourceSheet, targetSheet);
       mergedSheetCount += 1;
@@ -214,7 +206,7 @@ export const mergeExcelBuffers = async ({
 
   const outputBaseName = sanitizeOutputName(
     fileName ?? "Merged Excel Workbook",
-    "Merged Excel Workbook",
+    "Merged Excel Workbook"
   );
   const output = await mergedWorkbook.xlsx.writeBuffer();
   const outputBuffer = Buffer.isBuffer(output)

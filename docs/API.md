@@ -26,6 +26,7 @@ x-csrf-token: <csrf-token>
 - **Public pages**: 30 requests per 60 seconds
 
 Rate limit headers:
+
 ```
 X-RateLimit-Limit: 10
 X-RateLimit-Remaining: 9
@@ -42,6 +43,7 @@ GET /api/v1/health
 ```
 
 **Response**
+
 ```json
 {
   "status": "ok",
@@ -60,6 +62,7 @@ GET /api/v1/auth/session
 ```
 
 **Response**
+
 ```json
 {
   "user": {
@@ -80,6 +83,7 @@ POST /api/v1/auth/refresh-token
 ```
 
 **Request Body**
+
 ```json
 {
   "refreshToken": "firebase-refresh-token"
@@ -87,6 +91,7 @@ POST /api/v1/auth/refresh-token
 ```
 
 **Response**
+
 ```json
 {
   "sessionCookie": "new-session-cookie",
@@ -105,10 +110,12 @@ GET /api/v1/accounts
 ```
 
 **Query Parameters**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Items per page (default: 20, max: 100)
 
 **Response**
+
 ```json
 {
   "accounts": [
@@ -139,6 +146,7 @@ GET /api/v1/accounts/:uid
 ```
 
 **Response**
+
 ```json
 {
   "uid": "user-id",
@@ -158,6 +166,7 @@ POST /api/v1/accounts
 ```
 
 **Request Body**
+
 ```json
 {
   "email": "newuser@example.com",
@@ -167,6 +176,7 @@ POST /api/v1/accounts
 ```
 
 **Response**
+
 ```json
 {
   "uid": "new-user-id",
@@ -181,6 +191,7 @@ PUT /api/v1/accounts/:uid
 ```
 
 **Request Body**
+
 ```json
 {
   "email": "updated@example.com",
@@ -196,6 +207,7 @@ DELETE /api/v1/accounts/:uid
 ```
 
 **Response**
+
 ```json
 {
   "success": true,
@@ -214,10 +226,12 @@ POST /api/v1/ifr-checker
 ```
 
 **Request Body** (multipart/form-data)
+
 - `ifrFiles`: File[] - Source IFR files
 - `consolidatedFile`: File - Consolidated file to validate
 
 **Response**
+
 ```json
 {
   "success": true,
@@ -255,6 +269,7 @@ GET /api/v1/templates
 ```
 
 **Response**
+
 ```json
 {
   "templates": [
@@ -277,10 +292,12 @@ POST /api/v1/templates
 ```
 
 **Request Body** (multipart/form-data)
+
 - `file`: File - Template file (.xlsx, .xls)
 - `type`: string - Template type (billing, accomplishment)
 
 **Response**
+
 ```json
 {
   "id": "template-id",
@@ -314,10 +331,12 @@ GET /api/v1/inventory
 ```
 
 **Query Parameters**
+
 - `category` (optional): Filter by category
 - `search` (optional): Search term
 
 **Response**
+
 ```json
 {
   "items": [
@@ -340,6 +359,7 @@ POST /api/v1/inventory
 ```
 
 **Request Body**
+
 ```json
 {
   "name": "New Item",
@@ -370,12 +390,14 @@ GET /api/v1/audit-trail
 ```
 
 **Query Parameters**
+
 - `startDate` (optional): ISO date string
 - `endDate` (optional): ISO date string
 - `userId` (optional): Filter by user
 - `action` (optional): Filter by action type
 
 **Response**
+
 ```json
 {
   "entries": [

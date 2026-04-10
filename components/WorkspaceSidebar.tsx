@@ -92,8 +92,7 @@ const TOOLS = [
   {
     id: "hub" as const,
     name: "HUB",
-    description:
-      "Central workspace hub for quick access to all productivity tools.",
+    description: "Central workspace hub for quick access to all productivity tools.",
     icon: HouseIcon,
   },
   {
@@ -208,7 +207,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const [isDragMode, setIsDragMode] = useState(loadDragMode);
   const { selectedTab, setSelectedTab } = useWorkspaceTab();
   const { toolOrder, updateToolOrder, resetToolOrder } = useToolOrder(
-    TOOLS.map((t) => t.id),
+    TOOLS.map((t) => t.id)
   );
   const { isPinned, togglePin } = usePinnedTools();
 
@@ -220,7 +219,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   );
 
   useEffect(() => {
@@ -234,8 +233,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
         if (!cancelled) setProfile(p);
       })
       .catch(() => {
-        if (!cancelled)
-          setProfile({ first: "", middle: "", last: "", birthday: "" });
+        if (!cancelled) setProfile({ first: "", middle: "", last: "", birthday: "" });
       });
     return () => {
       cancelled = true;
@@ -318,20 +316,14 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
       window.location.assign("/?login=1");
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to logout. Please try again.";
+        error instanceof Error ? error.message : "Failed to logout. Please try again.";
       setLogoutError(message);
       setIsLoggingOut(false);
     }
   };
 
   const displayName = getDisplayName(profile, user.email);
-  const firstLetter = (
-    profile.first?.[0] ||
-    user.email?.[0] ||
-    "U"
-  ).toUpperCase();
+  const firstLetter = (profile.first?.[0] || user.email?.[0] || "U").toUpperCase();
   const isSuperAdmin = user.customClaims?.role === "super-admin";
   const userPermissions = user.customClaims?.permissions || [];
 
@@ -357,10 +349,10 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
     // First, sort by pinned status (pinned items first)
     const aPinned = isPinned(a.id);
     const bPinned = isPinned(b.id);
-    
+
     if (aPinned && !bPinned) return -1;
     if (!aPinned && bPinned) return 1;
-    
+
     // Then sort by saved order
     return toolOrder.indexOf(a.id) - toolOrder.indexOf(b.id);
   });
@@ -368,9 +360,10 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   // Apply search filter if not in drag mode
   const displayedTools = isDragMode
     ? sortedTools
-    : sortedTools.filter((tool) =>
-        tool.name.toLowerCase().includes(search.toLowerCase()) ||
-        tool.description.toLowerCase().includes(search.toLowerCase())
+    : sortedTools.filter(
+        (tool) =>
+          tool.name.toLowerCase().includes(search.toLowerCase()) ||
+          tool.description.toLowerCase().includes(search.toLowerCase())
       );
 
   const effectiveCollapsed = collapsed && isDesktop;
@@ -428,9 +421,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
             type="button"
             onClick={toggleCollapsed}
             className="hidden shrink-0 rounded-lg p-2 transition hover:bg-emerald-800 lg:inline-flex"
-            aria-label={
-              effectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"
-            }
+            aria-label={effectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {effectiveCollapsed ? (
               <CaretRightIcon size={20} weight="bold" className="text-white" />
@@ -449,11 +440,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
             {isMobileMenuOpen ? (
               <XIcon size={20} weight="bold" className="text-white" />
             ) : (
-              <ListBulletsIcon
-                size={20}
-                weight="duotone"
-                className="text-white"
-              />
+              <ListBulletsIcon size={20} weight="duotone" className="text-white" />
             )}
           </button>
         </div>
@@ -535,10 +522,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
         className={mobileBackdropClassName}
         onClick={() => setIsMobileMenuOpen(false)}
       />
-      <div
-        className={mobileNavPanelClassName}
-        aria-hidden={!showSidebarContent}
-      >
+      <div className={mobileNavPanelClassName} aria-hidden={!showSidebarContent}>
         <div className="min-h-0 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
           {!effectiveCollapsed && showSidebarContent && (
             <div className="flex items-center gap-2 border-b border-emerald-800 p-2 lg:hidden">
@@ -599,9 +583,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
                         <button
                           type="button"
                           onClick={() => setSelectedTab(item.id)}
-                          title={
-                            "description" in item ? item.description : undefined
-                          }
+                          title={"description" in item ? item.description : undefined}
                           className={`flex w-full flex-col items-center gap-2 rounded-lg p-3 transition hover:bg-emerald-800 ${
                             isActive ? "bg-emerald-800" : ""
                           }`}
@@ -657,9 +639,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
               type="button"
               onClick={() => setIsProfileOpen(true)}
               title={
-                effectiveCollapsed
-                  ? `${displayName} (${user.email ?? "—"})`
-                  : undefined
+                effectiveCollapsed ? `${displayName} (${user.email ?? "—"})` : undefined
               }
               className={`flex w-full items-center rounded-lg transition hover:bg-emerald-800 ${
                 effectiveCollapsed
@@ -721,9 +701,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
               </div>
               {!effectiveCollapsed && (
                 <div className="min-w-0 flex-1 overflow-hidden">
-                  <p className="truncate text-sm font-medium text-white">
-                    Logout
-                  </p>
+                  <p className="truncate text-sm font-medium text-white">Logout</p>
                   <p className="truncate text-xs text-emerald-200/80">
                     End current session safely
                   </p>

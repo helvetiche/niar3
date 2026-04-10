@@ -20,9 +20,7 @@ export function ScheduleOnlyToggleButton({
       }`}
       aria-pressed={scheduleOnly}
       aria-label="Toggle schedule-only view"
-      title={
-        scheduleOnly ? "Back to calendar view" : "Switch to schedule-only view"
-      }
+      title={scheduleOnly ? "Back to calendar view" : "Switch to schedule-only view"}
     >
       {scheduleOnly ? (
         <CalendarBlankIcon size={14} weight="duotone" />

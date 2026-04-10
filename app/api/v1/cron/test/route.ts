@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/auth";
 /**
  * GET /api/v1/cron/test
  * Test endpoint to manually trigger the cron job
- * 
+ *
  * This is useful for testing the cron job without waiting for the scheduled run.
  * It forwards the request to the actual cron endpoint with the secret.
  */
@@ -16,9 +16,9 @@ export async function GET(request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET;
     if (!cronSecret) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "CRON_SECRET not configured" 
+        {
+          success: false,
+          error: "CRON_SECRET not configured",
         },
         { status: 500 }
       );
@@ -26,10 +26,10 @@ export async function GET(request: NextRequest) {
 
     // Get the base URL
     const baseUrl = request.nextUrl.origin;
-    
+
     // Call the actual cron endpoint
     const cronUrl = `${baseUrl}/api/v1/cron/send-reminders?secret=${cronSecret}`;
-    
+
     console.log("[TEST] Triggering cron job manually...");
     const response = await fetch(cronUrl, {
       method: "GET",
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error testing cron job:", error);
-    
+
     return NextResponse.json(
       {
         success: false,

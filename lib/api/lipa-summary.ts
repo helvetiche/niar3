@@ -53,7 +53,7 @@ export type GenerateLipaSummaryResult = {
 };
 
 export const generateLipaSummary = async (
-  payload: GenerateLipaSummaryPayload,
+  payload: GenerateLipaSummaryPayload
 ): Promise<GenerateLipaSummaryResult> => {
   const formData = new FormDataBuilder()
     .appendFiles("files", payload.files)
@@ -68,7 +68,7 @@ export const generateLipaSummary = async (
       method: "POST",
       credentials: "include",
       body: formData,
-    }),
+    })
   );
 
   if (!response.ok) {
@@ -78,18 +78,18 @@ export const generateLipaSummary = async (
   const blob = await response.blob();
   const fileName = getFileNameFromContentDisposition(
     response.headers.get("Content-Disposition"),
-    "LIPA_Summary_Report.xlsx",
+    "LIPA_Summary_Report.xlsx"
   );
   const scannedFiles = Number(response.headers.get("X-Scanned-Files") ?? "0");
   const extractedAssociations = Number(
-    response.headers.get("X-Extracted-Associations") ?? "0",
+    response.headers.get("X-Extracted-Associations") ?? "0"
   );
 
   return { blob, fileName, scannedFiles, extractedAssociations };
 };
 
 export const scanLipaFile = async (
-  payload: ScanLipaFilePayload,
+  payload: ScanLipaFilePayload
 ): Promise<LipaScannedFileResult> => {
   const formData = new FormDataBuilder()
     .append("file", payload.file)
@@ -104,7 +104,7 @@ export const scanLipaFile = async (
       method: "POST",
       credentials: "include",
       body: formData,
-    }),
+    })
   );
 
   if (!response.ok) {
@@ -116,7 +116,7 @@ export const scanLipaFile = async (
 };
 
 export const buildLipaSummaryReport = async (
-  payload: BuildLipaSummaryReportPayload,
+  payload: BuildLipaSummaryReportPayload
 ): Promise<GenerateLipaSummaryResult> => {
   const response = await fetchWithSessionRefresh(() =>
     fetch("/api/v1/lipa-summary/report", {
@@ -124,7 +124,7 @@ export const buildLipaSummaryReport = async (
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    }),
+    })
   );
 
   if (!response.ok) {
@@ -134,11 +134,11 @@ export const buildLipaSummaryReport = async (
   const blob = await response.blob();
   const fileName = getFileNameFromContentDisposition(
     response.headers.get("Content-Disposition"),
-    "LIPA_Summary_Report.xlsx",
+    "LIPA_Summary_Report.xlsx"
   );
   const scannedFiles = Number(response.headers.get("X-Scanned-Files") ?? "0");
   const extractedAssociations = Number(
-    response.headers.get("X-Extracted-Associations") ?? "0",
+    response.headers.get("X-Extracted-Associations") ?? "0"
   );
 
   return { blob, fileName, scannedFiles, extractedAssociations };

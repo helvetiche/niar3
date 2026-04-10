@@ -6,7 +6,7 @@ const PERIOD_KEY_SEP = "\u001e";
 export const completionPeriodKey = (
   scheduleId: string,
   periodStart: string,
-  periodEnd: string,
+  periodEnd: string
 ): string =>
   `${scheduleId}${PERIOD_KEY_SEP}${periodStart}${PERIOD_KEY_SEP}${periodEnd}`;
 
@@ -14,14 +14,11 @@ export const completionPeriodKey = (
  * O(m) build, O(1) lookup — replaces per-schedule completions.find (O(n×m)).
  */
 export const buildCompletionLookup = (
-  completions: TaskCompletion[],
+  completions: TaskCompletion[]
 ): Map<string, TaskCompletion> => {
   const map = new Map<string, TaskCompletion>();
   for (const c of completions) {
-    map.set(
-      completionPeriodKey(c.scheduleId, c.periodStart, c.periodEnd),
-      c,
-    );
+    map.set(completionPeriodKey(c.scheduleId, c.periodStart, c.periodEnd), c);
   }
   return map;
 };
@@ -30,7 +27,7 @@ export const buildCompletionLookup = (
 export const groupActiveTasksByDeadlineType = <
   T extends { id: string; status: string; deadline: { type: ScheduleDeadlineType } },
 >(
-  tasks: T[],
+  tasks: T[]
 ): Array<{ type: string; label: string; tasks: T[] }> => {
   const daily: T[] = [];
   const weekly: T[] = [];

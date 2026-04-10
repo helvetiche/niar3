@@ -18,8 +18,7 @@ export const MONTH_NAMES = [
 const WEEKDAY_TASK =
   "SUPERVISED WRFOB, WATER DISTRIBUTION, AREA MONITORING, FIELD INSPECTION ATTEND IA MEETING and OTHER O&M ACTIVITIES";
 
-const WRFO_B_TASK_LINE_1 =
-  "FIELD INSPECTION , ASSIST SWRFT IN AREA MONITORING,";
+const WRFO_B_TASK_LINE_1 = "FIELD INSPECTION , ASSIST SWRFT IN AREA MONITORING,";
 const WRFO_B_TASK_LINE_2 = "REMOVING OF DEBRIS AND OTHER O&M ACTIVITIES";
 
 export const getDaysInMonth = (year: number, month: number): number =>
@@ -40,11 +39,8 @@ export const formatPeriodLabel = (period: AccomplishmentReportPeriod): string =>
   return `PERIOD COVERED ${monthName} ${start}-${end}, ${period.year}`;
 };
 
-export const getDayOfWeek = (
-  year: number,
-  month: number,
-  day: number,
-): number => new Date(year, month - 1, day).getDay();
+export const getDayOfWeek = (year: number, month: number, day: number): number =>
+  new Date(year, month - 1, day).getDay();
 
 export type TaskForDayResult =
   | { type: "single"; value: string }
@@ -55,7 +51,7 @@ export const getTaskForDay = (
   month: number,
   day: number,
   designation: string,
-  customTasks?: string[],
+  customTasks?: string[]
 ): TaskForDayResult => {
   const dow = getDayOfWeek(year, month, day);
   const weekendLabel = dow === 0 ? "Sunday" : dow === 6 ? "Saturday" : null;

@@ -78,9 +78,7 @@ export function MergeFilesToolStepped() {
               />
               <div className="text-center">
                 <p className="font-medium text-white">Excel Files</p>
-                <p className="mt-1 text-xs text-white/70">
-                  Combine into one workbook
-                </p>
+                <p className="mt-1 text-xs text-white/70">Combine into one workbook</p>
               </div>
             </button>
           </div>

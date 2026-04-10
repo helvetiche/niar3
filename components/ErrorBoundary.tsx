@@ -19,10 +19,7 @@ interface ErrorBoundaryState {
  * Error Boundary component to catch React errors
  * Prevents the entire app from crashing when a component throws an error
  */
-export class ErrorBoundary extends Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -69,11 +66,7 @@ export class ErrorBoundary extends Component<
           <div className="w-full max-w-md rounded-2xl border border-rose-200 bg-white p-8 shadow-xl">
             <div className="mb-6 flex items-center justify-center">
               <div className="rounded-full bg-rose-100 p-4">
-                <WarningCircle
-                  size={48}
-                  className="text-rose-600"
-                  weight="duotone"
-                />
+                <WarningCircle size={48} className="text-rose-600" weight="duotone" />
               </div>
             </div>
 
@@ -82,8 +75,8 @@ export class ErrorBoundary extends Component<
             </h1>
 
             <p className="mb-6 text-center text-sm text-gray-600">
-              We encountered an unexpected error. Please try refreshing the page
-              or contact support if the problem persists.
+              We encountered an unexpected error. Please try refreshing the page or
+              contact support if the problem persists.
             </p>
 
             {process.env.NODE_ENV === "development" && this.state.error && (
@@ -126,7 +119,7 @@ export class ErrorBoundary extends Component<
  */
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
-  fallback?: ReactNode,
+  fallback?: ReactNode
 ): React.ComponentType<P> {
   return function WithErrorBoundary(props: P) {
     return (

@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  applySecurityHeaders,
-  secureFileResponse,
-} from "@/lib/security-headers";
+import { applySecurityHeaders, secureFileResponse } from "@/lib/security-headers";
 import { withAuth } from "@/lib/auth";
 import { getTemplateRecord } from "@/lib/firebase-admin/firestore";
 import { downloadBufferFromStorage } from "@/lib/firebase-admin/storage";
@@ -60,16 +57,13 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: "Template is required. Select an accomplishment template." },
-          { status: 400 },
-        ),
+          { status: 400 }
+        )
       );
     }
 
     const templateRecord = await getTemplateRecord(templateId.trim());
-    if (
-      !templateRecord ||
-      templateRecord.scope !== "accomplishment-report"
-    ) {
+    if (!templateRecord || templateRecord.scope !== "accomplishment-report") {
       await logAuditTrailEntry({
         uid: user.uid,
         action: "generate-accomplishment-report.post",
@@ -83,15 +77,20 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: "Template not found or invalid scope." },
-          { status: 404 },
-        ),
+          { status: 404 }
+        )
       );
     }
 
-    const fullName =
+    const firstNameStr =
       typeof firstNameOverride === "string" && firstNameOverride.trim()
         ? firstNameOverride.trim()
         : "";
+    const lastNameStr =
+      typeof lastNameOverride === "string" && lastNameOverride.trim()
+        ? lastNameOverride.trim()
+        : "";
+    const fullName = [firstNameStr, lastNameStr].filter(Boolean).join(" ").trim();
 
     if (!fullName) {
       return applySecurityHeaders(
@@ -99,8 +98,8 @@ export async function POST(request: Request) {
           {
             error: "Full name is required. Enter it in the form.",
           },
-          { status: 400 },
-        ),
+          { status: 400 }
+        )
       );
     }
 
@@ -110,9 +109,7 @@ export async function POST(request: Request) {
         const parsed = JSON.parse(monthsRaw) as unknown;
         if (Array.isArray(parsed)) {
           months = parsed
-            .filter(
-              (m): m is number => typeof m === "number" && m >= 1 && m <= 12,
-            )
+            .filter((m): m is number => typeof m === "number" && m >= 1 && m <= 12)
             .sort((a, b) => a - b);
         }
       } catch {
@@ -139,8 +136,8 @@ export async function POST(request: Request) {
             error:
               "Select at least one period: first half (1-15) or second half (16-30/31).",
           },
-          { status: 400 },
-        ),
+          { status: 400 }
+        )
       );
     }
 
@@ -155,9 +152,7 @@ export async function POST(request: Request) {
         const parsed = JSON.parse(customTasksRaw) as unknown;
         if (Array.isArray(parsed)) {
           customTasks = parsed
-            .filter(
-              (t): t is string => typeof t === "string" && t.trim().length > 0,
-            )
+            .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
             .map((t) => (t as string).trim())
             .slice(0, 20);
           if (customTasks.length === 0) customTasks = undefined;
@@ -167,9 +162,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const templateBuffer = await downloadBufferFromStorage(
-      templateRecord.storagePath,
-    );
+    const templateBuffer = await downloadBufferFromStorage(templateRecord.storagePath);
 
     const year = new Date().getFullYear();
     const buffer = await generateMergedAccomplishmentReportWorkbook(
@@ -182,7 +175,7 @@ export async function POST(request: Request) {
         includeFirstHalf,
         includeSecondHalf,
       },
-      customTasks,
+      customTasks
     );
 
     const outputBaseName = `${sanitizeForFilename(fullName)} - ${designationValue}`;
@@ -207,13 +200,12 @@ export async function POST(request: Request) {
     });
 
     return secureFileResponse(buffer, {
-      contentType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       filename: outputName,
       extraHeaders: {
         "X-Accomplishment-Report-Period-Count": String(
           months.length * (includeFirstHalf ? 1 : 0) +
-            months.length * (includeSecondHalf ? 1 : 0),
+            months.length * (includeSecondHalf ? 1 : 0)
         ),
       },
     });
@@ -240,8 +232,8 @@ export async function POST(request: Request) {
               ? error.message
               : "Failed to generate accomplishment report.",
         },
-        { status: 500 },
-      ),
+        { status: 500 }
+      )
     );
   }
 }

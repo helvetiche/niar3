@@ -40,7 +40,7 @@ export function useLipaSummary() {
 
   const handleIncomingFiles = (incoming: FileList | null) => {
     const incomingFiles = Array.from(incoming ?? []).filter((file) =>
-      file.name.toLowerCase().endsWith(".pdf"),
+      file.name.toLowerCase().endsWith(".pdf")
     );
 
     if (incomingFiles.length === 0) {
@@ -52,15 +52,15 @@ export function useLipaSummary() {
       const existingKeys = new Set(
         previous.map(
           (item) =>
-            `${item.file.name}-${String(item.file.lastModified)}-${String(item.file.size)}`,
-        ),
+            `${item.file.name}-${String(item.file.lastModified)}-${String(item.file.size)}`
+        )
       );
       const added = incomingFiles
         .filter(
           (file) =>
             !existingKeys.has(
-              `${file.name}-${String(file.lastModified)}-${String(file.size)}`,
-            ),
+              `${file.name}-${String(file.lastModified)}-${String(file.size)}`
+            )
         )
         .map((file, index) => ({
           id: createItemId(file, previous.length + index),
@@ -75,9 +75,7 @@ export function useLipaSummary() {
 
   const handleDivisionChange = (id: string, divisionName: string) => {
     setItems((previous) =>
-      previous.map((item) =>
-        item.id === id ? { ...item, divisionName } : item,
-      ),
+      previous.map((item) => (item.id === id ? { ...item, divisionName } : item))
     );
   };
 
@@ -86,8 +84,8 @@ export function useLipaSummary() {
       previous.map((item) =>
         item.id === id
           ? { ...item, pageNumber: pageNumber.replace(/[^0-9]/g, "") }
-          : item,
-      ),
+          : item
+      )
     );
   };
 

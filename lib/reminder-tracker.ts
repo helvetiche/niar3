@@ -23,24 +23,24 @@ export interface SentReminderRecord {
  * @param granularity 'day' | 'hour' | 'minute' - defaults to 'day'
  */
 export const generateIdempotencyKey = (
-  scheduleId: string, 
+  scheduleId: string,
   date: Date,
-  granularity: 'day' | 'hour' | 'minute' = 'day'
+  granularity: "day" | "hour" | "minute" = "day"
 ): string => {
   const isoString = date.toISOString();
-  
+
   switch (granularity) {
-    case 'minute':
+    case "minute":
       // Format: scheduleId_YYYY-MM-DD_HH:MM
-      const minuteStr = isoString.substring(0, 16).replace('T', '_');
+      const minuteStr = isoString.substring(0, 16).replace("T", "_");
       return `${scheduleId}_${minuteStr}`;
-    
-    case 'hour':
+
+    case "hour":
       // Format: scheduleId_YYYY-MM-DD_HH
-      const hourStr = isoString.substring(0, 13).replace('T', '_');
+      const hourStr = isoString.substring(0, 13).replace("T", "_");
       return `${scheduleId}_${hourStr}`;
-    
-    case 'day':
+
+    case "day":
     default:
       // Format: scheduleId_YYYY-MM-DD
       const dateStr = isoString.split("T")[0];
@@ -57,12 +57,12 @@ export const generateIdempotencyKey = (
 export const hasReminderBeenSent = async (
   scheduleId: string,
   date: Date = new Date(),
-  granularity: 'day' | 'hour' | 'minute' = 'day'
+  granularity: "day" | "hour" | "minute" = "day"
 ): Promise<boolean> => {
   try {
     const db = getFirestore();
     const key = generateIdempotencyKey(scheduleId, date, granularity);
-    
+
     const doc = await db.collection("sentReminders").doc(key).get();
     return doc.exists;
   } catch (error) {
@@ -87,7 +87,7 @@ export const markReminderAsSent = async (
     scheduleTitle: string;
     messageId?: string;
   },
-  granularity: 'day' | 'hour' | 'minute' = 'day'
+  granularity: "day" | "hour" | "minute" = "day"
 ): Promise<void> => {
   try {
     const db = getFirestore();
@@ -118,7 +118,7 @@ export const markReminderAsSent = async (
 export const cleanupOldReminders = async (): Promise<number> => {
   try {
     const db = getFirestore();
-    
+
     // Get time 1 hour ago
     const oneHourAgo = new Date();
     oneHourAgo.setHours(oneHourAgo.getHours() - 1);
@@ -157,16 +157,18 @@ export const clearTodaysSentReminder = async (
   try {
     const db = getFirestore();
     const key = generateIdempotencyKey(scheduleId, date);
-    
+
     const docRef = db.collection("sentReminders").doc(key);
     const doc = await docRef.get();
-    
+
     if (doc.exists) {
       await docRef.delete();
-      console.log(`Cleared sent reminder marker for schedule ${scheduleId} on ${date.toISOString().split("T")[0]}`);
+      console.log(
+        `Cleared sent reminder marker for schedule ${scheduleId} on ${date.toISOString().split("T")[0]}`
+      );
       return true;
     }
-    
+
     return false; // Wasn't sent today anyway
   } catch (error) {
     console.error(`Error clearing sent reminder for ${scheduleId}:`, error);

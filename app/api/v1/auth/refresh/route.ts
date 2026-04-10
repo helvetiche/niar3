@@ -18,7 +18,7 @@ export const GET = withApiAuth(async (req, user) => {
     logger.error("Error fetching user claims:", error);
     return NextResponse.json(
       { error: "Something went wrong" },
-      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR },
+      { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
     );
   }
 });

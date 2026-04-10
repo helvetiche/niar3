@@ -9,9 +9,7 @@ const parseApiError = async (res: Response): Promise<string> => {
   return data.error ?? "Unknown error";
 };
 
-export async function fetchCalendarNotes(): Promise<
-  Record<string, NoteItem[]>
-> {
+export async function fetchCalendarNotes(): Promise<Record<string, NoteItem[]>> {
   const res = await fetch("/api/v1/calendar-notes", { credentials: "include" });
   if (!res.ok) {
     const message = await parseApiError(res);
@@ -22,7 +20,7 @@ export async function fetchCalendarNotes(): Promise<
 
 export async function saveCalendarNotesForDate(
   dateKey: string,
-  items: NoteItem[],
+  items: NoteItem[]
 ): Promise<void> {
   const res = await fetch(`/api/v1/calendar-notes/${dateKey}`, {
     method: "PUT",

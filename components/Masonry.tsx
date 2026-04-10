@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 
 import "./Masonry.css";
@@ -12,7 +6,7 @@ import "./Masonry.css";
 const useMedia = (
   queries: string[],
   values: number[],
-  defaultValue: number,
+  defaultValue: number
 ): number => {
   const get = () =>
     values[queries.findIndex((q) => matchMedia(q).matches)] ?? defaultValue;
@@ -23,9 +17,7 @@ const useMedia = (
     const handler = () => setValue(get);
     queries.forEach((q) => matchMedia(q).addEventListener("change", handler));
     return () =>
-      queries.forEach((q) =>
-        matchMedia(q).removeEventListener("change", handler),
-      );
+      queries.forEach((q) => matchMedia(q).removeEventListener("change", handler));
   }, [queries]);
 
   return value;
@@ -56,8 +48,8 @@ const preloadImages = async (urls: string[]): Promise<void> => {
           const img = new Image();
           img.src = src;
           img.onload = img.onerror = () => resolve();
-        }),
-    ),
+        })
+    )
   );
 };
 
@@ -106,7 +98,7 @@ const Masonry: React.FC<MasonryProps> = ({
       "(min-width:400px)",
     ],
     [5, 4, 3, 2],
-    1,
+    1
   );
 
   const [containerRef, { width }] = useMeasure<HTMLDivElement>();
@@ -270,10 +262,7 @@ const Masonry: React.FC<MasonryProps> = ({
             onMouseEnter={(e) => handleMouseEnter(e, item)}
             onMouseLeave={(e) => handleMouseLeave(e, item)}
           >
-            <div
-              className="item-img"
-              style={{ backgroundImage: `url(${item.img})` }}
-            >
+            <div className="item-img" style={{ backgroundImage: `url(${item.img})` }}>
               {colorShiftOnHover && (
                 <div
                   className="color-overlay"

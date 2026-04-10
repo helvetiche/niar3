@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  FilePdfIcon,
-  FileXlsIcon,
-  ArrowsDownUpIcon,
-} from "@phosphor-icons/react";
+import { FilePdfIcon, FileXlsIcon, ArrowsDownUpIcon } from "@phosphor-icons/react";
 import type { PdfPageOrderItem } from "@/lib/api/merge-files";
 
 type PdfPageItem = PdfPageOrderItem & {

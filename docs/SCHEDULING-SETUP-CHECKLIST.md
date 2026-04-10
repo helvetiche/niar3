@@ -14,6 +14,7 @@ Quick checklist to get the NIA Tools scheduling system up and running.
 ## 🔧 Configuration Checklist
 
 ### 1. Environment Variables
+
 - [ ] `CRON_SECRET` is set in `.env.local`
 - [ ] `EMAIL_HOST` is configured
 - [ ] `EMAIL_PORT` is configured
@@ -21,12 +22,14 @@ Quick checklist to get the NIA Tools scheduling system up and running.
 - [ ] `EMAIL_APP_PASSWORD` is configured
 
 ### 2. Firestore Collections
+
 - [ ] `schedules` collection exists
 - [ ] `scheduleCache` collection will be created on first sync
 - [ ] `sentReminders` collection will be created on first send
 - [ ] `cronLogs` collection will be created on first run
 
 ### 3. Initial Cache Sync
+
 - [ ] Call `/api/v1/schedules/sync-cache` to initialize cache
 - [ ] Verify cache status via `/api/v1/schedules/cache-status`
 
@@ -35,17 +38,20 @@ Quick checklist to get the NIA Tools scheduling system up and running.
 Choose one option:
 
 #### Option A: Vercel Cron (Production)
+
 - [ ] Add cron configuration to `vercel.json`
 - [ ] Deploy to Vercel
 - [ ] Verify cron is running in Vercel dashboard
 
 #### Option B: External Cron Service (Development/Alternative)
+
 - [ ] Sign up for cron service (cron-job.org, EasyCron, etc.)
 - [ ] Configure cron to hit `/api/v1/cron/send-reminders?secret=YOUR_SECRET`
 - [ ] Set schedule to every minute (`* * * * *`)
 - [ ] Test the endpoint
 
 ### 5. Testing
+
 - [ ] Create a test schedule with reminder in next 5 minutes
 - [ ] Sync the cache
 - [ ] Wait for cron to run
@@ -75,12 +81,14 @@ curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET"
 ## 📋 Verification Checklist
 
 ### Email System
+
 - [ ] Email configuration is valid (`verifyEmailConfig()`)
 - [ ] Test email can be sent
 - [ ] NIA template renders correctly
 - [ ] Plain text fallback works
 
 ### Deadline Calculator
+
 - [ ] Daily schedules calculate correctly
 - [ ] Weekly schedules calculate correctly
 - [ ] Monthly schedules calculate correctly
@@ -88,16 +96,19 @@ curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET"
 - [ ] 5-minute window works as expected
 
 ### Reminder Tracker
+
 - [ ] Idempotency prevents duplicate emails
 - [ ] Different granularities work (day/hour/minute)
 - [ ] Old markers are cleaned up automatically
 
 ### Schedule Cache
+
 - [ ] Cache syncs successfully
 - [ ] Cached schedules are retrieved correctly
 - [ ] Cache status shows accurate information
 
 ### Cron Job
+
 - [ ] Cron runs every minute
 - [ ] Authorization works (CRON_SECRET)
 - [ ] Schedules in window are processed
@@ -107,23 +118,27 @@ curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET"
 ## 🚨 Troubleshooting
 
 ### No emails being sent?
+
 1. Check cache is synced: `/api/v1/schedules/cache-status`
-2. Verify email config: Check EMAIL_* env variables
+2. Verify email config: Check EMAIL\_\* env variables
 3. Check cron logs: Look at `cronLogs` collection
 4. Test manually: Use `/api/v1/cron/test`
 
 ### Duplicate emails?
+
 1. Check `sentReminders` collection
 2. Verify idempotency is working
 3. Check if multiple cron instances are running
 
 ### Wrong timing?
+
 1. Verify schedule deadline configuration
 2. Check reminder date settings
 3. Test deadline calculator with known dates
 4. Verify Philippine timezone handling
 
 ### Cache not updating?
+
 1. Call sync endpoint after schedule changes
 2. Check Firestore permissions
 3. Verify cache document exists
@@ -131,6 +146,7 @@ curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET"
 ## 📊 Monitoring
 
 ### Key Metrics to Track
+
 - [ ] Cron execution frequency (should be ~1 minute)
 - [ ] Email success rate (sent vs errors)
 - [ ] Cache hit rate (should be 100%)
@@ -138,6 +154,7 @@ curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET"
 - [ ] Email delivery time
 
 ### Firestore Collections to Monitor
+
 - [ ] `cronLogs` - Execution history
 - [ ] `sentReminders` - Sent email tracking
 - [ ] `scheduleCache` - Cache status

@@ -9,6 +9,7 @@ This guide covers performance optimization strategies implemented in NIA Tools a
 ### 1. React Performance
 
 #### Memoization
+
 ```typescript
 // Context value memoization
 const contextValue = useMemo(
@@ -23,6 +24,7 @@ export const Spinner = memo(function Spinner({ size, className }) {
 ```
 
 #### Callback Optimization
+
 ```typescript
 const handleSetSelectedTab = useCallback((tab: WorkspaceTab) => {
   setSelectedTab((current) => {
@@ -35,12 +37,14 @@ const handleSetSelectedTab = useCallback((tab: WorkspaceTab) => {
 ### 2. Caching Strategy
 
 #### Template Cache
+
 ```typescript
 // 5-minute TTL for templates
 const TEMPLATE_CACHE_TTL_MS = 5 * 60 * 1000;
 ```
 
 #### SWR Configuration
+
 ```typescript
 const swrConfig = {
   revalidateOnFocus: false,
@@ -52,10 +56,12 @@ const swrConfig = {
 ### 3. Code Splitting
 
 #### Route-Based Splitting
+
 - Automatic with Next.js App Router
 - Each route loads only required code
 
 #### Dynamic Imports
+
 ```typescript
 // For heavy components
 const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
@@ -66,6 +72,7 @@ const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
 ### 4. Asset Optimization
 
 #### Next.js Image
+
 ```typescript
 import Image from 'next/image';
 
@@ -79,21 +86,24 @@ import Image from 'next/image';
 ```
 
 #### Font Optimization
-```typescript
-import { Inter } from 'next/font/google';
 
-const inter = Inter({ subsets: ['latin'] });
+```typescript
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"] });
 ```
 
 ## Performance Metrics
 
 ### Current Metrics
+
 - First Contentful Paint (FCP): ~1.2s
 - Largest Contentful Paint (LCP): ~2.1s
 - Time to Interactive (TTI): ~2.8s
 - Cumulative Layout Shift (CLS): 0.05
 
 ### Target Metrics
+
 - FCP: <1.0s
 - LCP: <2.5s
 - TTI: <3.5s
@@ -104,16 +114,18 @@ const inter = Inter({ subsets: ['latin'] });
 ### 1. Bundle Size Reduction
 
 #### Current Issues
+
 ```json
 {
-  "exceljs": "^4.4.0",      // 500KB
-  "xlsx": "^0.18.5",        // Duplicate
+  "exceljs": "^4.4.0", // 500KB
+  "xlsx": "^0.18.5", // Duplicate
   "xlsx-populate": "^1.21.0", // Duplicate
-  "xlsx-calc": "^0.9.2"     // Duplicate
+  "xlsx-calc": "^0.9.2" // Duplicate
 }
 ```
 
 #### Recommendation
+
 ```bash
 # Remove duplicate libraries
 npm uninstall xlsx xlsx-populate xlsx-calc
@@ -125,6 +137,7 @@ npm uninstall xlsx xlsx-populate xlsx-calc
 ### 2. Component Memoization
 
 #### Components to Memoize
+
 - WorkspaceToolPlaceholder
 - DraggableToolItem
 - UploadProgressIndicator
@@ -132,6 +145,7 @@ npm uninstall xlsx xlsx-populate xlsx-calc
 - AddNoteTooltip
 
 #### Example
+
 ```typescript
 import { memo } from 'react';
 
@@ -151,23 +165,26 @@ export const WorkspaceToolPlaceholder = memo(function WorkspaceToolPlaceholder({
 ### 3. Lazy Loading
 
 #### Heavy Components
+
 ```typescript
 // Lazy load modal components
-const ProfileModal = dynamic(() => import('./ProfileModal'));
-const TemplateManager = dynamic(() => import('./TemplateManager'));
-const MasonryModal = dynamic(() => import('./MasonryModal'));
+const ProfileModal = dynamic(() => import("./ProfileModal"));
+const TemplateManager = dynamic(() => import("./TemplateManager"));
+const MasonryModal = dynamic(() => import("./MasonryModal"));
 ```
 
 #### Route-Level
+
 ```typescript
 // Lazy load entire routes
-const InventoryPage = dynamic(() => import('./Inventory'));
-const AccountsPage = dynamic(() => import('./AccountManagement'));
+const InventoryPage = dynamic(() => import("./Inventory"));
+const AccountsPage = dynamic(() => import("./AccountManagement"));
 ```
 
 ### 4. Data Fetching Optimization
 
 #### Parallel Fetching
+
 ```typescript
 // Bad: Sequential
 const user = await fetchUser();
@@ -183,6 +200,7 @@ const [user, templates, inventory] = await Promise.all([
 ```
 
 #### Prefetching
+
 ```typescript
 // Prefetch on hover
 <Link
@@ -196,10 +214,12 @@ const [user, templates, inventory] = await Promise.all([
 ### 5. Image Optimization
 
 #### Current State
+
 - No image optimization strategy
 - Images loaded at full size
 
 #### Recommendations
+
 ```typescript
 // Use Next.js Image with responsive sizes
 <Image
@@ -216,12 +236,14 @@ const [user, templates, inventory] = await Promise.all([
 ## Monitoring
 
 ### Tools
+
 - Vercel Analytics (enabled)
 - Speed Insights (enabled)
 - Chrome DevTools Performance
 - Lighthouse CI
 
 ### Key Metrics to Track
+
 - Bundle size per route
 - Time to First Byte (TTFB)
 - First Contentful Paint (FCP)
@@ -230,6 +252,7 @@ const [user, templates, inventory] = await Promise.all([
 - Cumulative Layout Shift (CLS)
 
 ### Monitoring Script
+
 ```bash
 # Run Lighthouse
 npm run lighthouse
@@ -244,6 +267,7 @@ npm run build -- --analyze
 ## Best Practices
 
 ### 1. Avoid Unnecessary Re-renders
+
 ```typescript
 // Bad
 <Component onClick={() => handleClick(id)} />
@@ -254,6 +278,7 @@ const handleClickMemo = useCallback(() => handleClick(id), [id]);
 ```
 
 ### 2. Use Proper Key Props
+
 ```typescript
 // Bad
 {items.map((item, index) => <Item key={index} {...item} />)}
@@ -263,6 +288,7 @@ const handleClickMemo = useCallback(() => handleClick(id), [id]);
 ```
 
 ### 3. Optimize State Updates
+
 ```typescript
 // Bad: Multiple state updates
 setUser(newUser);
@@ -278,26 +304,26 @@ setState({
 ```
 
 ### 4. Debounce Expensive Operations
-```typescript
-import { useDebouncedCallback } from 'use-debounce';
 
-const debouncedSearch = useDebouncedCallback(
-  (value) => {
-    performSearch(value);
-  },
-  300
-);
+```typescript
+import { useDebouncedCallback } from "use-debounce";
+
+const debouncedSearch = useDebouncedCallback((value) => {
+  performSearch(value);
+}, 300);
 ```
 
 ## Server-Side Optimization
 
 ### 1. Edge Functions
+
 ```typescript
 // Use edge runtime for fast responses
-export const runtime = 'edge';
+export const runtime = "edge";
 ```
 
 ### 2. Streaming
+
 ```typescript
 // Stream large responses
 export async function GET() {
@@ -311,12 +337,13 @@ export async function GET() {
 ```
 
 ### 3. Caching Headers
+
 ```typescript
 // Cache static responses
 export async function GET() {
   return new Response(data, {
     headers: {
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+      "Cache-Control": "public, max-age=3600, s-maxage=3600",
     },
   });
 }
@@ -325,28 +352,33 @@ export async function GET() {
 ## Database Optimization
 
 ### 1. Query Optimization
+
 - Use indexes on frequently queried fields
 - Limit result sets
 - Use pagination
 
 ### 2. Connection Pooling
+
 - Reuse database connections
 - Set appropriate pool size
 
 ### 3. Caching Layer
+
 - Redis for frequently accessed data
 - In-memory cache for static data
 
 ## Action Items
 
 ### High Priority
-1.   Memoize WorkspaceContext value
-2.   Complete Sentry integration in logger
-3.   Extract business logic from large route handlers
-4. ⏳ Remove duplicate Excel libraries
-5. ⏳ Memoize frequently re-rendering components
+
+1.  Memoize WorkspaceContext value
+2.  Complete Sentry integration in logger
+3.  Extract business logic from large route handlers
+4.  ⏳ Remove duplicate Excel libraries
+5.  ⏳ Memoize frequently re-rendering components
 
 ### Medium Priority
+
 1. Implement lazy loading for modals
 2. Add bundle size monitoring
 3. Optimize image loading
@@ -354,6 +386,7 @@ export async function GET() {
 5. Add performance monitoring
 
 ### Low Priority
+
 1. Implement service workers
 2. Add offline support
 3. Optimize font loading
@@ -362,6 +395,7 @@ export async function GET() {
 ## Verification
 
 ### Performance Testing
+
 ```bash
 # Run Lighthouse
 npx lighthouse http://localhost:3000 --view
@@ -377,6 +411,7 @@ npm run build
 ```
 
 ### Monitoring
+
 ```bash
 # Check Vercel Analytics
 # Visit: https://vercel.com/dashboard/analytics

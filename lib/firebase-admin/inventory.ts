@@ -13,7 +13,7 @@ function inventoryCollection() {
 
 function toInventoryItem(
   id: string,
-  data: Record<string, unknown>,
+  data: Record<string, unknown>
 ): InventoryItem | null {
   if (!data) return null;
 
@@ -21,25 +21,23 @@ function toInventoryItem(
     id,
     sku: typeof data.sku === "string" ? data.sku : "",
     name: typeof data.name === "string" ? data.name : "",
-    description:
-      typeof data.description === "string" ? data.description : undefined,
+    description: typeof data.description === "string" ? data.description : undefined,
     category: typeof data.category === "string" ? data.category : undefined,
     unit:
       data.unit === "box" || data.unit === "pieces" || data.unit === "ream"
         ? data.unit
         : "pieces",
     stockAmount: typeof data.stockAmount === "number" ? data.stockAmount : 0,
-    stockMonth:
-      typeof data.stockMonth === "number" ? data.stockMonth : undefined,
+    stockMonth: typeof data.stockMonth === "number" ? data.stockMonth : undefined,
     yearlyData: data.yearlyData as
       | Record<string, Record<string, QuarterlyData | undefined>>
       | undefined,
     isActive: typeof data.isActive === "boolean" ? data.isActive : true,
     createdAt: new Date(
-      typeof data.createdAt === "number" ? data.createdAt : Date.now(),
+      typeof data.createdAt === "number" ? data.createdAt : Date.now()
     ),
     updatedAt: new Date(
-      typeof data.updatedAt === "number" ? data.updatedAt : Date.now(),
+      typeof data.updatedAt === "number" ? data.updatedAt : Date.now()
     ),
   };
 }
@@ -73,9 +71,7 @@ export async function getInventoryItemsPaginated(params: {
   // Client-side search filtering (Firestore doesn't support full-text search)
   if (search) {
     const searchLower = search.toLowerCase();
-    items = items.filter((item) =>
-      item.name.toLowerCase().includes(searchLower),
-    );
+    items = items.filter((item) => item.name.toLowerCase().includes(searchLower));
   }
 
   // Sort by SKU numerically
@@ -101,9 +97,7 @@ export async function getInventoryItemsPaginated(params: {
 }
 
 export async function getInventoryCategories(): Promise<string[]> {
-  const snapshot = await inventoryCollection()
-    .where("isActive", "==", true)
-    .get();
+  const snapshot = await inventoryCollection().where("isActive", "==", true).get();
 
   const categoriesSet = new Set<string>();
   snapshot.docs.forEach((doc) => {
@@ -183,7 +177,7 @@ export async function updateInventoryItem(
     unit?: "box" | "pieces" | "ream";
     stockAmount?: number;
     stockMonth?: number;
-  },
+  }
 ): Promise<InventoryItem | null> {
   const ref = inventoryCollection().doc(id);
   const existing = await ref.get();
@@ -196,12 +190,10 @@ export async function updateInventoryItem(
 
   if (updates.sku !== undefined) payload.sku = updates.sku;
   if (updates.name !== undefined) payload.name = updates.name;
-  if (updates.description !== undefined)
-    payload.description = updates.description;
+  if (updates.description !== undefined) payload.description = updates.description;
   if (updates.category !== undefined) payload.category = updates.category;
   if (updates.unit !== undefined) payload.unit = updates.unit;
-  if (updates.stockAmount !== undefined)
-    payload.stockAmount = updates.stockAmount;
+  if (updates.stockAmount !== undefined) payload.stockAmount = updates.stockAmount;
   if (updates.stockMonth !== undefined) payload.stockMonth = updates.stockMonth;
 
   await ref.update(payload);
@@ -215,7 +207,7 @@ export async function updateInventoryQuarterlyData(
   year: number,
   quarter: number,
   field: "requestedQuantity" | "receivedQuantity",
-  value: number | null,
+  value: number | null
 ): Promise<InventoryItem | null> {
   if (quarter < 1 || quarter > 4) {
     throw new Error("Quarter must be between 1 and 4");
@@ -271,9 +263,7 @@ export async function deleteInventoryItem(id: string): Promise<void> {
   });
 }
 
-export async function getInventoryItem(
-  id: string,
-): Promise<InventoryItem | null> {
+export async function getInventoryItem(id: string): Promise<InventoryItem | null> {
   const ref = inventoryCollection().doc(id);
   const snap = await ref.get();
 

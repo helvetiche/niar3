@@ -70,11 +70,7 @@ describe("Error Handler", () => {
 
     it("should sanitize error message", () => {
       const error = new Error("ENOENT: /secret/path");
-      const response = createErrorResponse(
-        "FILE_ERROR",
-        error.message,
-        404
-      );
+      const response = createErrorResponse("FILE_ERROR", error.message, 404);
 
       expect(response.error.message).toBe("Resource not found");
     });

@@ -39,9 +39,9 @@ export function useIFRChecker() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [severityFilter, setSeverityFilter] = useState<
-    "all" | "error" | "warning"
-  >("all");
+  const [severityFilter, setSeverityFilter] = useState<"all" | "error" | "warning">(
+    "all"
+  );
   const [fieldFilter, setFieldFilter] = useState<string>("all");
 
   const handleIFRFilesSelection = (incoming: FileList | null) => {
@@ -92,9 +92,7 @@ export function useIFRChecker() {
       if (data.issues.length === 0) {
         toast.success("Perfect match! No issues found.");
       } else {
-        toast.success(
-          `Validation complete. Found ${data.issues.length} issue(s).`,
-        );
+        toast.success(`Validation complete. Found ${data.issues.length} issue(s).`);
       }
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to validate files."));
@@ -131,7 +129,7 @@ export function useIFRChecker() {
           issue.field.toLowerCase().includes(query) ||
           issue.reason.toLowerCase().includes(query) ||
           String(issue.ifrValue).toLowerCase().includes(query) ||
-          String(issue.consolidatedValue).toLowerCase().includes(query),
+          String(issue.consolidatedValue).toLowerCase().includes(query)
       );
     }
 

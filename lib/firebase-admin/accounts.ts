@@ -26,7 +26,7 @@ export interface PaginatedAccounts {
  */
 export async function getAccountsPaginated(
   limit = 8,
-  pageToken?: string,
+  pageToken?: string
 ): Promise<PaginatedAccounts> {
   const auth = getAdminAuth();
 

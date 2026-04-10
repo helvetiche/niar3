@@ -41,6 +41,6 @@ export function useAccounts(limit = 8, pageToken?: string) {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 10000,
-    },
+    }
   );
 }

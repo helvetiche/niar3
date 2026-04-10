@@ -49,7 +49,7 @@ describe("Security Headers", () => {
     // HSTS is conditionally added based on NODE_ENV at module load time
     // This test verifies the header exists in the constant
     const hsts = SECURITY_RESPONSE_HEADERS["Strict-Transport-Security"];
-    
+
     if (process.env.NODE_ENV === "production") {
       expect(hsts).toBeDefined();
       expect(hsts).toContain("max-age=63072000");

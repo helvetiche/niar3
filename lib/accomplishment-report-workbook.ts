@@ -32,7 +32,7 @@ const populateSheetForPeriod = (
   fullName: string,
   designation: string,
   period: AccomplishmentReportPeriod,
-  customTasks?: string[],
+  customTasks?: string[]
 ): void => {
   sheet.cell("A6").value(formatPeriodLabel(period));
   const a6Cell = sheet.cell("A6");
@@ -62,7 +62,7 @@ const populateSheetForPeriod = (
       period.month,
       dayNum,
       designation,
-      customTasks,
+      customTasks
     );
     if (task.type === "double") {
       sheet.cell(taskRef1).value(`${task.line1}\n${task.line2}`);
@@ -76,7 +76,7 @@ const populateSheetForPeriod = (
 };
 
 export const generateSingleAccomplishmentReportBuffer = async (
-  input: AccomplishmentReportWorkbookInput,
+  input: AccomplishmentReportWorkbookInput
 ): Promise<Buffer> => {
   const workbook = await XlsxPopulate.fromDataAsync(input.templateBuffer);
   let sheet: ReturnType<typeof workbook.sheet>;
@@ -94,7 +94,7 @@ export const generateSingleAccomplishmentReportBuffer = async (
 };
 
 export const getAllAccomplishmentReportPeriods = (
-  year: number,
+  year: number
 ): AccomplishmentReportPeriod[] => {
   const periods: AccomplishmentReportPeriod[] = [];
   for (let month = 1; month <= 12; month += 1) {
@@ -106,7 +106,7 @@ export const getAllAccomplishmentReportPeriods = (
 
 export const getFilteredAccomplishmentReportPeriods = (
   year: number,
-  filter: AccomplishmentReportPeriodFilter,
+  filter: AccomplishmentReportPeriodFilter
 ): AccomplishmentReportPeriod[] => {
   const all = getAllAccomplishmentReportPeriods(year);
   const monthSet = new Set(filter.months);
@@ -128,7 +128,7 @@ export const generateMergedAccomplishmentReportWorkbook = async (
   designation: string,
   year: number,
   filter?: AccomplishmentReportPeriodFilter,
-  customTasks?: string[],
+  customTasks?: string[]
 ): Promise<Buffer> => {
   const workbook = await XlsxPopulate.fromDataAsync(templateBuffer);
   let templateSheet: ReturnType<typeof workbook.sheet>;

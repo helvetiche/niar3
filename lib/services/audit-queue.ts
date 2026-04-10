@@ -36,7 +36,6 @@ class AuditQueue {
       await Promise.all(batch.map((entry) => logAuditTrailEntry(entry)));
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
-         
         console.error("Audit queue flush failed:", error);
       }
       this.queue.unshift(...batch);

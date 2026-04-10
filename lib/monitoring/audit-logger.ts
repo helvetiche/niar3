@@ -28,12 +28,11 @@ export function logPermissionCheck(entry: Omit<AuditLogEntry, "timestamp">) {
   if (entry.status === "rejected" && entry.httpStatus === 403) {
     captureMessage(
       `Permission denied: ${entry.action} for user ${entry.userEmail || entry.userId}`,
-      "warning",
+      "warning"
     );
   }
 
   if (process.env.NODE_ENV === "development") {
-     
     console.log("[AUDIT]", JSON.stringify(logEntry, null, 2));
   }
 }
@@ -59,7 +58,6 @@ export function logAuthFailure(email: string, reason: string, route: string) {
   captureMessage(`Authentication failed: ${email} - ${reason}`, "warning");
 
   if (process.env.NODE_ENV === "development") {
-     
     console.log("[AUTH_FAILURE]", JSON.stringify(logEntry, null, 2));
   }
 }

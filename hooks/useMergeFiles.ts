@@ -24,18 +24,14 @@ export function useMergeFiles() {
   const [mode, setMode] = useState<MergeMode>("pdf");
   const [files, setFiles] = useState<File[]>([]);
   const [pdfPages, setPdfPages] = useState<PdfPageItem[]>([]);
-  const [excelPageNames, setExcelPageNames] = useState<Record<string, string>>(
-    {},
-  );
+  const [excelPageNames, setExcelPageNames] = useState<Record<string, string>>({});
   const [fileName, setFileName] = useState(pdfDefaultName);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPreparingPages, setIsPreparingPages] = useState(false);
 
   const defaultFileName = mode === "pdf" ? pdfDefaultName : excelDefaultName;
 
-  const buildPdfPages = async (
-    incomingFiles: File[],
-  ): Promise<PdfPageItem[]> => {
+  const buildPdfPages = async (incomingFiles: File[]): Promise<PdfPageItem[]> => {
     const pages: PdfPageItem[] = [];
 
     for (let fileIndex = 0; fileIndex < incomingFiles.length; fileIndex += 1) {
@@ -82,7 +78,7 @@ export function useMergeFiles() {
         setExcelPageNames(names);
       }
     },
-    [mode],
+    [mode]
   );
 
   const changeMergeMode = useCallback(
@@ -96,7 +92,7 @@ export function useMergeFiles() {
       setIsPreparingPages(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     },
-    [mode],
+    [mode]
   );
 
   const reorderPages = useCallback((fromIndex: number, toIndex: number) => {
@@ -119,15 +115,12 @@ export function useMergeFiles() {
     });
   }, []);
 
-  const updateExcelPageName = useCallback(
-    (fileIndex: number, value: string) => {
-      setExcelPageNames((prev) => ({
-        ...prev,
-        [fileIndex]: value,
-      }));
-    },
-    [],
-  );
+  const updateExcelPageName = useCallback((fileIndex: number, value: string) => {
+    setExcelPageNames((prev) => ({
+      ...prev,
+      [fileIndex]: value,
+    }));
+  }, []);
 
   const executeMerge = useCallback(async () => {
     if (files.length === 0) {
@@ -144,8 +137,7 @@ export function useMergeFiles() {
         files,
         fileName: fileName.trim() || defaultFileName,
         pageOrder: mode === "pdf" ? pdfPages : undefined,
-        excelPageNames:
-          mode === "excel" ? Object.values(excelPageNames) : undefined,
+        excelPageNames: mode === "excel" ? Object.values(excelPageNames) : undefined,
       });
 
       downloadBlob(result.blob, result.fileName);

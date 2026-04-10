@@ -53,9 +53,7 @@ export function FileUploadZone({
         className="flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-white/45 bg-white/10 px-6 py-10 text-base text-white transition hover:border-white hover:bg-white/15"
       >
         <UploadSimpleIcon size={34} className="text-white" />
-        <span className="font-medium">
-          Drag and drop files, or click to browse
-        </span>
+        <span className="font-medium">Drag and drop files, or click to browse</span>
       </button>
 
       <div className="mt-2 flex flex-wrap gap-2">

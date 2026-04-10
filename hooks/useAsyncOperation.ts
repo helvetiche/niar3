@@ -41,8 +41,7 @@ export function useAsyncOperation(options: UseAsyncOperationOptions = {}) {
         }
         onSuccess?.();
       } catch (err) {
-        const errorMsg =
-          err instanceof Error ? err.message : "Unknown error occurred";
+        const errorMsg = err instanceof Error ? err.message : "Unknown error occurred";
         setError(errorMsg);
 
         if (showErrorToast) {
@@ -53,14 +52,7 @@ export function useAsyncOperation(options: UseAsyncOperationOptions = {}) {
         setIsLoading(false);
       }
     },
-    [
-      onSuccess,
-      onError,
-      showErrorToast,
-      showSuccessToast,
-      successMessage,
-      errorMessage,
-    ],
+    [onSuccess, onError, showErrorToast, showSuccessToast, successMessage, errorMessage]
   );
 
   return { execute, isLoading, error };

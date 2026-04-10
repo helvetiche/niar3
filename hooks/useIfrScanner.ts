@@ -3,9 +3,9 @@ import { getFileKey, getBaseName, sanitizeFolderName } from "@/lib/file-utils";
 
 export function useIfrScanner() {
   const [sourceFiles, setSourceFiles] = useState<File[]>([]);
-  const [sourceFolderNames, setSourceFolderNames] = useState<
-    Record<string, string>
-  >({});
+  const [sourceFolderNames, setSourceFolderNames] = useState<Record<string, string>>(
+    {}
+  );
 
   // Compute derived folder names from source files
   const derivedFolderNames = useMemo(() => {

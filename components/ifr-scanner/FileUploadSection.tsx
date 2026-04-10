@@ -54,8 +54,8 @@ export function FileUploadSection({
       </div>
 
       <p className="mt-2 text-xs text-white/80">
-        Upload one or many .xlsx/.xls files. Each uploaded file is processed as
-        a separate division folder in the ZIP with one{" "}
+        Upload one or many .xlsx/.xls files. Each uploaded file is processed as a
+        separate division folder in the ZIP with one{" "}
         <span className="font-medium">billing unit</span> subfolder.
       </p>
     </div>

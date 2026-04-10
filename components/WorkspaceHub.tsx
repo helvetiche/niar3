@@ -203,21 +203,19 @@ export function WorkspaceHub() {
 
   const filteredTools = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    
+
     // Super admins have access to all tools
-    const permittedTools = isSuperAdmin 
-      ? HUB_TOOLS 
+    const permittedTools = isSuperAdmin
+      ? HUB_TOOLS
       : HUB_TOOLS.filter((tool) => userPermissions.includes(tool.id));
-    
+
     // Then filter by search keyword
     if (!keyword) return permittedTools;
-    
+
     return permittedTools.filter((tool) => {
       const inName = tool.name.toLowerCase().includes(keyword);
       const inDescription = tool.description.toLowerCase().includes(keyword);
-      const inTags = tool.tags.some((tag) =>
-        tag.label.toLowerCase().includes(keyword),
-      );
+      const inTags = tool.tags.some((tag) => tag.label.toLowerCase().includes(keyword));
       return inName || inDescription || inTags;
     });
   }, [search, isSuperAdmin, userPermissions]);
@@ -246,20 +244,16 @@ export function WorkspaceHub() {
           </span>
         </div>
         <p className="mt-2 max-w-3xl text-sm text-white/85">
-          Choose a tool to start your workflow. Each option takes you directly
-          to the feature page with all controls ready so you can upload files,
-          configure inputs, and generate outputs faster.
+          Choose a tool to start your workflow. Each option takes you directly to the
+          feature page with all controls ready so you can upload files, configure
+          inputs, and generate outputs faster.
         </p>
         <div className="mt-4 w-full max-w-md">
           <label
             htmlFor="workspace-hub-search"
             className="flex items-center gap-2 rounded-lg border border-white/50 bg-white/15 px-3 py-2 backdrop-blur-sm"
           >
-            <MagnifyingGlassIcon
-              size={16}
-              weight="duotone"
-              className="text-white"
-            />
+            <MagnifyingGlassIcon size={16} weight="duotone" className="text-white" />
             <input
               id="workspace-hub-search"
               type="search"
@@ -303,11 +297,7 @@ export function WorkspaceHub() {
                       key={tag.id}
                       className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm transition sm:gap-2 sm:px-4 sm:py-1.5 sm:text-sm group-hover:bg-white/30"
                     >
-                      <TagIcon
-                        size={13}
-                        weight="duotone"
-                        className="shrink-0"
-                      />
+                      <TagIcon size={13} weight="duotone" className="shrink-0" />
                       {tag.label}
                     </span>
                   );

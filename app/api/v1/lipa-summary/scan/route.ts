@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         details: { reason: "missing-file" },
       });
       return applySecurityHeaders(
-        NextResponse.json({ error: "PDF file is required." }, { status: 400 }),
+        NextResponse.json({ error: "PDF file is required." }, { status: 400 })
       );
     }
     const uploadValidation = validateUploads([file], scanUploadLimits);
@@ -74,8 +74,8 @@ export async function POST(request: Request) {
       return applySecurityHeaders(
         NextResponse.json(
           { error: uploadValidation.message },
-          { status: uploadValidation.status },
-        ),
+          { status: uploadValidation.status }
+        )
       );
     }
     if (typeof payloadRaw !== "string" || !payloadRaw.trim()) {
@@ -90,10 +90,7 @@ export async function POST(request: Request) {
         details: { reason: "missing-payload" },
       });
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "Scan payload is required." },
-          { status: 400 },
-        ),
+        NextResponse.json({ error: "Scan payload is required." }, { status: 400 })
       );
     }
 
@@ -112,10 +109,7 @@ export async function POST(request: Request) {
         details: { reason: "invalid-payload-json" },
       });
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "Invalid scan payload JSON." },
-          { status: 400 },
-        ),
+        NextResponse.json({ error: "Invalid scan payload JSON." }, { status: 400 })
       );
     }
     const payload = scanPayloadSchema.parse(parsed);
@@ -147,9 +141,7 @@ export async function POST(request: Request) {
   } catch (error) {
     logger.error("[api/lipa-summary/scan POST]", error);
     const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to scan PDF for LIPA summary";
+      error instanceof Error ? error.message : "Failed to scan PDF for LIPA summary";
     const lower = message.toLowerCase();
     const isQuotaOrRateLimit =
       lower.includes("quota") ||
@@ -176,8 +168,8 @@ export async function POST(request: Request) {
               ? "LIPA scan request is currently rate-limited. Please retry."
               : "Failed to scan PDF for LIPA summary.",
         },
-        { status: isValidationError ? 400 : isQuotaOrRateLimit ? 429 : 500 },
-      ),
+        { status: isValidationError ? 400 : isQuotaOrRateLimit ? 429 : 500 }
+      )
     );
   }
 }

@@ -137,8 +137,7 @@ export async function exportInventoryToExcel({
         (q2.requestedQuantity ?? 0) +
         (q1Remaining > 0 ? q1Remaining : 0);
       const q2ReceivedWithRollover =
-        (q2.receivedQuantity ?? 0) +
-        (q1Remaining < 0 ? Math.abs(q1Remaining) : 0);
+        (q2.receivedQuantity ?? 0) + (q1Remaining < 0 ? Math.abs(q1Remaining) : 0);
       const q2Remaining = q2RequestedWithRollover - q2ReceivedWithRollover;
       const q2Balance = q2Remaining > 0 ? q2Remaining : 0;
 
@@ -147,8 +146,7 @@ export async function exportInventoryToExcel({
         (q3.requestedQuantity ?? 0) +
         (q2Remaining > 0 ? q2Remaining : 0);
       const q3ReceivedWithRollover =
-        (q3.receivedQuantity ?? 0) +
-        (q2Remaining < 0 ? Math.abs(q2Remaining) : 0);
+        (q3.receivedQuantity ?? 0) + (q2Remaining < 0 ? Math.abs(q2Remaining) : 0);
       const q3Remaining = q3RequestedWithRollover - q3ReceivedWithRollover;
       const q3Balance = q3Remaining > 0 ? q3Remaining : 0;
 
@@ -157,8 +155,7 @@ export async function exportInventoryToExcel({
         (q4.requestedQuantity ?? 0) +
         (q3Remaining > 0 ? q3Remaining : 0);
       const q4ReceivedWithRollover =
-        (q4.receivedQuantity ?? 0) +
-        (q3Remaining < 0 ? Math.abs(q3Remaining) : 0);
+        (q4.receivedQuantity ?? 0) + (q3Remaining < 0 ? Math.abs(q3Remaining) : 0);
       const q4Remaining = q4RequestedWithRollover - q4ReceivedWithRollover;
       const q4Balance = q4Remaining > 0 ? q4Remaining : 0;
 

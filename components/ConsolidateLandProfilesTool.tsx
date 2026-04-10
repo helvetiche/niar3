@@ -43,8 +43,8 @@ export default function ConsolidateLandProfilesTool() {
           <div>
             <h3 className="text-lg font-medium text-white">Upload IFR Files</h3>
             <p className="mt-1 text-sm text-white/80">
-              Upload one or more IFR Excel files to consolidate. Files will be
-              processed and merged into the template.
+              Upload one or more IFR Excel files to consolidate. Files will be processed
+              and merged into the template.
             </p>
           </div>
 
@@ -87,9 +87,7 @@ export default function ConsolidateLandProfilesTool() {
                   >
                     <div className="flex items-center gap-2">
                       <FileIcon size={18} className="text-white/80" />
-                      <span className="text-sm text-white">
-                        {item.file.name}
-                      </span>
+                      <span className="text-sm text-white">{item.file.name}</span>
                     </div>
                     <button
                       type="button"
@@ -112,12 +110,9 @@ export default function ConsolidateLandProfilesTool() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Enter File Details
-            </h3>
+            <h3 className="text-lg font-medium text-white">Enter File Details</h3>
             <p className="mt-1 text-sm text-white/80">
-              Provide division number and irrigation association for each
-              uploaded file.
+              Provide division number and irrigation association for each uploaded file.
             </p>
           </div>
 
@@ -132,9 +127,7 @@ export default function ConsolidateLandProfilesTool() {
                     <th className="border-r border-white/20 p-3 font-semibold">
                       Division Number
                     </th>
-                    <th className="p-3 font-semibold">
-                      Irrigation Association (IA)
-                    </th>
+                    <th className="p-3 font-semibold">Irrigation Association (IA)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -153,11 +146,7 @@ export default function ConsolidateLandProfilesTool() {
                           type="text"
                           value={item.divisionNumber || ""}
                           onChange={(e) =>
-                            updateFileDetails(
-                              item.id,
-                              "divisionNumber",
-                              e.target.value,
-                            )
+                            updateFileDetails(item.id, "divisionNumber", e.target.value)
                           }
                           placeholder="Enter division number"
                           className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-1 focus:ring-white"
@@ -171,7 +160,7 @@ export default function ConsolidateLandProfilesTool() {
                             updateFileDetails(
                               item.id,
                               "irrigationAssociation",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                           placeholder="Enter IA"
@@ -193,9 +182,7 @@ export default function ConsolidateLandProfilesTool() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Review & Consolidate
-            </h3>
+            <h3 className="text-lg font-medium text-white">Review & Consolidate</h3>
             <p className="mt-1 text-sm text-white/80">
               Review your files and consolidate them into a single output file.
             </p>
@@ -209,9 +196,8 @@ export default function ConsolidateLandProfilesTool() {
                 {templateFile
                   ? templateFile.name
                   : selectedTemplateId
-                    ? consolidationTemplates.find(
-                        (t) => t.id === selectedTemplateId,
-                      )?.name || "Auto-selected"
+                    ? consolidationTemplates.find((t) => t.id === selectedTemplateId)
+                        ?.name || "Auto-selected"
                     : "Auto-selected"}
               </p>
               <p>
@@ -222,9 +208,7 @@ export default function ConsolidateLandProfilesTool() {
           </div>
 
           <div className="rounded-lg border border-white/30 bg-white/5 p-4">
-            <h4 className="mb-3 text-sm font-medium text-white">
-              File Details
-            </h4>
+            <h4 className="mb-3 text-sm font-medium text-white">File Details</h4>
             <div className="overflow-x-auto">
               <table className="w-full border border-white/30 text-sm">
                 <thead className="border-b border-white/20 bg-white/5">
@@ -235,9 +219,7 @@ export default function ConsolidateLandProfilesTool() {
                     <th className="border-r border-white/20 p-3 font-semibold">
                       Division Number
                     </th>
-                    <th className="p-3 font-semibold">
-                      Irrigation Association (IA)
-                    </th>
+                    <th className="p-3 font-semibold">Irrigation Association (IA)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -344,8 +326,8 @@ export default function ConsolidateLandProfilesTool() {
           </span>
         </div>
         <p className="mt-2 text-sm text-white/85">
-          Consolidate multiple IFR files into a single output file with
-          automatic calculations.
+          Consolidate multiple IFR files into a single output file with automatic
+          calculations.
         </p>
       </div>
 

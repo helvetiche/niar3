@@ -5,6 +5,7 @@ Complete guide to test the NIA Tools scheduling system end-to-end.
 ## 🧪 Testing Overview
 
 We'll test in this order:
+
 1. **Email Configuration** - Verify email system works
 2. **Cache System** - Test cache sync and retrieval
 3. **Deadline Calculator** - Verify calculations are correct
@@ -30,6 +31,7 @@ grep EMAIL_ .env.local
 ```
 
 Expected output:
+
 ```
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=465
@@ -52,6 +54,7 @@ curl -X POST http://localhost:3000/api/v1/schedules/test-email \
 ```
 
 Create `scripts/test-email.ts`:
+
 ```typescript
 import { sendTestEmail } from "@/lib/email";
 
@@ -68,6 +71,7 @@ testEmail();
 ```
 
 Run it:
+
 ```bash
 npx tsx scripts/test-email.ts
 ```
@@ -110,6 +114,7 @@ curl -X POST http://localhost:3000/api/v1/schedules/sync-cache \
 ```
 
 **Expected Response:**
+
 ```json
 {
   "success": true,
@@ -129,6 +134,7 @@ curl http://localhost:3000/api/v1/schedules/cache-status \
 ```
 
 **Expected Response:**
+
 ```json
 {
   "success": true,
@@ -145,6 +151,7 @@ curl http://localhost:3000/api/v1/schedules/cache-status \
 ### Step 2.4: Verify in Firestore
 
 Open Firebase Console → Firestore → `scheduleCache` collection:
+
 - Should have 1 document: `upcomingReminders`
 - Should contain array of your schedules
 - Check `lastSynced` timestamp
@@ -154,40 +161,56 @@ Open Firebase Console → Firestore → `scheduleCache` collection:
 Create `scripts/test-deadline-calculator.ts`:
 
 ```typescript
-import { calculateNextDeadline, calculateReminderDate, shouldSendReminder } from "@/lib/deadline-calculator";
+import {
+  calculateNextDeadline,
+  calculateReminderDate,
+  shouldSendReminder,
+} from "@/lib/deadline-calculator";
 
 function testDeadlineCalculator() {
   console.log("🧪 Testing Deadline Calculator\n");
 
   const now = new Date();
   console.log(`Current time (UTC): ${now.toISOString()}`);
-  console.log(`Current time (PH): ${new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString()}\n`);
+  console.log(
+    `Current time (PH): ${new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString()}\n`
+  );
 
   // Test 1: Daily deadline
   console.log("Test 1: Daily at 14:00 PH time");
-  const dailyDeadline = calculateNextDeadline({
-    type: "daily",
-    time: "14:00"
-  }, now);
+  const dailyDeadline = calculateNextDeadline(
+    {
+      type: "daily",
+      time: "14:00",
+    },
+    now
+  );
   console.log(`Next deadline: ${dailyDeadline.toISOString()}`);
-  console.log(`In PH time: ${new Date(dailyDeadline.getTime() + 8 * 60 * 60 * 1000).toISOString()}\n`);
+  console.log(
+    `In PH time: ${new Date(dailyDeadline.getTime() + 8 * 60 * 60 * 1000).toISOString()}\n`
+  );
 
   // Test 2: Reminder calculation
   console.log("Test 2: Reminder 1 day before at 09:00");
-  const reminderDate = calculateReminderDate({
-    type: "relative",
-    daysBefore: 1,
-    time: "09:00"
-  }, dailyDeadline);
+  const reminderDate = calculateReminderDate(
+    {
+      type: "relative",
+      daysBefore: 1,
+      time: "09:00",
+    },
+    dailyDeadline
+  );
   console.log(`Reminder time: ${reminderDate.toISOString()}`);
-  console.log(`In PH time: ${new Date(reminderDate.getTime() + 8 * 60 * 60 * 1000).toISOString()}\n`);
+  console.log(
+    `In PH time: ${new Date(reminderDate.getTime() + 8 * 60 * 60 * 1000).toISOString()}\n`
+  );
 
   // Test 3: Should send check
   console.log("Test 3: Should send reminder?");
   const testTime1 = new Date(reminderDate.getTime() - 1 * 60 * 1000); // 1 min before
   const testTime2 = new Date(reminderDate.getTime() + 2 * 60 * 1000); // 2 min after
   const testTime3 = new Date(reminderDate.getTime() + 5 * 60 * 1000); // 5 min after
-  
+
   console.log(`1 min before: ${shouldSendReminder(reminderDate, testTime1)}`);
   console.log(`2 min after: ${shouldSendReminder(reminderDate, testTime2)}`);
   console.log(`5 min after: ${shouldSendReminder(reminderDate, testTime3)}`);
@@ -197,11 +220,13 @@ testDeadlineCalculator();
 ```
 
 Run it:
+
 ```bash
 npx tsx scripts/test-deadline-calculator.ts
 ```
 
 **Expected Output:**
+
 - Daily deadline should be at 14:00 Philippine time (06:00 UTC)
 - Reminder should be 1 day before at 09:00 Philippine time (01:00 UTC)
 - Should send = true for times within -2 to +3 minute window
@@ -220,6 +245,7 @@ curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "success": true,
@@ -253,6 +279,7 @@ curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET"
 ### Step 4.2: Check Firestore Logs
 
 Open Firebase Console → Firestore → `cronLogs` collection:
+
 - Should have a new document with execution stats
 - Check `timestamp`, `checked`, `sent`, `skipped`, `errors`
 
@@ -300,24 +327,28 @@ curl -X POST http://localhost:3000/api/v1/schedules/sync-cache \
 ### Step 5.3: Wait and Monitor
 
 **Option A: Watch Server Logs**
+
 ```bash
 # In your terminal running npm run dev
 # Watch for cron execution logs
 ```
 
 **Option B: Poll Cron Endpoint**
+
 ```bash
 # Run this every 30 seconds
 watch -n 30 'curl -s "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_SECRET" | jq'
 ```
 
 **Option C: Check Firestore**
+
 - Watch `cronLogs` collection for new entries
 - Watch `sentReminders` collection for your schedule
 
 ### Step 5.4: Verify Email Received
 
 Within 5 minutes, you should receive:
+
 - ✅ Email with NIA branding
 - ✅ Green header "National Irrigation Administration"
 - ✅ Yellow highlight box with schedule details
@@ -326,6 +357,7 @@ Within 5 minutes, you should receive:
 ### Step 5.5: Check Firestore Records
 
 **cronLogs:**
+
 ```json
 {
   "timestamp": "2024-03-26T10:33:30.000Z",
@@ -338,6 +370,7 @@ Within 5 minutes, you should receive:
 ```
 
 **sentReminders:**
+
 ```json
 {
   "scheduleId": "abc123",
@@ -359,6 +392,7 @@ curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_SECRET"
 ```
 
 **Expected Response:**
+
 ```json
 {
   "success": true,
@@ -389,11 +423,13 @@ curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_SECRET"
 ### Step 7.1: Check Firestore Usage
 
 Open Firebase Console → Usage tab:
+
 - Note the read count before test
 - Run cron 10 times
 - Check read count after
 
 **Expected:**
+
 - Without cache: ~40 reads per run = 400 reads
 - With cache: ~1 read per run = 10 reads
 - **Savings: 97.5%**
@@ -401,6 +437,7 @@ Open Firebase Console → Usage tab:
 ### Step 7.2: Verify Cache Hit Rate
 
 Check cron response:
+
 ```json
 {
   "optimization": {
@@ -416,6 +453,7 @@ Check cron response:
 Create and test each type:
 
 ### Daily Schedule
+
 ```json
 {
   "deadline": { "type": "daily", "time": "14:00" },
@@ -424,6 +462,7 @@ Create and test each type:
 ```
 
 ### Weekly Schedule
+
 ```json
 {
   "deadline": { "type": "weekly", "dayOfWeek": 1, "time": "09:00" },
@@ -432,6 +471,7 @@ Create and test each type:
 ```
 
 ### Monthly Schedule
+
 ```json
 {
   "deadline": { "type": "monthly", "dayOfMonth": 15, "time": "17:00" },
@@ -440,6 +480,7 @@ Create and test each type:
 ```
 
 ### Hourly Schedule (for testing)
+
 ```json
 {
   "deadline": { "type": "hourly", "hours": 1 },
@@ -452,6 +493,7 @@ Create and test each type:
 ### Email Not Received
 
 **Check:**
+
 1. Email credentials in `.env.local`
 2. Gmail "Less secure app access" or App Password
 3. Spam folder
@@ -459,6 +501,7 @@ Create and test each type:
 5. `cronLogs` for error messages
 
 **Debug:**
+
 ```bash
 # Test email config
 npx tsx scripts/test-email.ts
@@ -471,11 +514,13 @@ echo $EMAIL_HOST
 ### Cache Not Working
 
 **Check:**
+
 1. Cache was synced: `/api/v1/schedules/cache-status`
 2. Firestore `scheduleCache` collection exists
 3. Schedules are `status: "active"`
 
 **Debug:**
+
 ```bash
 # Re-sync cache
 curl -X POST http://localhost:3000/api/v1/schedules/sync-cache \
@@ -487,12 +532,14 @@ curl -X POST http://localhost:3000/api/v1/schedules/sync-cache \
 ### Cron Not Running
 
 **Check:**
+
 1. `CRON_SECRET` is set
 2. Authorization header or query param is correct
 3. Server is running
 4. No errors in server logs
 
 **Debug:**
+
 ```bash
 # Test with correct secret
 curl "http://localhost:3000/api/v1/cron/send-reminders?secret=$(grep CRON_SECRET .env.local | cut -d= -f2)"
@@ -504,11 +551,13 @@ tail -f .next/server.log
 ### Wrong Timing
 
 **Check:**
+
 1. Philippine timezone (UTC+8) is handled correctly
 2. Deadline time is in 24-hour format
 3. Reminder time calculation is correct
 
 **Debug:**
+
 ```bash
 # Run deadline calculator test
 npx tsx scripts/test-deadline-calculator.ts

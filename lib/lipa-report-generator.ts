@@ -26,9 +26,7 @@ const sanitizeFileName = (value: string): string =>
 const normalizeOutputName = (value: string): string => {
   const safeBase = sanitizeFileName(value || "LIPA Summary Report");
   if (!safeBase) return "LIPA Summary Report.xlsx";
-  return safeBase.toLowerCase().endsWith(".xlsx")
-    ? safeBase
-    : `${safeBase}.xlsx`;
+  return safeBase.toLowerCase().endsWith(".xlsx") ? safeBase : `${safeBase}.xlsx`;
 };
 
 const createThinBorder = () => ({

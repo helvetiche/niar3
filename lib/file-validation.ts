@@ -18,7 +18,7 @@ const ALLOWED_EXTENSIONS: Record<string, string[]> = {
 
 export function validateFileBeforeUpload(
   file: File,
-  allowedTypes: keyof typeof ALLOWED_EXTENSIONS = "all",
+  allowedTypes: keyof typeof ALLOWED_EXTENSIONS = "all"
 ): FileValidationResult {
   const fileName = file.name.toLowerCase();
   const fileSize = file.size;
@@ -67,7 +67,7 @@ export function validateFileBeforeUpload(
 
 export function validateMultipleFiles(
   files: File[],
-  allowedTypes: keyof typeof ALLOWED_EXTENSIONS = "all",
+  allowedTypes: keyof typeof ALLOWED_EXTENSIONS = "all"
 ): {
   valid: File[];
   invalid: Array<{ file: File; error: string }>;

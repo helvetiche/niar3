@@ -26,8 +26,8 @@ export function UserRoleDebug() {
       </div>
       {role !== "super-admin" && (
         <p className="mt-2 text-xs text-white/60">
-          Log out and log back in to refresh your session if your role was
-          recently updated.
+          Log out and log back in to refresh your session if your role was recently
+          updated.
         </p>
       )}
     </div>

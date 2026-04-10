@@ -1,11 +1,5 @@
 import "server-only";
-import {
-  getApps,
-  initializeApp,
-  getApp,
-  cert,
-  type App,
-} from "firebase-admin/app";
+import { getApps, initializeApp, getApp, cert, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 
 let app: App | null = null;
@@ -24,7 +18,7 @@ export function getFirebaseAdminApp(): App {
 
   if (!projectId || !clientEmail || !privateKey) {
     throw new Error(
-      "Firebase Admin credentials missing. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY.",
+      "Firebase Admin credentials missing. Set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY."
     );
   }
 

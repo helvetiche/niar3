@@ -1,11 +1,7 @@
 "use client";
 
 import { ReactNode, useState } from "react";
-import {
-  CheckIcon,
-  CaretLeftIcon,
-  CaretRightIcon,
-} from "@phosphor-icons/react";
+import { CheckIcon, CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 
 interface StepConfig {
   title: string;
@@ -92,20 +88,12 @@ export function WorkspaceStepper({
                     }`}
                   >
                     {isCompleted ? (
-                      <CheckIcon
-                        size={16}
-                        weight="bold"
-                        className="sm:hidden"
-                      />
+                      <CheckIcon size={16} weight="bold" className="sm:hidden" />
                     ) : (
                       <span className="text-xs sm:text-sm">{index + 1}</span>
                     )}
                     {isCompleted && (
-                      <CheckIcon
-                        size={20}
-                        weight="bold"
-                        className="hidden sm:block"
-                      />
+                      <CheckIcon size={20} weight="bold" className="hidden sm:block" />
                     )}
                   </div>
                   <div className="hidden flex-col items-start lg:flex">
@@ -117,9 +105,7 @@ export function WorkspaceStepper({
                       {step.title}
                     </span>
                     {step.description && (
-                      <span className="text-xs text-white/50">
-                        {step.description}
-                      </span>
+                      <span className="text-xs text-white/50">{step.description}</span>
                     )}
                   </div>
                 </button>
@@ -164,11 +150,7 @@ export function WorkspaceStepper({
           {!isLastStep && (
             <>
               <CaretRightIcon size={14} weight="bold" className="sm:hidden" />
-              <CaretRightIcon
-                size={16}
-                weight="bold"
-                className="hidden sm:block"
-              />
+              <CaretRightIcon size={16} weight="bold" className="hidden sm:block" />
             </>
           )}
         </button>

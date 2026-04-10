@@ -5,9 +5,11 @@ export function calculateNextDeadline(
   currentTime: Date
 ): Date {
   // Work in Manila timezone (UTC+8)
-  const manilaTimeString = currentTime.toLocaleString("en-US", { timeZone: "Asia/Manila" });
+  const manilaTimeString = currentTime.toLocaleString("en-US", {
+    timeZone: "Asia/Manila",
+  });
   const now = new Date(manilaTimeString);
-  
+
   // Parse time if available
   let targetHour = 14; // Default 2 PM
   let targetMinute = 0;
@@ -16,9 +18,9 @@ export function calculateNextDeadline(
     targetHour = hours || 14;
     targetMinute = minutes || 0;
   }
-  
+
   let nextDeadline: Date;
-  
+
   switch (deadline.type) {
     case "daily": {
       nextDeadline = new Date(now);
@@ -51,7 +53,15 @@ export function calculateNextDeadline(
     }
     case "monthly": {
       const targetDay = deadline.dayOfMonth || 1;
-      nextDeadline = new Date(now.getFullYear(), now.getMonth(), targetDay, targetHour, targetMinute, 0, 0);
+      nextDeadline = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        targetDay,
+        targetHour,
+        targetMinute,
+        0,
+        0
+      );
       if (nextDeadline <= now) {
         nextDeadline.setMonth(nextDeadline.getMonth() + 1);
       }
@@ -60,7 +70,15 @@ export function calculateNextDeadline(
     case "monthly-specific": {
       const targetMonth = (deadline.month || 1) - 1;
       const targetDay = deadline.day || 1;
-      nextDeadline = new Date(now.getFullYear(), targetMonth, targetDay, targetHour, targetMinute, 0, 0);
+      nextDeadline = new Date(
+        now.getFullYear(),
+        targetMonth,
+        targetDay,
+        targetHour,
+        targetMinute,
+        0,
+        0
+      );
       if (nextDeadline <= now) {
         nextDeadline.setFullYear(nextDeadline.getFullYear() + 1);
       }
@@ -80,7 +98,7 @@ export function calculateNextDeadline(
       break;
     }
   }
-  
+
   return nextDeadline;
 }
 
@@ -91,16 +109,16 @@ export function calculateReminderDate(
   if (reminderDate.type === "absolute" && reminderDate.dateTime) {
     return new Date(reminderDate.dateTime);
   }
-  
+
   // Relative reminder
   const daysBefore = reminderDate.daysBefore ?? 1;
   const reminderTime = reminderDate.time || "08:00";
   const [hours, minutes] = reminderTime.split(":").map(Number);
-  
+
   const reminder = new Date(deadlineDate);
   reminder.setDate(reminder.getDate() - daysBefore);
   reminder.setHours(hours || 8, minutes || 0, 0, 0);
-  
+
   return reminder;
 }
 
@@ -113,10 +131,28 @@ export function formatTimeTo12Hour(time: string): string {
   return `${displayHour}:${minutes} ${ampm}`;
 }
 
-const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAYS_OF_WEEK = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 export function formatDeadline(deadline: ScheduleDeadline): string {
@@ -143,12 +179,14 @@ export function formatDeadline(deadline: ScheduleDeadline): string {
 
 export function formatReminder(reminderDate: ReminderDate): string {
   const daysBefore = reminderDate.daysBefore ?? 1;
-  const timeStr = reminderDate.time ? ` at ${formatTimeTo12Hour(reminderDate.time)}` : "";
-  
+  const timeStr = reminderDate.time
+    ? ` at ${formatTimeTo12Hour(reminderDate.time)}`
+    : "";
+
   if (daysBefore === 0) {
     return `Same day${timeStr}`;
   }
-  
+
   return `${daysBefore} day${daysBefore !== 1 ? "s" : ""} before deadline${timeStr}`;
 }
 

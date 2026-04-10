@@ -4,7 +4,7 @@ declare module "xlsx-populate" {
     cloneSheet(
       from: Sheet,
       name: string,
-      indexOrBeforeSheet?: number | string | Sheet,
+      indexOrBeforeSheet?: number | string | Sheet
     ): Sheet;
     outputAsync(mimeType?: string): Promise<Buffer | ArrayBuffer>;
     toFileAsync(path: string, options?: { password?: string }): Promise<void>;
@@ -27,7 +27,7 @@ declare module "xlsx-populate" {
 
   function fromFileAsync(
     path: string,
-    options?: { password?: string },
+    options?: { password?: string }
   ): Promise<Workbook>;
 
   function fromDataAsync(data: Buffer | ArrayBuffer | Blob): Promise<Workbook>;

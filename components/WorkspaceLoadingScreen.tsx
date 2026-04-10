@@ -104,11 +104,7 @@ export function WorkspaceLoadingScreen({
       <div className="flex flex-col items-center gap-6">
         <div className="flex items-center gap-3 text-white">
           {isDone ? (
-            <CheckCircleIcon
-              size={32}
-              weight="fill"
-              className="shrink-0 text-white"
-            />
+            <CheckCircleIcon size={32} weight="fill" className="shrink-0 text-white" />
           ) : (
             <WrenchIcon size={32} weight="duotone" className="shrink-0" />
           )}
@@ -126,9 +122,7 @@ export function WorkspaceLoadingScreen({
             />
           </div>
         </div>
-        <p className="tabular-nums text-sm font-medium text-white/90">
-          {progress}%
-        </p>
+        <p className="tabular-nums text-sm font-medium text-white/90">{progress}%</p>
         <p className="max-w-[15.5rem] px-2 text-center text-sm italic text-white/70 sm:max-w-md sm:px-0">
           {quote}
         </p>

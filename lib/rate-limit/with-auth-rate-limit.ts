@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { applySecurityHeaders } from "@/lib/security-headers";
-import {
-  authRateLimit,
-  getClientIdentifier,
-  isRateLimitEnabled,
-} from "./index";
+import { authRateLimit, getClientIdentifier, isRateLimitEnabled } from "./index";
 
 /**
  * Use on auth endpoints (login, signup, forgot-password) for stricter limits.
@@ -18,7 +14,7 @@ import {
  * }
  */
 export async function withAuthRateLimit(
-  request: Request,
+  request: Request
 ): Promise<NextResponse | null> {
   if (!isRateLimitEnabled() || !authRateLimit) {
     return null;
@@ -33,7 +29,7 @@ export async function withAuthRateLimit(
         headers: {
           "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)),
         },
-      },
+      }
     );
     return applySecurityHeaders(response);
   }

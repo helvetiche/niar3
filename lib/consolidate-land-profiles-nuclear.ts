@@ -74,19 +74,10 @@ function getRequiredSheets(workbook: XlsxPopulate.Workbook) {
 function extractAccountDetails(sheet: XlsxPopulate.Sheet) {
   return {
     lotNo: getCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.LOT_CODE),
-    ownerFirstName: getCellValue(
-      sheet,
-      EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME,
-    ),
+    ownerFirstName: getCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.OWNER_FIRST_NAME),
     ownerLastName: getCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.OWNER_LAST_NAME),
-    tillerFirstName: getCellValue(
-      sheet,
-      EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME,
-    ),
-    tillerLastName: getCellValue(
-      sheet,
-      EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME,
-    ),
+    tillerFirstName: getCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.TILLER_FIRST_NAME),
+    tillerLastName: getCellValue(sheet, EXCEL_CELLS.ACC_DETAILS.TILLER_LAST_NAME),
   };
 }
 
@@ -106,7 +97,7 @@ function extractFinancialData(sheet: XlsxPopulate.Sheet) {
  */
 export async function extractNuclearData(
   fileBuffer: Buffer,
-  fileName: string,
+  fileName: string
 ): Promise<NuclearLandProfileData | null> {
   try {
     const rowNumber = extractRowNumber(fileName);
@@ -137,23 +128,15 @@ export async function extractNuclearData(
  */
 function writeDataToTemplate(
   sheet: XlsxPopulate.Sheet,
-  data: NuclearLandProfileData,
+  data: NuclearLandProfileData
 ): void {
   const row = data.rowNumber + TEMPLATE_ROW_OFFSET;
 
   sheet.cell(`${TEMPLATE_COLUMNS.LOT_NO}${row}`).value(data.lotNo);
-  sheet
-    .cell(`${TEMPLATE_COLUMNS.OWNER_LAST_NAME}${row}`)
-    .value(data.ownerLastName);
-  sheet
-    .cell(`${TEMPLATE_COLUMNS.OWNER_FIRST_NAME}${row}`)
-    .value(data.ownerFirstName);
-  sheet
-    .cell(`${TEMPLATE_COLUMNS.TILLER_LAST_NAME}${row}`)
-    .value(data.tillerLastName);
-  sheet
-    .cell(`${TEMPLATE_COLUMNS.TILLER_FIRST_NAME}${row}`)
-    .value(data.tillerFirstName);
+  sheet.cell(`${TEMPLATE_COLUMNS.OWNER_LAST_NAME}${row}`).value(data.ownerLastName);
+  sheet.cell(`${TEMPLATE_COLUMNS.OWNER_FIRST_NAME}${row}`).value(data.ownerFirstName);
+  sheet.cell(`${TEMPLATE_COLUMNS.TILLER_LAST_NAME}${row}`).value(data.tillerLastName);
+  sheet.cell(`${TEMPLATE_COLUMNS.TILLER_FIRST_NAME}${row}`).value(data.tillerFirstName);
   sheet.cell(`${TEMPLATE_COLUMNS.PRINCIPAL}${row}`).value(data.principal);
   sheet.cell(`${TEMPLATE_COLUMNS.PENALTY}${row}`).value(data.penalty);
   sheet.cell(`${TEMPLATE_COLUMNS.OLD_ACCOUNT}${row}`).value(data.oldAccount);
@@ -165,7 +148,7 @@ function writeDataToTemplate(
  */
 async function processLandProfileFile(
   file: LandProfileFile,
-  sheet: XlsxPopulate.Sheet,
+  sheet: XlsxPopulate.Sheet
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const data = await extractNuclearData(file.buffer, file.fileName);
@@ -191,9 +174,7 @@ async function processLandProfileFile(
 /**
  * Convert workbook to buffer
  */
-async function workbookToBuffer(
-  workbook: XlsxPopulate.Workbook,
-): Promise<Buffer> {
+async function workbookToBuffer(workbook: XlsxPopulate.Workbook): Promise<Buffer> {
   const output = await workbook.outputAsync();
   return Buffer.isBuffer(output) ? output : Buffer.from(output as ArrayBuffer);
 }
@@ -203,7 +184,7 @@ async function workbookToBuffer(
  */
 export async function consolidateNuclear(
   templateBuffer: Buffer,
-  landProfileFiles: LandProfileFile[],
+  landProfileFiles: LandProfileFile[]
 ): Promise<ConsolidationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -224,7 +205,7 @@ export async function consolidateNuclear(
 
   if (processedCount > 0) {
     warnings.push(
-      "Column I (Area) is left blank. You can fill this manually by opening the consolidated file.",
+      "Column I (Area) is left blank. You can fill this manually by opening the consolidated file."
     );
   }
 

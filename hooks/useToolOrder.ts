@@ -3,11 +3,9 @@ import type { WorkspaceTab } from "@/contexts/WorkspaceContext";
 
 const TOOL_ORDER_KEY = "workspace_tool_order";
 
-function loadToolOrderFromStorage(
-  defaultOrder: WorkspaceTab[],
-): WorkspaceTab[] {
+function loadToolOrderFromStorage(defaultOrder: WorkspaceTab[]): WorkspaceTab[] {
   if (typeof window === "undefined") return defaultOrder;
-  
+
   try {
     const saved = localStorage.getItem(TOOL_ORDER_KEY);
     if (saved) {
@@ -15,9 +13,7 @@ function loadToolOrderFromStorage(
       // Validate that all tools are still present (in case TOOLS array changed)
       const validTools = parsed.filter((tool) => defaultOrder.includes(tool));
       // Add any new tools that weren't in the saved order
-      const newTools = defaultOrder.filter(
-        (tool) => !validTools.includes(tool),
-      );
+      const newTools = defaultOrder.filter((tool) => !validTools.includes(tool));
       return [...validTools, ...newTools];
     }
   } catch {

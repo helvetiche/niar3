@@ -28,11 +28,7 @@ export function DeleteModal({
         <div className="rounded-2xl border border-rose-500/40 bg-rose-950/90 p-5 shadow-2xl">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-rose-500/60 bg-rose-900/50">
-              <WarningCircleIcon
-                size={24}
-                weight="duotone"
-                className="text-rose-200"
-              />
+              <WarningCircleIcon size={24} weight="duotone" className="text-rose-200" />
             </div>
             <div>
               <h3 className="text-lg font-medium text-white">Delete Account</h3>

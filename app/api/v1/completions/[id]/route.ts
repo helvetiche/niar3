@@ -6,7 +6,7 @@ import { logger } from "@/lib/logger";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await withAuth(request, { action: "completions.delete" });
   if (auth instanceof NextResponse) return auth;
@@ -15,7 +15,7 @@ export async function DELETE(
   const { id } = await params;
   if (!id) {
     return applySecurityHeaders(
-      NextResponse.json({ error: "Completion ID is required" }, { status: 400 }),
+      NextResponse.json({ error: "Completion ID is required" }, { status: 400 })
     );
   }
 
@@ -26,7 +26,7 @@ export async function DELETE(
 
     if (!doc.exists) {
       return applySecurityHeaders(
-        NextResponse.json({ error: "Completion not found" }, { status: 404 }),
+        NextResponse.json({ error: "Completion not found" }, { status: 404 })
       );
     }
 
@@ -34,7 +34,7 @@ export async function DELETE(
     const ownerId = data?.scheduleOwnerId as string | undefined;
     if (ownerId && ownerId !== user.uid) {
       return applySecurityHeaders(
-        NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+        NextResponse.json({ error: "Forbidden" }, { status: 403 })
       );
     }
 
@@ -45,13 +45,13 @@ export async function DELETE(
         const scheduleUserId = scheduleDoc.data()?.userId;
         if (scheduleUserId !== user.uid) {
           return applySecurityHeaders(
-            NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+            NextResponse.json({ error: "Forbidden" }, { status: 403 })
           );
         }
       }
     } else if (!ownerId) {
       return applySecurityHeaders(
-        NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+        NextResponse.json({ error: "Forbidden" }, { status: 403 })
       );
     }
 
@@ -60,7 +60,7 @@ export async function DELETE(
   } catch (err) {
     logger.error("[api/completions DELETE]", err);
     return applySecurityHeaders(
-      NextResponse.json({ error: "Failed to remove completion" }, { status: 500 }),
+      NextResponse.json({ error: "Failed to remove completion" }, { status: 500 })
     );
   }
 }

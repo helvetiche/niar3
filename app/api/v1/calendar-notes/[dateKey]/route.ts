@@ -9,7 +9,7 @@ import { stripHtml } from "@/lib/sanitize";
 /** PUT /api/v1/calendar-notes/[dateKey] - Save notes for a date (YYYY-MM-DD) */
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ dateKey: string }> },
+  { params }: { params: Promise<{ dateKey: string }> }
 ) {
   const auth = await withAuth(request, {
     action: "calendar-notes.date-key.put",
@@ -30,10 +30,7 @@ export async function PUT(
       details: { reason: "invalid-date-key", dateKey },
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Invalid dateKey (use YYYY-MM-DD)" },
-        { status: 400 },
-      ),
+      NextResponse.json({ error: "Invalid dateKey (use YYYY-MM-DD)" }, { status: 400 })
     );
   }
   let body: { items?: { text: string; color: string }[] };
@@ -60,7 +57,7 @@ export async function PUT(
       details: { reason: "invalid-json-body", dateKey },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Invalid JSON body" }, { status: 400 }),
+      NextResponse.json({ error: "Invalid JSON body" }, { status: 400 })
     );
   }
   const MAX_ITEMS = 50;
@@ -70,9 +67,7 @@ export async function PUT(
   const items = Array.isArray(body.items)
     ? body.items
         .slice(0, MAX_ITEMS)
-        .filter(
-          (x) => x && typeof x.text === "string" && typeof x.color === "string",
-        )
+        .filter((x) => x && typeof x.text === "string" && typeof x.color === "string")
         .map((x) => ({
           text: String(x.text).slice(0, MAX_TEXT_LENGTH),
           color: String(x.color).slice(0, MAX_COLOR_LENGTH),
@@ -105,7 +100,7 @@ export async function PUT(
       details: { dateKey },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Failed to save notes" }, { status: 500 }),
+      NextResponse.json({ error: "Failed to save notes" }, { status: 500 })
     );
   }
 }

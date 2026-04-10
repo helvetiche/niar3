@@ -7,9 +7,7 @@ import { z } from "zod";
 
 const envSchema = z.object({
   // Node environment
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 
   // Firebase Admin SDK (required for backend)
   FIREBASE_PROJECT_ID: z.string().min(1, "Firebase Project ID is required"),
@@ -71,10 +69,9 @@ export function validateEnv(): Env {
         .map((err: z.ZodIssue) => `${err.path.join(".")}: ${err.message}`)
         .join("\n");
 
-       
       console.error("❌ Environment validation failed:\n", errorMessage);
       throw new Error(
-        `Invalid environment variables. Please check your .env file.\n${errorMessage}`,
+        `Invalid environment variables. Please check your .env file.\n${errorMessage}`
       );
     }
     throw error;
@@ -87,9 +84,7 @@ export function validateEnv(): Env {
  */
 export function getEnv(): Env {
   if (!validatedEnv) {
-    throw new Error(
-      "Environment variables not validated. Call validateEnv() first.",
-    );
+    throw new Error("Environment variables not validated. Call validateEnv() first.");
   }
   return validatedEnv;
 }

@@ -6,7 +6,7 @@ export class AppError extends Error {
   constructor(
     public code: string,
     message: string,
-    public statusCode: number = 500,
+    public statusCode: number = 500
   ) {
     super(message);
     this.name = "AppError";
@@ -19,12 +19,11 @@ export class AppError extends Error {
  */
 export function safeAsync(
   fn: () => Promise<void>,
-  context: string = "async operation",
+  context: string = "async operation"
 ): void {
   fn().catch((error) => {
     // Use a proper logger instead of console.error
     if (process.env.NODE_ENV === "development") {
-       
       console.error(`[${context}] Unhandled error:`, error);
     }
     // In production, this should send to external logging service
@@ -68,7 +67,7 @@ export function sanitizeErrorForClient(error: unknown): string {
 export function createErrorResponse(
   code: string,
   message: string,
-  statusCode: number = 500,
+  statusCode: number = 500
 ) {
   return {
     error: {

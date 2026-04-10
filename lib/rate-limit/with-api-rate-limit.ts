@@ -16,8 +16,8 @@ function createRateLimitResponse(reset: number): NextResponse {
         headers: {
           "Retry-After": String(Math.ceil((reset - Date.now()) / 1000)),
         },
-      },
-    ),
+      }
+    )
   );
 }
 
@@ -32,9 +32,7 @@ function createRateLimitResponse(reset: number): NextResponse {
  *   // ... handle request
  * }
  */
-export async function withApiRateLimit(
-  request: Request,
-): Promise<NextResponse | null> {
+export async function withApiRateLimit(request: Request): Promise<NextResponse | null> {
   if (!isRateLimitEnabled() || !apiRateLimit) {
     return null;
   }
@@ -49,7 +47,7 @@ export async function withApiRateLimit(
  * Stricter limit: 5 requests per minute per IP.
  */
 export async function withHeavyOperationRateLimit(
-  request: Request,
+  request: Request
 ): Promise<NextResponse | null> {
   if (!isRateLimitEnabled() || !heavyOperationRateLimit) {
     return null;

@@ -239,7 +239,8 @@ export function compareMatchingLots(
 
     // Check Total
     const expectedTotal = expected.principal + expected.penalty + expected.oldAccount;
-    const consolidatedTotal = consolidated.principal + consolidated.penalty + consolidated.oldAccount;
+    const consolidatedTotal =
+      consolidated.principal + consolidated.penalty + consolidated.oldAccount;
     const totalDiff = Math.abs(expectedTotal - consolidatedTotal);
     if (totalDiff > TOLERANCE) {
       issues.push({

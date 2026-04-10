@@ -4,10 +4,7 @@ import type XlsxPopulate from "xlsx-populate";
  * Safely get cell value from Excel sheet
  * Returns empty string for "N" values or errors
  */
-export function getCellValue(
-  sheet: XlsxPopulate.Sheet,
-  address: string,
-): string {
+export function getCellValue(sheet: XlsxPopulate.Sheet, address: string): string {
   try {
     const val = sheet.cell(address).value();
     const strVal = val ? String(val).trim() : "";
@@ -24,7 +21,7 @@ export function getCellValue(
  */
 export function getNumericCellValue(
   sheet: XlsxPopulate.Sheet,
-  address: string,
+  address: string
 ): number {
   try {
     const val = sheet.cell(address).value();
@@ -46,7 +43,7 @@ export function getNumericCellValue(
 export function setCellValue(
   sheet: XlsxPopulate.Sheet,
   address: string,
-  value: string | number,
+  value: string | number
 ): void {
   const excelValue = toExcelValue(value);
   sheet.cell(address).value(excelValue);
@@ -81,9 +78,7 @@ export function roundHalfUp(num: number, decimals: number): number {
  * Check if a name value is valid (not empty or "N")
  */
 export function isValidName(value: string): boolean {
-  return Boolean(
-    value && value.trim() !== "" && value.trim().toUpperCase() !== "N",
-  );
+  return Boolean(value && value.trim() !== "" && value.trim().toUpperCase() !== "N");
 }
 
 /**

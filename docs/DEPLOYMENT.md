@@ -214,6 +214,7 @@ git push origin main --force
 ### Database Scaling
 
 Consider migrating from Firebase to:
+
 - PostgreSQL (Supabase, Neon)
 - MongoDB (Atlas)
 - PlanetScale (MySQL)
@@ -221,6 +222,7 @@ Consider migrating from Firebase to:
 ### File Storage
 
 Consider migrating to:
+
 - AWS S3
 - Cloudflare R2
 - Vercel Blob
@@ -300,7 +302,7 @@ firebase database:get / > backup.json
 
 ```typescript
 // Add to API routes
-export const runtime = 'edge';
+export const runtime = "edge";
 export const revalidate = 60; // Cache for 60 seconds
 ```
 

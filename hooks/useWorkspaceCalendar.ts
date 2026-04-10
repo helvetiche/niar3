@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import useSWR from "swr";
-import {
-  fetchCalendarNotes,
-  saveCalendarNotesForDate,
-} from "@/lib/api/calendar-notes";
+import { fetchCalendarNotes, saveCalendarNotesForDate } from "@/lib/api/calendar-notes";
 import type { Schedule } from "@/types/schedule";
 import { calculateNextDeadline } from "@/lib/deadline-calculator";
 
-export type NoteItem = { text: string; color: string; isSchedule?: boolean; scheduleId?: string };
+export type NoteItem = {
+  text: string;
+  color: string;
+  isSchedule?: boolean;
+  scheduleId?: string;
+};
 
 const dateKey = (year: number, month: number, day: number) =>
   `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -44,9 +46,7 @@ export const useWorkspaceCalendar = (uid: string) => {
       })
       .catch((err) => {
         if (!cancelled) {
-          toast.error(
-            err instanceof Error ? err.message : "Failed to load notes",
-          );
+          toast.error(err instanceof Error ? err.message : "Failed to load notes");
         }
       });
     return () => {
@@ -57,15 +57,15 @@ export const useWorkspaceCalendar = (uid: string) => {
   const getNotesFor = (year: number, month: number, day: number) => {
     const key = dateKey(year, month, day);
     const userNotes = notes[key] ?? [];
-    
+
     // Add schedule deadlines for this date
     const scheduleNotes: NoteItem[] = [];
     if (schedulesData?.schedules) {
       const targetDate = new Date(year, month, day);
-      
+
       schedulesData.schedules.forEach((schedule) => {
         if (schedule.status !== "active") return;
-        
+
         // Check if this schedule has a deadline on this specific date
         if (scheduleMatchesDate(schedule, targetDate)) {
           scheduleNotes.push({
@@ -77,7 +77,7 @@ export const useWorkspaceCalendar = (uid: string) => {
         }
       });
     }
-    
+
     return [...userNotes, ...scheduleNotes];
   };
 
@@ -155,7 +155,7 @@ export const useWorkspaceCalendar = (uid: string) => {
     day: number,
     text: string,
     color: string,
-    onSuccess?: () => void,
+    onSuccess?: () => void
   ) => {
     const key = dateKey(year, month, day);
     const trimmed = text.trim();
@@ -177,18 +177,18 @@ export const useWorkspaceCalendar = (uid: string) => {
     year: number,
     month: number,
     day: number,
-    index: number,
+    index: number
   ) => {
     const key = dateKey(year, month, day);
     const allItems = getNotesFor(year, month, day);
     const itemToRemove = allItems[index];
-    
+
     // Prevent removing schedule notes
     if (itemToRemove?.isSchedule) {
       toast.error("Cannot remove schedule deadlines from calendar");
       return;
     }
-    
+
     // Only remove user notes
     const userNotes = notes[key] ?? [];
     const items = userNotes.filter((_, i) => i !== index);
@@ -221,7 +221,7 @@ export const useWorkspaceCalendar = (uid: string) => {
     if (!isViewingCurrentMonth) {
       const noteDate = new Date(year, month, day);
       const diff = Math.ceil(
-        (noteDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+        (noteDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000)
       );
       return diff;
     }
@@ -276,7 +276,7 @@ export const useWorkspaceCalendar = (uid: string) => {
         note,
         daysUntil: getDaysUntil(day),
         progress: getProgress(day),
-      })),
+      }))
     )
     .sort((a, b) => a.daysUntil - b.daysUntil || a.day - b.day);
 

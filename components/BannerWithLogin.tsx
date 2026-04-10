@@ -25,8 +25,8 @@ export function BannerWithLogin() {
             <span>Exclusive for NIA O&M Employees</span>
           </div>
           <p className="mt-1 hidden text-xs text-white/90 sm:block">
-            Designed for NIA employees to streamline workflows, automate manual
-            tasks, and boost productivity across the organization.
+            Designed for NIA employees to streamline workflows, automate manual tasks,
+            and boost productivity across the organization.
           </p>
         </div>
         <button

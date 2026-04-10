@@ -62,7 +62,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
       onSelectAll,
       allToolsSelected,
     },
-    ref,
+    ref
   ) => {
     return (
       <div
@@ -110,9 +110,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-white/80">
-              Last Name
-            </label>
+            <label className="block text-xs font-medium text-white/80">Last Name</label>
             <input
               type="text"
               value={lastName}
@@ -137,8 +135,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
           </div>
           <div>
             <label className="block text-xs font-medium text-white/80">
-              Password{" "}
-              {!editingAccountId && <span className="text-rose-400">*</span>}
+              Password {!editingAccountId && <span className="text-rose-400">*</span>}
             </label>
             {editingAccountId && (
               <p className="mt-1 text-xs text-white/60">
@@ -152,9 +149,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
               disabled={isCreating}
               className="mt-1 w-full rounded-lg border border-white/20 bg-emerald-900/30 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               placeholder={
-                editingAccountId
-                  ? "Leave blank to keep current"
-                  : "Min 8 characters"
+                editingAccountId ? "Leave blank to keep current" : "Min 8 characters"
               }
             />
           </div>
@@ -170,9 +165,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
               disabled={isCreating}
               className="mt-1 w-full rounded-lg border border-white/20 bg-emerald-900/30 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               placeholder={
-                editingAccountId
-                  ? "Leave blank to keep current"
-                  : "Confirm password"
+                editingAccountId ? "Leave blank to keep current" : "Confirm password"
               }
             />
           </div>
@@ -202,9 +195,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
                   />
                   <div className="text-center">
                     <div className="font-semibold">Basic</div>
-                    <div className="mt-1 text-xs opacity-80">
-                      Standard tools only
-                    </div>
+                    <div className="mt-1 text-xs opacity-80">Standard tools only</div>
                   </div>
                 </div>
               </button>
@@ -248,9 +239,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
                   />
                   <div className="text-center">
                     <div className="font-semibold">Custom</div>
-                    <div className="mt-1 text-xs opacity-80">
-                      Select tools manually
-                    </div>
+                    <div className="mt-1 text-xs opacity-80">Select tools manually</div>
                   </div>
                 </div>
               </button>
@@ -330,7 +319,7 @@ export const AccountForm = forwardRef<HTMLDivElement, AccountFormProps>(
         </div>
       </div>
     );
-  },
+  }
 );
 
 AccountForm.displayName = "AccountForm";

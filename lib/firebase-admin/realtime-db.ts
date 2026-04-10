@@ -11,7 +11,7 @@ const getDefaultRealtimeDatabaseUrl = (): string => {
   const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID?.trim();
   if (!projectId) {
     throw new Error(
-      "Realtime Database URL is missing. Set FIREBASE_DATABASE_URL or FIREBASE_ADMIN_PROJECT_ID.",
+      "Realtime Database URL is missing. Set FIREBASE_DATABASE_URL or FIREBASE_ADMIN_PROJECT_ID."
     );
   }
 
@@ -20,9 +20,6 @@ const getDefaultRealtimeDatabaseUrl = (): string => {
 
 export function getAdminRealtimeDatabase(): Database {
   if (database) return database;
-  database = getDatabaseWithUrl(
-    getDefaultRealtimeDatabaseUrl(),
-    getFirebaseAdminApp(),
-  );
+  database = getDatabaseWithUrl(getDefaultRealtimeDatabaseUrl(), getFirebaseAdminApp());
   return database;
 }

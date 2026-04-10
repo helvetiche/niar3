@@ -8,7 +8,7 @@ import { logger } from "@/lib/logger";
 
 export async function GET(
   request: Request,
-  context: { params: Promise<{ templateId: string }> },
+  context: { params: Promise<{ templateId: string }> }
 ) {
   const result = await getSession();
   if (!result.user) {
@@ -22,7 +22,7 @@ export async function GET(
       details: { reason: "unauthorized" },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     );
   }
 
@@ -43,7 +43,7 @@ export async function GET(
         details: { reason: "template-not-found", templateId },
       });
       return applySecurityHeaders(
-        NextResponse.json({ error: "Template not found" }, { status: 404 }),
+        NextResponse.json({ error: "Template not found" }, { status: 404 })
       );
     }
 
@@ -91,10 +91,7 @@ export async function GET(
       details: { templateId },
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Failed to download template" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to download template" }, { status: 500 })
     );
   }
 }

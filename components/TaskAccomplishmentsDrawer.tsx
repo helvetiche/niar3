@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  CalendarBlankIcon,
-  ListChecksIcon,
-  XIcon,
-} from "@phosphor-icons/react";
+import { useCallback, useState } from "react";
+import { CalendarBlankIcon, ListChecksIcon, XIcon } from "@phosphor-icons/react";
 import { MasonryModal } from "@/components/MasonryModal";
 import { TaskManager } from "@/components/TaskManager";
 import { WorkspaceCalendar } from "@/components/WorkspaceCalendar";
@@ -26,16 +22,15 @@ export function TaskAccomplishmentsDrawer({
 }: TaskAccomplishmentsDrawerProps) {
   const [view, setView] = useState<PanelView>("tasks");
 
-  useEffect(() => {
-    if (!isOpen) {
-      setView("tasks");
-    }
-  }, [isOpen]);
+  const handleClose = useCallback(() => {
+    setView("tasks");
+    onClose();
+  }, [onClose]);
 
   return (
     <MasonryModal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       animateFrom="right"
       placement="right"
       blurToFocus

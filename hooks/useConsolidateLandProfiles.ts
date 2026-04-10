@@ -35,17 +35,12 @@ export function useConsolidateLandProfiles() {
 
   // Auto-select the first template when templates are loaded
   useEffect(() => {
-    if (
-      consolidationTemplates.length > 0 &&
-      !selectedTemplateId &&
-      !templateFile
-    ) {
+    if (consolidationTemplates.length > 0 && !selectedTemplateId && !templateFile) {
       setSelectedTemplateId(consolidationTemplates[0].id);
     }
   }, [consolidationTemplates, selectedTemplateId, templateFile]);
 
-  const wait = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
+  const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const startTimer = () => {
     if (elapsedIntervalRef.current) {
@@ -124,10 +119,10 @@ export function useConsolidateLandProfiles() {
   const updateFileDetails = (
     id: string,
     field: "divisionNumber" | "irrigationAssociation",
-    value: string,
+    value: string
   ) => {
     setLandProfileFiles((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, [field]: value } : f)),
+      prev.map((f) => (f.id === id ? { ...f, [field]: value } : f))
     );
   };
 
@@ -172,7 +167,7 @@ export function useConsolidateLandProfiles() {
       formData.append(`divisionNumber_${index}`, item.divisionNumber || "");
       formData.append(
         `irrigationAssociation_${index}`,
-        item.irrigationAssociation || "",
+        item.irrigationAssociation || ""
       );
     });
 
@@ -198,12 +193,8 @@ export function useConsolidateLandProfiles() {
     document.body.removeChild(a);
   };
 
-  const parseConsolidationResult = (
-    response: Response,
-  ): ConsolidationResult => {
-    const processedCount = parseInt(
-      response.headers.get("X-Processed-Count") || "0",
-    );
+  const parseConsolidationResult = (response: Response): ConsolidationResult => {
+    const processedCount = parseInt(response.headers.get("X-Processed-Count") || "0");
 
     // Decode base64 encoded headers
     const errorsHeader = response.headers.get("X-Errors") || "";
@@ -219,7 +210,6 @@ export function useConsolidateLandProfiles() {
       }
     } catch (e) {
       if (process.env.NODE_ENV === "development") {
-         
         console.error("Failed to parse errors header:", e);
       }
     }
@@ -231,7 +221,6 @@ export function useConsolidateLandProfiles() {
       }
     } catch (e) {
       if (process.env.NODE_ENV === "development") {
-         
         console.error("Failed to parse warnings header:", e);
       }
     }
@@ -240,10 +229,7 @@ export function useConsolidateLandProfiles() {
   };
 
   const handleConsolidate = async () => {
-    if (
-      (!templateFile && !selectedTemplateId) ||
-      landProfileFiles.length === 0
-    ) {
+    if ((!templateFile && !selectedTemplateId) || landProfileFiles.length === 0) {
       toast.error("Please select a template and upload IFR files.");
       return;
     }
@@ -277,11 +263,11 @@ export function useConsolidateLandProfiles() {
 
       if (consolidationResult.errors.length === 0) {
         toast.success(
-          `Successfully consolidated ${consolidationResult.count} IFR file(s)!`,
+          `Successfully consolidated ${consolidationResult.count} IFR file(s)!`
         );
       } else {
         toast.success(
-          `Consolidated with ${consolidationResult.errors.length} error(s). Check results for details.`,
+          `Consolidated with ${consolidationResult.errors.length} error(s). Check results for details.`
         );
       }
     } catch (error) {
@@ -297,9 +283,7 @@ export function useConsolidateLandProfiles() {
   const canProceedToStep = (step: number): boolean => {
     if (step === 0) return landProfileFiles.length > 0;
     if (step === 1) {
-      return landProfileFiles.every(
-        (f) => f.divisionNumber && f.irrigationAssociation,
-      );
+      return landProfileFiles.every((f) => f.divisionNumber && f.irrigationAssociation);
     }
     return true;
   };

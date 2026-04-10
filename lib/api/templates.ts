@@ -6,10 +6,7 @@ import {
   invalidateTemplateCache,
 } from "@/lib/services/template-cache";
 
-export type TemplateScope =
-  | "ifr-scanner"
-  | "accomplishment-report"
-  | "consolidation";
+export type TemplateScope = "ifr-scanner" | "accomplishment-report" | "consolidation";
 
 export type StoredTemplate = {
   id: string;
@@ -24,9 +21,7 @@ export type StoredTemplate = {
   updatedByUid?: string;
 };
 
-export async function listTemplates(
-  scope: TemplateScope,
-): Promise<StoredTemplate[]> {
+export async function listTemplates(scope: TemplateScope): Promise<StoredTemplate[]> {
   const cached = getCachedTemplates(scope);
   if (cached) return cached;
 
@@ -35,9 +30,7 @@ export async function listTemplates(
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ?? "Failed to load templates",
-    );
+    throw new Error((data as { error?: string }).error ?? "Failed to load templates");
   }
   const data = (await response.json()) as { templates?: StoredTemplate[] };
   const templates = data.templates ?? [];
@@ -49,7 +42,7 @@ export async function listTemplates(
 export async function uploadTemplate(
   scope: TemplateScope,
   file: File,
-  name?: string,
+  name?: string
 ): Promise<StoredTemplate> {
   const formData = new FormData();
   formData.append("scope", scope);
@@ -65,9 +58,7 @@ export async function uploadTemplate(
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ?? "Failed to upload template",
-    );
+    throw new Error((data as { error?: string }).error ?? "Failed to upload template");
   }
 
   const newTemplate = (await response.json()) as StoredTemplate;
@@ -88,9 +79,7 @@ export async function deleteTemplate(templateId: string): Promise<void> {
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ?? "Failed to delete template",
-    );
+    throw new Error((data as { error?: string }).error ?? "Failed to delete template");
   }
 
   // Get scope from response for targeted cache invalidation
@@ -110,7 +99,7 @@ export async function updateTemplate(
   updates: {
     name?: string;
     file?: File | null;
-  },
+  }
 ): Promise<StoredTemplate> {
   const formData = new FormData();
   if (updates.name?.trim()) {
@@ -127,9 +116,7 @@ export async function updateTemplate(
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ?? "Failed to update template",
-    );
+    throw new Error((data as { error?: string }).error ?? "Failed to update template");
   }
 
   const updatedTemplate = (await response.json()) as StoredTemplate;
@@ -137,9 +124,7 @@ export async function updateTemplate(
   // Update cache with updated template
   const cached = getCachedTemplates(updatedTemplate.scope);
   if (cached) {
-    const updatedCache = cached.map((t) =>
-      t.id === templateId ? updatedTemplate : t,
-    );
+    const updatedCache = cached.map((t) => (t.id === templateId ? updatedTemplate : t));
     setCachedTemplates(updatedTemplate.scope, updatedCache);
   }
 

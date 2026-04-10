@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestore } from "@/lib/firebase-admin";
 import { Schedule, ScheduleDeadline, ReminderDate } from "@/types/schedule";
-import { calculateNextDeadline, calculateReminderDate, shouldSendReminder } from "@/lib/deadline-calculator";
+import {
+  calculateNextDeadline,
+  calculateReminderDate,
+  shouldSendReminder,
+} from "@/lib/deadline-calculator";
 import { sendReminderEmail } from "@/lib/email";
-import { hasReminderBeenSent, markReminderAsSent, cleanupOldReminders } from "@/lib/reminder-tracker";
+import {
+  hasReminderBeenSent,
+  markReminderAsSent,
+  cleanupOldReminders,
+} from "@/lib/reminder-tracker";
 import { getCachedSchedules } from "@/lib/schedule-cache";
 
 // Verify cron secret for authorization
@@ -19,16 +27,14 @@ const verifyCronSecret = (request: NextRequest): boolean => {
   // Method 1: Check query parameter (for external cron services like cronhub)
   const { searchParams } = new URL(request.url);
   const querySecret = searchParams.get("secret");
-  
+
   if (querySecret && querySecret === cronSecret) {
     return true;
   }
 
   // Method 2: Check Authorization header (for Vercel cron)
   const authHeader = request.headers.get("authorization");
-  const token = authHeader?.startsWith("Bearer ") 
-    ? authHeader.slice(7) 
-    : authHeader;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
 
   return token === cronSecret;
 };
@@ -77,7 +83,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     // OPTIMIZATION: Use cache to get all schedules (no Firestore reads!)
     const cachedSchedules = await getCachedSchedules();
-    
+
     result.cacheHit = cachedSchedules.length > 0;
     console.log(`[CACHE] Loaded ${cachedSchedules.length} schedules from cache`);
     console.log(`[CACHE] Current UTC Time: ${now.toISOString()}`);
@@ -87,7 +93,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       console.log("[INFO] No schedules in cache - needs sync");
       const cleanedCount = await cleanupOldReminders();
       result.cleanedUp = cleanedCount;
-      
+
       return NextResponse.json({
         success: true,
         data: {
@@ -105,11 +111,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // Filter schedules with reminders in the next 5 minutes (calculate on the fly)
-    const windowStart = new Date(now.getTime() - (2 * 60 * 1000)); // 2 min before
-    const windowEnd = new Date(now.getTime() + (3 * 60 * 1000)); // 3 min ahead (total 5 min window)
+    const windowStart = new Date(now.getTime() - 2 * 60 * 1000); // 2 min before
+    const windowEnd = new Date(now.getTime() + 3 * 60 * 1000); // 3 min ahead (total 5 min window)
     const schedulesToProcess: Schedule[] = [];
 
-    console.log(`[WINDOW] Checking from ${windowStart.toISOString()} to ${windowEnd.toISOString()}`);
+    console.log(
+      `[WINDOW] Checking from ${windowStart.toISOString()} to ${windowEnd.toISOString()}`
+    );
     console.log(`[WINDOW] Current time: ${now.toISOString()}`);
 
     const debugInfo: Array<{
@@ -131,11 +139,20 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         // Calculate next deadline and reminder time on the fly
         // Use a dummy createdAt since we don't have it in cache
         const dummyCreatedAt = new Date(2024, 0, 1).toISOString();
-        const nextDeadline = calculateNextDeadline(cached.deadline as ScheduleDeadline, now, dummyCreatedAt);
-        const reminderDate = calculateReminderDate(cached.reminderDate as ReminderDate, nextDeadline);
+        const nextDeadline = calculateNextDeadline(
+          cached.deadline as ScheduleDeadline,
+          now,
+          dummyCreatedAt
+        );
+        const reminderDate = calculateReminderDate(
+          cached.reminderDate as ReminderDate,
+          nextDeadline
+        );
 
         const inWindow = reminderDate >= windowStart && reminderDate <= windowEnd;
-        const minutesUntil = Math.round((reminderDate.getTime() - now.getTime()) / 60000);
+        const minutesUntil = Math.round(
+          (reminderDate.getTime() - now.getTime()) / 60000
+        );
 
         const scheduleDebug = {
           id: cached.id,
@@ -147,7 +164,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             reminderTime: reminderDate.toISOString(),
             inWindow,
             minutesUntil,
-          }
+          },
         };
 
         debugInfo.push(scheduleDebug);
@@ -160,12 +177,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
         // Check if reminder is within window
         if (inWindow) {
-          console.log(`[CACHE] Schedule in window: ${cached.id} - ${cached.title} at ${reminderDate.toISOString()}`);
-          
+          console.log(
+            `[CACHE] Schedule in window: ${cached.id} - ${cached.title} at ${reminderDate.toISOString()}`
+          );
+
           // Convert cached schedule to Schedule type
           schedulesToProcess.push({
             id: cached.id,
-            userId: '', // Not needed for sending
+            userId: "", // Not needed for sending
             title: cached.title,
             description: cached.description,
             deadline: cached.deadline as ScheduleDeadline,
@@ -190,14 +209,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     result.checked = schedulesToProcess.length;
     result.upcomingCount = schedulesToProcess.length;
 
-    console.log(`[OPTIMIZATION] Processing ${schedulesToProcess.length} schedules (saved ${cachedSchedules.length - schedulesToProcess.length} calculations)`);
+    console.log(
+      `[OPTIMIZATION] Processing ${schedulesToProcess.length} schedules (saved ${cachedSchedules.length - schedulesToProcess.length} calculations)`
+    );
 
     // If no schedules to process, run cleanup and return
     if (schedulesToProcess.length === 0) {
       console.log("[INFO] No schedules with reminders in window");
       const cleanedCount = await cleanupOldReminders();
       result.cleanedUp = cleanedCount;
-      
+
       return NextResponse.json({
         success: true,
         data: {
@@ -222,7 +243,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     // Process each schedule
     for (const schedule of schedulesToProcess) {
-
       try {
         // STEP 1: Calculate the next deadline (already calculated above, recalculate for accuracy)
         // Pass UTC - calculateNextDeadline converts to PH internally
@@ -237,7 +257,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
         // STEP 3: Check if we should send
         const shouldSend = shouldSendReminder(reminderDate, now);
-        const timeDiffMinutes = Math.floor((now.getTime() - reminderDate.getTime()) / 60000);
+        const timeDiffMinutes = Math.floor(
+          (now.getTime() - reminderDate.getTime()) / 60000
+        );
 
         console.log(`[SCHEDULE ${schedule.id}] "${schedule.title}"`);
         console.log(`  Next Deadline: ${nextDeadline.toISOString()}`);
@@ -258,13 +280,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         }
 
         // STEP 4: Check idempotency
-        const granularity = schedule.deadline.type === 'per-minute' ? 'minute' 
-                          : schedule.deadline.type === 'hourly' ? 'hour' 
-                          : 'day';
-        
+        const granularity =
+          schedule.deadline.type === "per-minute"
+            ? "minute"
+            : schedule.deadline.type === "hourly"
+              ? "hour"
+              : "day";
+
         const alreadySent = await hasReminderBeenSent(schedule.id, now, granularity);
         console.log(`  Already Sent (${granularity}): ${alreadySent}`);
-        
+
         if (alreadySent) {
           result.skipped++;
           result.details.push({
@@ -281,14 +306,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         const emailResult = await sendReminderEmail(schedule, nextDeadline);
 
         if (emailResult.success) {
-          console.log(`  ✓ Email sent successfully (Message ID: ${emailResult.messageId})`);
-          
+          console.log(
+            `  ✓ Email sent successfully (Message ID: ${emailResult.messageId})`
+          );
+
           // STEP 6: Mark as sent
-          await markReminderAsSent(schedule.id, now, {
-            personEmail: schedule.personEmail,
-            scheduleTitle: schedule.title,
-            messageId: emailResult.messageId,
-          }, granularity);
+          await markReminderAsSent(
+            schedule.id,
+            now,
+            {
+              personEmail: schedule.personEmail,
+              scheduleTitle: schedule.title,
+              messageId: emailResult.messageId,
+            },
+            granularity
+          );
 
           result.sent++;
           result.details.push({
@@ -313,7 +345,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           scheduleId: schedule.id,
           title: schedule.title,
           status: "error",
-          reason: scheduleError instanceof Error ? scheduleError.message : "Unknown error",
+          reason:
+            scheduleError instanceof Error ? scheduleError.message : "Unknown error",
         });
       }
     }
@@ -338,7 +371,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     let interval: number | null = null;
     if (!lastLogSnapshot.empty) {
       const lastLog = lastLogSnapshot.docs[0].data();
-      const lastTimestamp = lastLog.timestamp?.toDate?.() || new Date(lastLog.timestamp);
+      const lastTimestamp =
+        lastLog.timestamp?.toDate?.() || new Date(lastLog.timestamp);
       interval = endTime - lastTimestamp.getTime();
     }
 

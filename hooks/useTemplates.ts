@@ -19,6 +19,6 @@ export function useTemplates(scope: TemplateScope | "") {
       revalidateOnFocus: false,
       revalidateOnReconnect: true,
       dedupingInterval: 30000,
-    },
+    }
   );
 }

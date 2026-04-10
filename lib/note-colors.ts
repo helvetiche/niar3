@@ -111,10 +111,7 @@ export const NOTE_COLORS: NoteColorConfig[] = [
 ];
 
 const COLOR_MAP = Object.fromEntries(
-  NOTE_COLORS.map((c) => [
-    c.id,
-    { bg: c.bg, bgDark: c.bgDark, accent: c.accent },
-  ]),
+  NOTE_COLORS.map((c) => [c.id, { bg: c.bg, bgDark: c.bgDark, accent: c.accent }])
 ) as Record<NoteColorId, { bg: string; bgDark: string; accent: string }>;
 
 // Add schedule color (glassy white pill)
@@ -129,9 +126,7 @@ const DEFAULT_ENTRY = COLOR_MAP.emerald;
 export const getNoteBg = (color: string): string =>
   (COLOR_MAP[color as NoteColorId] ?? DEFAULT_ENTRY).bgDark;
 
-export const getNotePopoverConfig = (
-  color: string,
-): { accent: string; bg: string } => {
+export const getNotePopoverConfig = (color: string): { accent: string; bg: string } => {
   const entry = COLOR_MAP[color as NoteColorId] ?? DEFAULT_ENTRY;
   return { accent: entry.accent, bg: entry.bg };
 };

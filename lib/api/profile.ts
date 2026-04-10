@@ -6,9 +6,7 @@ export async function fetchProfile(): Promise<UserProfile> {
   const res = await fetch("/api/v1/profile", { credentials: "include" });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ?? "Failed to load profile",
-    );
+    throw new Error((data as { error?: string }).error ?? "Failed to load profile");
   }
   return res.json();
 }
@@ -22,8 +20,6 @@ export async function saveProfile(profile: UserProfile): Promise<void> {
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ?? "Failed to save profile",
-    );
+    throw new Error((data as { error?: string }).error ?? "Failed to save profile");
   }
 }

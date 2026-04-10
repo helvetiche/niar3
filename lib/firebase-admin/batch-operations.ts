@@ -17,7 +17,7 @@ export async function executeBatchWrites(
     path: string;
     data?: Record<string, unknown>;
     merge?: boolean;
-  }>,
+  }>
 ): Promise<number> {
   const db = getFirestore(getFirebaseAdminApp());
   let successCount = 0;
@@ -60,7 +60,7 @@ export async function executeBatchWrites(
  * @returns Number of successful updates
  */
 export async function bulkUpdateUserClaims(
-  updates: Array<{ uid: string; claims: Record<string, unknown> }>,
+  updates: Array<{ uid: string; claims: Record<string, unknown> }>
 ): Promise<number> {
   const { getAdminAuth } = await import("./app");
   const auth = getAdminAuth();
@@ -84,9 +84,7 @@ export async function bulkUpdateUserClaims(
  * @returns Number of successful deletions
  */
 export async function bulkDeleteDocuments(paths: string[]): Promise<number> {
-  return executeBatchWrites(
-    paths.map((path) => ({ type: "delete" as const, path })),
-  );
+  return executeBatchWrites(paths.map((path) => ({ type: "delete" as const, path })));
 }
 
 /**
@@ -97,7 +95,7 @@ export async function bulkDeleteDocuments(paths: string[]): Promise<number> {
  */
 export async function bulkUpsertDocuments(
   documents: Array<{ path: string; data: Record<string, unknown> }>,
-  merge = true,
+  merge = true
 ): Promise<number> {
   return executeBatchWrites(
     documents.map((doc) => ({
@@ -105,6 +103,6 @@ export async function bulkUpsertDocuments(
       path: doc.path,
       data: doc.data,
       merge,
-    })),
+    }))
   );
 }

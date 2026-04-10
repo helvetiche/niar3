@@ -20,16 +20,10 @@ import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { MasonryModal } from "@/components/MasonryModal";
 import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
 import { useAccomplishmentReportTool } from "@/hooks/useAccomplishmentReportTool";
-import type { AccomplishmentTaskDesignation } from "@/lib/api/accomplishment-tasks";
-
-const DESIGNATION_OPTIONS = [
-  "SWRFT",
-  "WRFOB",
-  "Senior Engineer A",
-  "Senior Engineer B",
-  "Engineer A",
-  "Administrative Aide",
-] as const;
+import {
+  ACCOMPLISHMENT_TASK_DESIGNATIONS,
+  type AccomplishmentTaskDesignation,
+} from "@/lib/api/accomplishment-tasks";
 
 const MONTH_LABELS = [
   "Jan",
@@ -98,9 +92,7 @@ export function AccomplishmentReportToolStepped() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Personal Information
-            </h3>
+            <h3 className="text-lg font-medium text-white">Personal Information</h3>
             <p className="mt-1 text-sm text-white/80">
               Enter your name for the report.
             </p>
@@ -134,8 +126,7 @@ export function AccomplishmentReportToolStepped() {
           <div>
             <h3 className="text-lg font-medium text-white">Task Selection</h3>
             <p className="mt-1 text-sm text-white/80">
-              Optionally select a task. Its designation will be used in the
-              report.
+              Optionally select a task. Its designation will be used in the report.
             </p>
           </div>
 
@@ -175,10 +166,7 @@ export function AccomplishmentReportToolStepped() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <label
-                htmlFor="designation-filter"
-                className="text-xs text-white/70"
-              >
+              <label htmlFor="designation-filter" className="text-xs text-white/70">
                 Filter:
               </label>
               <select
@@ -186,7 +174,7 @@ export function AccomplishmentReportToolStepped() {
                 value={taskDesignationFilter}
                 onChange={(e) =>
                   setTaskDesignationFilter(
-                    e.target.value as "all" | AccomplishmentTaskDesignation,
+                    e.target.value as "all" | AccomplishmentTaskDesignation
                   )
                 }
                 className="rounded-lg border border-white/40 bg-white/5 px-3 py-1.5 text-xs text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
@@ -194,7 +182,7 @@ export function AccomplishmentReportToolStepped() {
                 <option value="all" className="bg-gray-800">
                   All
                 </option>
-                {DESIGNATION_OPTIONS.map((opt) => (
+                {ACCOMPLISHMENT_TASK_DESIGNATIONS.map((opt) => (
                   <option key={opt} value={opt} className="bg-gray-800">
                     {opt}
                   </option>
@@ -352,8 +340,7 @@ export function AccomplishmentReportToolStepped() {
               </button>
             </div>
             <p className="mt-2 text-xs text-white/70">
-              Select at least one period. Both can be selected for full month
-              reports.
+              Select at least one period. Both can be selected for full month reports.
             </p>
           </div>
         </div>
@@ -365,9 +352,7 @@ export function AccomplishmentReportToolStepped() {
       content: (
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-medium text-white">
-              Review & Generate
-            </h3>
+            <h3 className="text-lg font-medium text-white">Review & Generate</h3>
             <p className="mt-1 text-sm text-white/80">
               Review your selections and generate the report.
             </p>
@@ -380,9 +365,8 @@ export function AccomplishmentReportToolStepped() {
                 <span className="text-white/70">Template:</span>{" "}
                 {selectedTemplateId
                   ? accomplishmentReportTemplates.find(
-                      (t) => t.id === selectedTemplateId,
-                    )
-                      ?.name || "Auto-selected"
+                      (t) => t.id === selectedTemplateId
+                    )?.name || "Auto-selected"
                   : "Auto-selected"}
               </p>
               <p>
@@ -393,8 +377,7 @@ export function AccomplishmentReportToolStepped() {
                 {selectedTask?.label || "None"}
               </p>
               <p>
-                <span className="text-white/70">Designation:</span>{" "}
-                {designation}
+                <span className="text-white/70">Designation:</span> {designation}
               </p>
               <p>
                 <span className="text-white/70">Months:</span>{" "}
@@ -508,12 +491,12 @@ export function AccomplishmentReportToolStepped() {
                   value={newTaskDesignation}
                   onChange={(e) =>
                     setNewTaskDesignation(
-                      e.target.value as AccomplishmentTaskDesignation,
+                      e.target.value as AccomplishmentTaskDesignation
                     )
                   }
                   className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                 >
-                  {DESIGNATION_OPTIONS.map((opt) => (
+                  {ACCOMPLISHMENT_TASK_DESIGNATIONS.map((opt) => (
                     <option key={opt} value={opt} className="bg-gray-800">
                       {opt}
                     </option>

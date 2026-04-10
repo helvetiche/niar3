@@ -12,7 +12,7 @@ import {
 const handleKeyDown = (
   event: KeyboardEvent,
   isOpen: boolean,
-  handleClose: () => void,
+  handleClose: () => void
 ) => {
   if (!isOpen || event.key !== "Escape") return;
   event.preventDefault();
@@ -83,11 +83,7 @@ export function MasonryModal({
     if (isOpen) {
       const panel = panelRef.current;
       const panelRect = panel.getBoundingClientRect();
-      const { fromY, fromX } = getOpenFromCoords(
-        animateFrom,
-        panelRect,
-        viewport,
-      );
+      const { fromY, fromX } = getOpenFromCoords(animateFrom, panelRect, viewport);
 
       gsap.set(overlayRef.current, { display: "flex", opacity: 0 });
       gsap.set(panel, {
@@ -219,6 +215,6 @@ export function MasonryModal({
         {content}
       </div>
     </div>,
-    document.body,
+    document.body
   );
 }

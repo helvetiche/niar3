@@ -11,7 +11,6 @@ const SENTRY_ENVIRONMENT =
 export function initSentry() {
   if (!SENTRY_DSN) {
     if (process.env.NODE_ENV === "development") {
-       
       console.warn("Sentry DSN not configured. Error monitoring disabled.");
     }
     return;
@@ -42,10 +41,7 @@ export function initSentry() {
  * @param error - Error object to capture
  * @param context - Additional context for the error
  */
-export function captureException(
-  error: unknown,
-  context?: Record<string, unknown>,
-) {
+export function captureException(error: unknown, context?: Record<string, unknown>) {
   if (!SENTRY_DSN) return;
 
   if (context) {
@@ -62,7 +58,7 @@ export function captureException(
  */
 export function captureMessage(
   message: string,
-  level: "info" | "warning" | "error" = "info",
+  level: "info" | "warning" | "error" = "info"
 ) {
   if (!SENTRY_DSN) return;
   Sentry.captureMessage(message, level);

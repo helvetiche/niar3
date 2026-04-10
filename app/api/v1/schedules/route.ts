@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       .collection("schedules")
       .where("userId", "==", user.uid)
       .get();
-    
+
     let filteredSchedules = totalSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
@@ -69,10 +69,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching schedules:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch schedules" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch schedules" }, { status: 500 });
   }
 }
 
@@ -82,23 +79,13 @@ export async function POST(request: NextRequest) {
     const db = getFirestore();
     const body = await request.json();
 
-    const {
-      title,
-      description,
-      deadline,
-      reminderDate,
-      personAssigned,
-      status,
-    } = body;
+    const { title, description, deadline, reminderDate, personAssigned, status } = body;
 
     // Force the email to be the current user's email for security
     const userEmail = user.email;
 
     if (!title || !userEmail || !deadline || !reminderDate) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     const now = new Date().toISOString();
@@ -132,9 +119,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ schedule }, { status: 201 });
   } catch (error) {
     console.error("Error creating schedule:", error);
-    return NextResponse.json(
-      { error: "Failed to create schedule" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create schedule" }, { status: 500 });
   }
 }

@@ -35,7 +35,7 @@ export const COLUMN_MAPPING = {
 
 export function shouldSkipSeason(
   cropYear: number,
-  cropSeason: string | number | null | undefined,
+  cropSeason: string | number | null | undefined
 ): boolean {
   if (cropYear < 1975) return true;
   const seasonStr = String(cropSeason || "").toUpperCase();
@@ -45,7 +45,7 @@ export function shouldSkipSeason(
 
 export function buildCropSeasonCode(
   year: number,
-  season: string | number | null | undefined,
+  season: string | number | null | undefined
 ): string {
   const yearCode = year >= 2000 ? String(year) : String(year).slice(-2);
   const seasonStr = String(season || "").toUpperCase();
@@ -55,7 +55,7 @@ export function buildCropSeasonCode(
 
 export function calculateSeasonCharges(
   area: number,
-  cropSeasonCode: string,
+  cropSeasonCode: string
 ): { principal: number; penalty: number } | null {
   const rateData = lookupIrrigationRate(cropSeasonCode);
   if (!rateData) return null;
@@ -68,7 +68,7 @@ export function calculateSeasonCharges(
 
 export function extractRowData(
   sheet: XLSX.WorkSheet,
-  row: number,
+  row: number
 ): {
   lotCode: string | null;
   cropSeason: string | null;

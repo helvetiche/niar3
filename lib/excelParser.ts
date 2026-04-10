@@ -37,11 +37,9 @@ export const parseExcelFile = (buffer: Buffer): ParsedSheet[] => {
 
 export const getCellByAddress = (
   worksheet: XLSX.WorkSheet,
-  address: string,
+  address: string
 ): string | number | undefined => {
   const cell = worksheet[address];
   if (!cell || cell.v === undefined || cell.v === null) return undefined;
-  return typeof cell.v === "number"
-    ? cell.v
-    : String(cell.v).trim() || undefined;
+  return typeof cell.v === "number" ? cell.v : String(cell.v).trim() || undefined;
 };

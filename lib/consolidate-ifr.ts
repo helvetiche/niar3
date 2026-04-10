@@ -32,7 +32,7 @@ export interface IFRLotData {
  */
 export async function extractIFRData(
   fileBuffer: Buffer,
-  fileName: string,
+  fileName: string
 ): Promise<IFRLotData[]> {
   try {
     // Read with XLSX for data extraction
@@ -89,10 +89,7 @@ export async function extractIFRData(
 
       if (shouldSkipSeason(rowData.cropYear, rowData.cropSeason)) continue;
 
-      const cropSeasonCode = buildCropSeasonCode(
-        rowData.cropYear,
-        rowData.cropSeason,
-      );
+      const cropSeasonCode = buildCropSeasonCode(rowData.cropYear, rowData.cropSeason);
 
       if (group.seenSeasons.has(cropSeasonCode)) continue;
       group.seenSeasons.add(cropSeasonCode);
@@ -147,7 +144,7 @@ export async function consolidateIFR(
     fileName: string;
     divisionNumber?: string;
     irrigationAssociation?: string;
-  }[],
+  }[]
 ): Promise<{
   buffer: Buffer;
   processedCount: number;
@@ -198,8 +195,7 @@ export async function consolidateIFR(
           processedCount++;
         }
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : "Unknown error";
+        const errorMsg = error instanceof Error ? error.message : "Unknown error";
         errors.push(`Error processing ${file.fileName}: ${errorMsg}`);
       }
     }

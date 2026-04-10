@@ -9,22 +9,22 @@ export async function POST(request: NextRequest) {
     const { email } = body;
 
     if (!email) {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     await sendTestEmail(email);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      message: `Test email sent to ${email}` 
+      message: `Test email sent to ${email}`,
     });
   } catch (error) {
     console.error("Error sending test email:", error);
     return NextResponse.json(
-      { error: "Failed to send test email", details: error instanceof Error ? error.message : "Unknown error" },
+      {
+        error: "Failed to send test email",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }

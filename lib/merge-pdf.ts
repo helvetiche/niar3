@@ -41,7 +41,7 @@ export const mergePdfBuffers = async ({
   }
 
   const sourceDocs = await Promise.all(
-    inputFiles.map(async (item) => PDFDocument.load(item.buffer)),
+    inputFiles.map(async (item) => PDFDocument.load(item.buffer))
   );
   const sourcePageCounts = sourceDocs.map((doc) => doc.getPageCount());
   const totalPages = sourcePageCounts.reduce((sum, count) => sum + count, 0);
@@ -76,14 +76,10 @@ export const mergePdfBuffers = async ({
   }
 
   const uniqueKeys = new Set(
-    finalOrder.map(
-      (entry) => `${String(entry.fileIndex)}:${String(entry.pageIndex)}`,
-    ),
+    finalOrder.map((entry) => `${String(entry.fileIndex)}:${String(entry.pageIndex)}`)
   );
   if (uniqueKeys.size !== totalPages) {
-    throw new Error(
-      "Page order must include each uploaded PDF page exactly once.",
-    );
+    throw new Error("Page order must include each uploaded PDF page exactly once.");
   }
 
   const merged = await PDFDocument.create();
@@ -97,7 +93,7 @@ export const mergePdfBuffers = async ({
   const mergedBytes = await merged.save();
   const outputBaseName = sanitizeOutputName(
     fileName ?? "Merged PDF Document",
-    "Merged PDF Document",
+    "Merged PDF Document"
   );
 
   return {

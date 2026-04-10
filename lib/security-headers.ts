@@ -55,7 +55,7 @@ export const SECURITY_RESPONSE_HEADERS: Record<string, string> = {
  */
 export function applySecurityHeaders<T extends Response>(
   response: T,
-  additionalHeaders?: Record<string, string>,
+  additionalHeaders?: Record<string, string>
 ): T {
   Object.entries(SECURITY_RESPONSE_HEADERS).forEach(([key, value]) => {
     if (value) response.headers.set(key, value);
@@ -78,12 +78,9 @@ export function secureFileResponse(
     contentType: string;
     filename: string;
     extraHeaders?: Record<string, string>;
-  },
+  }
 ): Response {
-  const safeFilename = safeContentDispositionFilename(
-    options.filename,
-    "download",
-  );
+  const safeFilename = safeContentDispositionFilename(options.filename, "download");
   const encodedFilename = encodeURIComponent(safeFilename);
   const contentDisposition = `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`;
   const response = new NextResponse(new Uint8Array(buffer), {
@@ -102,7 +99,7 @@ export function secureFileResponse(
  */
 export function secureJsonResponse(
   data: unknown,
-  init?: { status?: number; headers?: Record<string, string> },
+  init?: { status?: number; headers?: Record<string, string> }
 ): Response {
   const { status, headers: extra } = init ?? {};
   const response = NextResponse.json(data, status ? { status } : undefined);

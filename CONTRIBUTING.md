@@ -21,23 +21,27 @@ Thank you for your interest in contributing! This guide will help you get starte
 ### Setup Development Environment
 
 1. Fork and clone the repository
+
 ```bash
 git clone https://github.com/your-username/niatools.git
 cd niatools
 ```
 
 2. Install dependencies
+
 ```bash
 npm install
 ```
 
 3. Set up environment variables
+
 ```bash
 cp .env.example .env.local
 # Edit .env.local with your credentials
 ```
 
 4. Run development server
+
 ```bash
 npm run dev
 ```
@@ -67,6 +71,7 @@ footer (optional)
 ```
 
 Types:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation
@@ -76,6 +81,7 @@ Types:
 - `chore`: Maintenance
 
 Examples:
+
 ```
 feat(inventory): add quarterly data tracking
 fix(auth): resolve session expiry issue
@@ -123,31 +129,35 @@ npm run test:coverage
 
 ### Before Submitting
 
-1.   All tests pass
-2.   No linting errors
-3.   Type checking passes
-4.   Code is formatted
-5.   Documentation updated
-6.   Commit messages follow convention
+1.  All tests pass
+2.  No linting errors
+3.  Type checking passes
+4.  Code is formatted
+5.  Documentation updated
+6.  Commit messages follow convention
 
 ### PR Template
 
 ```markdown
 ## Description
+
 Brief description of changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Testing
+
 - [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
 - [ ] Manual testing completed
 
 ## Checklist
+
 - [ ] Code follows style guidelines
 - [ ] Self-review completed
 - [ ] Comments added for complex code
@@ -213,10 +223,10 @@ function getUser(uid: any): any {
 // Good
 export function UserProfile({ userId }: { userId: string }) {
   const { data, error } = useUser(userId);
-  
+
   if (error) return <Error />;
   if (!data) return <Loading />;
-  
+
   return <div>{data.name}</div>;
 }
 
@@ -256,20 +266,20 @@ components/Feature/
 export async function POST(request: NextRequest) {
   // 1. Authenticate
   const user = await requireAuth();
-  
+
   // 2. Authorize
   await requirePermission(user, "resource.create");
-  
+
   // 3. Validate
   const body = await request.json();
   const validated = schema.parse(body);
-  
+
   // 4. Process
   const result = await createResource(validated);
-  
+
   // 5. Audit
   safeAsync(() => logAudit(user, "resource.create", result));
-  
+
   // 6. Respond
   return secureJsonResponse(result, { status: 201 });
 }
@@ -339,7 +349,7 @@ try {
 ```typescript
 /**
  * Validates consolidated file against source IFR data.
- * 
+ *
  * @param ifrFiles - Source IFR files to validate against
  * @param consolidatedFile - Consolidated file to check
  * @returns Validation results with issues and summary
@@ -370,6 +380,7 @@ export async function validateIFR(
 ## Recognition
 
 Contributors will be:
+
 - Listed in CONTRIBUTORS.md
 - Mentioned in release notes
 - Credited in documentation

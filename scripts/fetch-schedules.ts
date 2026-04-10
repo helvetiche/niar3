@@ -18,7 +18,9 @@ function initializeFirebaseAdmin() {
 
   if (!projectId || !clientEmail || !privateKey) {
     console.error("Error: Firebase Admin credentials missing.");
-    console.error("Please set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY in .env.local");
+    console.error(
+      "Please set FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY in .env.local"
+    );
     process.exit(1);
   }
 
@@ -67,11 +69,15 @@ async function fetchAllSchedules() {
       console.log(`Status: ${data.status || "N/A"}`);
       console.log(`Deadline: ${JSON.stringify(data.deadline || {})}`);
       console.log(`Reminder: ${JSON.stringify(data.reminderDate || {})}`);
-      
+
       const formatTimestamp = (timestamp: unknown): string => {
         if (!timestamp) return "N/A";
         if (typeof timestamp === "string") return timestamp;
-        if (typeof timestamp === "object" && timestamp !== null && "_seconds" in timestamp) {
+        if (
+          typeof timestamp === "object" &&
+          timestamp !== null &&
+          "_seconds" in timestamp
+        ) {
           const ts = timestamp as { _seconds: number; _nanoseconds: number };
           return new Date(ts._seconds * 1000).toISOString();
         }

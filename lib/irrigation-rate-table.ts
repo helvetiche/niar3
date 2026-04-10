@@ -111,13 +111,8 @@ export const IRRIGATION_RATE_TABLE: IrrigationRateEntry[] = [
 /**
  * Lookup irrigation rate and penalty months by crop season
  */
-export function lookupIrrigationRate(
-  cropSeason: string,
-): IrrigationRateEntry | null {
-  return (
-    IRRIGATION_RATE_TABLE.find((entry) => entry.cropSeason === cropSeason) ||
-    null
-  );
+export function lookupIrrigationRate(cropSeason: string): IrrigationRateEntry | null {
+  return IRRIGATION_RATE_TABLE.find((entry) => entry.cropSeason === cropSeason) || null;
 }
 
 /**

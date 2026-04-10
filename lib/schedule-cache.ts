@@ -3,15 +3,15 @@ import { Schedule } from "@/types/schedule";
 
 /**
  * Schedule cache for optimizing cron job reads
- * 
+ *
  * Problem: Cron job runs every minute and reads ALL schedules (40+ reads/min = 10k+ reads/day)
  * Solution: Cache upcoming reminder times, only query schedules when needed
- * 
+ *
  * Cache structure:
  * - Collection: scheduleCache
  * - Document ID: single doc "upcomingReminders"
  * - Data: Array of { scheduleId, reminderTime (ISO string), title }
- * 
+ *
  * The cron job checks this cache first. If no reminders within 3 minutes, skip schedule queries.
  */
 
@@ -97,7 +97,9 @@ export const syncScheduleCache = async (): Promise<{
 
     await db.collection("scheduleCache").doc("upcomingReminders").set(cacheDoc);
 
-    console.log(`Schedule cache synced: ${reminders.length} reminders from ${schedulesSnapshot.size} schedules`);
+    console.log(
+      `Schedule cache synced: ${reminders.length} reminders from ${schedulesSnapshot.size} schedules`
+    );
 
     return {
       success: true,
@@ -116,16 +118,19 @@ export const syncScheduleCache = async (): Promise<{
 /**
  * Get all cached schedules
  * Cron will calculate reminder times on the fly from these
- * 
+ *
  * @returns Array of cached schedule objects
  */
 export const getCachedSchedules = async (): Promise<CachedReminder[]> => {
   try {
     const db = getFirestore();
-    
+
     // Get cache
-    const cacheDoc = await db.collection("scheduleCache").doc("upcomingReminders").get();
-    
+    const cacheDoc = await db
+      .collection("scheduleCache")
+      .doc("upcomingReminders")
+      .get();
+
     if (!cacheDoc.exists) {
       console.warn("Schedule cache not found - needs sync.");
       return [];
@@ -150,17 +155,23 @@ export const getCacheStatus = async (): Promise<{
 }> => {
   try {
     const db = getFirestore();
-    const cacheDoc = await db.collection("scheduleCache").doc("upcomingReminders").get();
-    
+    const cacheDoc = await db
+      .collection("scheduleCache")
+      .doc("upcomingReminders")
+      .get();
+
     if (!cacheDoc.exists) {
       return { exists: false };
     }
 
     const cache = cacheDoc.data() as ScheduleCacheDoc;
-    
+
     return {
       exists: true,
-      lastSynced: cache.lastSynced instanceof Date ? cache.lastSynced : new Date(cache.lastSynced),
+      lastSynced:
+        cache.lastSynced instanceof Date
+          ? cache.lastSynced
+          : new Date(cache.lastSynced),
       scheduleCount: cache.scheduleCount,
       reminderCount: cache.reminders.length,
     };
@@ -172,7 +183,7 @@ export const getCacheStatus = async (): Promise<{
 
 /**
  * Calendar Cache - Optimizes calendar view reads
- * 
+ *
  * Problem: Calendar view reads ALL schedules every time it renders
  * Solution: Cache all schedules in a single document, sync on demand
  */
@@ -185,7 +196,7 @@ export interface CalendarCacheDoc {
 
 /**
  * Employee Cache - Optimizes employee task list reads
- * 
+ *
  * Problem: Right sidebar reads all schedules to group by employee
  * Solution: Cache employee-task mappings
  */
@@ -270,10 +281,10 @@ export const syncCalendarCache = async (): Promise<{
 export const getCachedCalendarSchedules = async (): Promise<Schedule[]> => {
   try {
     const db = getFirestore();
-    
+
     // Get cache
     const cacheDoc = await db.collection("calendarCache").doc("allSchedules").get();
-    
+
     if (!cacheDoc.exists) {
       console.warn("Calendar cache not found - needs sync.");
       return [];
@@ -298,16 +309,19 @@ export const getCalendarCacheStatus = async (): Promise<{
   try {
     const db = getFirestore();
     const cacheDoc = await db.collection("calendarCache").doc("allSchedules").get();
-    
+
     if (!cacheDoc.exists) {
       return { exists: false };
     }
 
     const cache = cacheDoc.data() as CalendarCacheDoc;
-    
+
     return {
       exists: true,
-      lastSynced: cache.lastSynced instanceof Date ? cache.lastSynced : new Date(cache.lastSynced),
+      lastSynced:
+        cache.lastSynced instanceof Date
+          ? cache.lastSynced
+          : new Date(cache.lastSynced),
       scheduleCount: cache.scheduleCount,
     };
   } catch (error) {
@@ -334,12 +348,15 @@ export const syncEmployeeCache = async (): Promise<{
       .get();
 
     // Group by employee
-    const employeeMap = new Map<string, {
-      email: string;
-      name: string;
-      taskCount: number;
-      tasks: Array<{ id: string; title: string; status: string }>;
-    }>();
+    const employeeMap = new Map<
+      string,
+      {
+        email: string;
+        name: string;
+        taskCount: number;
+        tasks: Array<{ id: string; title: string; status: string }>;
+      }
+    >();
 
     for (const doc of schedulesSnapshot.docs) {
       const data = doc.data();
@@ -364,7 +381,9 @@ export const syncEmployeeCache = async (): Promise<{
     }
 
     // Convert to array and sort by task count
-    const employees = Array.from(employeeMap.values()).sort((a, b) => b.taskCount - a.taskCount);
+    const employees = Array.from(employeeMap.values()).sort(
+      (a, b) => b.taskCount - a.taskCount
+    );
 
     // Store in cache
     const cacheDoc: EmployeeCacheDoc = {
@@ -397,10 +416,10 @@ export const syncEmployeeCache = async (): Promise<{
 export const getCachedEmployees = async () => {
   try {
     const db = getFirestore();
-    
+
     // Get cache
     const cacheDoc = await db.collection("employeeCache").doc("allEmployees").get();
-    
+
     if (!cacheDoc.exists) {
       console.warn("Employee cache not found - needs sync.");
       return [];
@@ -425,16 +444,19 @@ export const getEmployeeCacheStatus = async (): Promise<{
   try {
     const db = getFirestore();
     const cacheDoc = await db.collection("employeeCache").doc("allEmployees").get();
-    
+
     if (!cacheDoc.exists) {
       return { exists: false };
     }
 
     const cache = cacheDoc.data() as EmployeeCacheDoc;
-    
+
     return {
       exists: true,
-      lastSynced: cache.lastSynced instanceof Date ? cache.lastSynced : new Date(cache.lastSynced),
+      lastSynced:
+        cache.lastSynced instanceof Date
+          ? cache.lastSynced
+          : new Date(cache.lastSynced),
       totalEmployees: cache.totalEmployees,
     };
   } catch (error) {

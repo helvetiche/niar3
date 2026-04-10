@@ -23,7 +23,7 @@ export type MergeFilesResult = {
 
 const getFileNameFromContentDisposition = (
   value: string | null,
-  fallback: string,
+  fallback: string
 ): string => {
   if (!value) return fallback;
 
@@ -39,7 +39,7 @@ const getFileNameFromContentDisposition = (
 };
 
 export const mergeFiles = async (
-  payload: MergeFilesPayload,
+  payload: MergeFilesPayload
 ): Promise<MergeFilesResult> => {
   const formData = new FormData();
   formData.append("mode", payload.mode);
@@ -68,9 +68,7 @@ export const mergeFiles = async (
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(
-      (data as { error?: string }).error ?? "Failed to merge files",
-    );
+    throw new Error((data as { error?: string }).error ?? "Failed to merge files");
   }
 
   const blob = await response.blob();
@@ -78,7 +76,7 @@ export const mergeFiles = async (
   const defaultName = payload.mode === "pdf" ? "merged.pdf" : "merged.xlsx";
   const fileName = getFileNameFromContentDisposition(
     response.headers.get("Content-Disposition"),
-    defaultName,
+    defaultName
   );
 
   return { blob, fileName, mergedCount };

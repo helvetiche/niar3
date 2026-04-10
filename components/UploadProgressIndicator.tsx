@@ -38,11 +38,7 @@ export function UploadProgressIndicator({
             <CheckCircleIcon size={20} weight="fill" className="text-white" />
           )}
           {hasError && (
-            <WarningCircleIcon
-              size={20}
-              weight="fill"
-              className="text-red-400"
-            />
+            <WarningCircleIcon size={20} weight="fill" className="text-red-400" />
           )}
           <span className="text-sm font-medium text-white">
             {fileName || "Uploading file"}
@@ -66,15 +62,12 @@ export function UploadProgressIndicator({
         </span>
         {!hasError && !isComplete && (
           <span>
-            {Math.ceil((totalBytes - uploadedBytes) / (1024 * 1024))} MB
-            remaining
+            {Math.ceil((totalBytes - uploadedBytes) / (1024 * 1024))} MB remaining
           </span>
         )}
       </div>
 
-      {hasError && error && (
-        <p className="mt-2 text-xs text-red-300">{error}</p>
-      )}
+      {hasError && error && <p className="mt-2 text-xs text-red-300">{error}</p>}
     </div>
   );
 }

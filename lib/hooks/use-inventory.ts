@@ -57,7 +57,7 @@ export function useInventoryQuery(params: InventoryQueryParams = {}) {
     fetcher,
     {
       revalidateOnFocus: false,
-    },
+    }
   );
 
   return {
@@ -75,7 +75,7 @@ export function useCreateInventoryMutation() {
       options?: {
         onSuccess?: () => void;
         onError?: (error: Error) => void;
-      },
+      }
     ) => {
       try {
         const parsedPayload = createInventoryInputSchema.parse(payload);
@@ -112,7 +112,7 @@ export function useUpdateInventoryMutation(id: string | null) {
       options?: {
         onSuccess?: () => void;
         onError?: (error: Error) => void;
-      },
+      }
     ) => {
       try {
         if (!id) throw new Error("No item ID provided");
@@ -161,7 +161,7 @@ export function useUpdateQuarterlyDataMutation() {
       options?: {
         onSuccess?: () => void;
         onError?: (error: Error) => void;
-      },
+      }
     ) => {
       try {
         const response = await fetch(`/api/v1/inventory/${itemId}/quarterly`, {
@@ -175,7 +175,7 @@ export function useUpdateQuarterlyDataMutation() {
         if (!response.ok) {
           const errorText = await response.text();
           throw new Error(
-            `Failed to update quarterly data: ${response.status} ${errorText}`,
+            `Failed to update quarterly data: ${response.status} ${errorText}`
           );
         }
 

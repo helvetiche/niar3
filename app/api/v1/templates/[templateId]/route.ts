@@ -6,16 +6,13 @@ import {
   getTemplateRecord,
   updateTemplateRecord,
 } from "@/lib/firebase-admin/firestore";
-import {
-  deleteFromStorage,
-  uploadBufferToStorage,
-} from "@/lib/firebase-admin/storage";
+import { deleteFromStorage, uploadBufferToStorage } from "@/lib/firebase-admin/storage";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
 import { logger } from "@/lib/logger";
 
 export async function GET(
   request: Request,
-  context: { params: Promise<{ templateId: string }> },
+  context: { params: Promise<{ templateId: string }> }
 ) {
   const result = await getSession();
   if (!result.user) {
@@ -29,7 +26,7 @@ export async function GET(
       details: { reason: "unauthorized" },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     );
   }
 
@@ -50,7 +47,7 @@ export async function GET(
         details: { reason: "template-not-found", templateId },
       });
       return applySecurityHeaders(
-        NextResponse.json({ error: "Template not found" }, { status: 404 }),
+        NextResponse.json({ error: "Template not found" }, { status: 404 })
       );
     }
 
@@ -80,14 +77,14 @@ export async function GET(
       details: { templateId },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Failed to get template" }, { status: 500 }),
+      NextResponse.json({ error: "Failed to get template" }, { status: 500 })
     );
   }
 }
 
 export async function DELETE(
   request: Request,
-  context: { params: Promise<{ templateId: string }> },
+  context: { params: Promise<{ templateId: string }> }
 ) {
   const result = await getSession();
   if (!result.user) {
@@ -101,7 +98,7 @@ export async function DELETE(
       details: { reason: "unauthorized" },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     );
   }
 
@@ -122,7 +119,7 @@ export async function DELETE(
         details: { reason: "template-not-found", templateId },
       });
       return applySecurityHeaders(
-        NextResponse.json({ error: "Template not found" }, { status: 404 }),
+        NextResponse.json({ error: "Template not found" }, { status: 404 })
       );
     }
 
@@ -138,7 +135,7 @@ export async function DELETE(
         details: { reason: "forbidden-not-owner", templateId },
       });
       return applySecurityHeaders(
-        NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+        NextResponse.json({ error: "Forbidden" }, { status: 403 })
       );
     }
 
@@ -154,9 +151,7 @@ export async function DELETE(
       httpStatus: 200,
       details: { templateId, scope: template.scope },
     });
-    return applySecurityHeaders(
-      NextResponse.json({ ok: true, scope: template.scope }),
-    );
+    return applySecurityHeaders(NextResponse.json({ ok: true, scope: template.scope }));
   } catch (error) {
     logger.error("[api/templates/:id DELETE]", error);
     await logAuditTrailEntry({
@@ -171,17 +166,14 @@ export async function DELETE(
       details: { templateId },
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Failed to delete template" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to delete template" }, { status: 500 })
     );
   }
 }
 
 export async function PATCH(
   request: Request,
-  context: { params: Promise<{ templateId: string }> },
+  context: { params: Promise<{ templateId: string }> }
 ) {
   const result = await getSession();
   if (!result.user) {
@@ -195,7 +187,7 @@ export async function PATCH(
       details: { reason: "unauthorized" },
     });
     return applySecurityHeaders(
-      NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     );
   }
 
@@ -216,7 +208,7 @@ export async function PATCH(
         details: { reason: "template-not-found", templateId },
       });
       return applySecurityHeaders(
-        NextResponse.json({ error: "Template not found" }, { status: 404 }),
+        NextResponse.json({ error: "Template not found" }, { status: 404 })
       );
     }
 
@@ -232,7 +224,7 @@ export async function PATCH(
         details: { reason: "forbidden-not-owner", templateId },
       });
       return applySecurityHeaders(
-        NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+        NextResponse.json({ error: "Forbidden" }, { status: 403 })
       );
     }
 
@@ -241,9 +233,7 @@ export async function PATCH(
     const fileRaw = formData.get("file");
 
     const nextName =
-      typeof nameRaw === "string" && nameRaw.trim()
-        ? nameRaw.trim()
-        : undefined;
+      typeof nameRaw === "string" && nameRaw.trim() ? nameRaw.trim() : undefined;
     const hasFile = fileRaw instanceof File;
 
     if (!nextName && !hasFile) {
@@ -258,10 +248,7 @@ export async function PATCH(
         details: { reason: "no-updates", templateId },
       });
       return applySecurityHeaders(
-        NextResponse.json(
-          { error: "No template updates provided" },
-          { status: 400 },
-        ),
+        NextResponse.json({ error: "No template updates provided" }, { status: 400 })
       );
     }
 
@@ -285,12 +272,12 @@ export async function PATCH(
         contentType: nextContentType,
         sizeBytes: nextSizeBytes,
       },
-      result.user.uid,
+      result.user.uid
     );
 
     if (!saved) {
       return applySecurityHeaders(
-        NextResponse.json({ error: "Template not found" }, { status: 404 }),
+        NextResponse.json({ error: "Template not found" }, { status: 404 })
       );
     }
 
@@ -324,10 +311,7 @@ export async function PATCH(
       details: { templateId },
     });
     return applySecurityHeaders(
-      NextResponse.json(
-        { error: "Failed to update template" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to update template" }, { status: 500 })
     );
   }
 }
