@@ -313,7 +313,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
         };
         throw new Error(data.error ?? "Failed to logout");
       }
-      window.location.assign("/?login=1");
+      window.location.assign("/login");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to logout. Please try again.";

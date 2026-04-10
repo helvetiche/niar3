@@ -29,6 +29,6 @@ describe("requireAuth", () => {
 
     await requireAuth();
 
-    expect(redirect).toHaveBeenCalledWith("/?login=1");
+    expect(redirect).toHaveBeenCalledWith("/login");
   });
 });

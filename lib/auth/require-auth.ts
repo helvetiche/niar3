@@ -10,7 +10,7 @@ import type { AuthUser } from "@/types/auth";
 export async function requireAuth(): Promise<AuthUser> {
   const result = await getSession();
   if (!result.user) {
-    redirect("/?login=1");
+    redirect("/login");
   }
   return result.user;
 }
