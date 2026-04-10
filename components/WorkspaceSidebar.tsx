@@ -117,7 +117,7 @@ const TOOLS = [
     icon: ArrowsMergeIcon,
   },
   {
-    id: "swrft" as const,
+    id: "accomplishment-report" as const,
     name: "ACCOMPLISHMENT REPORT",
     description: "Generate quincena accomplishment reports.",
     icon: FileXlsIcon,

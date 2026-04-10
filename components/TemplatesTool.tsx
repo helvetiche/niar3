@@ -12,7 +12,8 @@ import { TemplateManager } from "@/components/TemplateManager";
 
 export function TemplatesTool() {
   const [scannerTemplateId, setScannerTemplateId] = useState("");
-  const [swrftTemplateId, setSwrftTemplateId] = useState("");
+  const [accomplishmentReportTemplateId, setAccomplishmentReportTemplateId] =
+    useState("");
 
   return (
     <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
@@ -67,9 +68,9 @@ export function TemplatesTool() {
             Accomplishment Report Templates
           </p>
           <TemplateManager
-            scope="swrft"
-            selectedTemplateId={swrftTemplateId}
-            onSelectedTemplateIdChange={setSwrftTemplateId}
+            scope="accomplishment-report"
+            selectedTemplateId={accomplishmentReportTemplateId}
+            onSelectedTemplateIdChange={setAccomplishmentReportTemplateId}
           />
         </section>
       </div>

@@ -1,5 +1,5 @@
 import "server-only";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, type QuerySnapshot } from "firebase-admin/firestore";
 import { getFirebaseAdminApp } from "./app";
 
 function getDb() {
@@ -81,7 +81,10 @@ export async function setCalendarNotesForDate(
   await ref.set({ items }, { merge: true });
 }
 
-export type TemplateScope = "ifr-scanner" | "swrft" | "consolidation";
+export type TemplateScope =
+  | "ifr-scanner"
+  | "accomplishment-report"
+  | "consolidation";
 
 export type StoredTemplate = {
   id: string;
@@ -96,8 +99,25 @@ export type StoredTemplate = {
   updatedByUid: string;
 };
 
-const isTemplateScope = (value: unknown): value is TemplateScope =>
-  value === "ifr-scanner" || value === "swrft" || value === "consolidation";
+/** Legacy Firestore value for accomplishment report templates. */
+const LEGACY_ACCOMPLISHMENT_REPORT_SCOPE = "swrft";
+
+const isPersistedTemplateScope = (
+  value: unknown,
+): value is TemplateScope | typeof LEGACY_ACCOMPLISHMENT_REPORT_SCOPE =>
+  value === "ifr-scanner" ||
+  value === "accomplishment-report" ||
+  value === LEGACY_ACCOMPLISHMENT_REPORT_SCOPE ||
+  value === "consolidation";
+
+const normalizeTemplateScope = (
+  raw: TemplateScope | typeof LEGACY_ACCOMPLISHMENT_REPORT_SCOPE,
+): TemplateScope => {
+  if (raw === LEGACY_ACCOMPLISHMENT_REPORT_SCOPE) {
+    return "accomplishment-report";
+  }
+  return raw;
+};
 
 function templateCollection() {
   return getDb().collection("templates");
@@ -109,11 +129,11 @@ function asStoredTemplate(
 ): StoredTemplate | null {
   if (!data) return null;
   const scope = data.scope;
-  if (!isTemplateScope(scope)) return null;
+  if (!isPersistedTemplateScope(scope)) return null;
   return {
     id,
     name: typeof data.name === "string" ? data.name : "",
-    scope,
+    scope: normalizeTemplateScope(scope),
     storagePath: typeof data.storagePath === "string" ? data.storagePath : "",
     contentType:
       typeof data.contentType === "string"
@@ -141,9 +161,19 @@ export async function listTemplates(
   scope?: TemplateScope,
 ): Promise<StoredTemplate[]> {
   const collection = templateCollection();
-  const snap = scope
-    ? await collection.where("scope", "==", scope).get()
-    : await collection.get();
+  let snap: QuerySnapshot;
+  if (!scope) {
+    snap = await collection.get();
+  } else if (scope === "accomplishment-report") {
+    snap = await collection
+      .where("scope", "in", [
+        "accomplishment-report",
+        LEGACY_ACCOMPLISHMENT_REPORT_SCOPE,
+      ])
+      .get();
+  } else {
+    snap = await collection.where("scope", "==", scope).get();
+  }
   const items = snap.docs
     .map((doc) => asStoredTemplate(doc.id, doc.data()))
     .filter((item): item is StoredTemplate => Boolean(item));

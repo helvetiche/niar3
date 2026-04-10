@@ -1,31 +1,63 @@
 "use client";
 
-import { useState, useEffect, type ReactNode, type KeyboardEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useId,
+  type ReactNode,
+  type KeyboardEvent,
+} from "react";
 import {
   CalendarBlankIcon,
   CalendarCheckIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  CheckCircleIcon,
   ClockCountdownIcon,
   ColumnsIcon,
   EnvelopeIcon,
   EyeIcon,
   LayoutIcon,
   ListChecksIcon,
+  MagnifyingGlassIcon,
   PlusIcon,
   SquaresFourIcon,
+  StarIcon,
   TrashIcon,
   XIcon,
+  CheckIcon,
+  FileXlsIcon,
+  DownloadSimpleIcon,
 } from "@phosphor-icons/react";
+import toast from "react-hot-toast";
 import {
   useWidgetSidebar,
   type ScheduleWidgetType,
 } from "@/contexts/WidgetSidebarContext";
 import { useUpcomingSchedules } from "@/hooks/useUpcomingSchedules";
+import { useAllSchedulesForTaskManager } from "@/hooks/useAllSchedulesForTaskManager";
+import { useScheduleCompletions } from "@/hooks/useScheduleCompletions";
+import { calculateNextDeadline } from "@/lib/deadline-calculator";
+import { getCurrentPeriod, getPeriodLabel } from "@/lib/period-calculator";
+import {
+  buildCompletionLookup,
+  completionPeriodKey,
+} from "@/lib/task-manager-utils";
+import { apiDelete, apiPost } from "@/lib/api-client";
+import type { Schedule, TaskCompletion } from "@/types/schedule";
+import { useTemplates } from "@/hooks/useTemplates";
+import { generateAccomplishmentReport } from "@/lib/api/accomplishment-report";
+import { downloadBlob, getErrorMessage } from "@/lib/utils";
 import { MasonryModal } from "@/components/MasonryModal";
 import { TaskAccomplishmentsDrawer } from "@/components/TaskAccomplishmentsDrawer";
 
 type WidgetChromeVariant = "sidebar" | "glass";
+
+const ALL_MONTHS_ACCOMPLISHMENT = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+] as const;
 
 /** ~14-day horizon: bar fills as the deadline gets closer. */
 const DEADLINE_URGENCY_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -64,6 +96,14 @@ const nearestDeadlineTitleIcon = (
   />
 );
 
+const priorityFocusTitleIcon = (
+  <StarIcon className="h-3.5 w-3.5 shrink-0" weight="duotone" aria-hidden />
+);
+
+const quickAccomplishmentTitleIcon = (
+  <FileXlsIcon className="h-3.5 w-3.5 shrink-0" weight="duotone" aria-hidden />
+);
+
 /** Shared shell: sidebar = solid emerald panel; glass = frosted for modal previews. */
 const ScheduleWidgetChrome = ({
   title,
@@ -72,6 +112,7 @@ const ScheduleWidgetChrome = ({
   children,
   variant = "sidebar",
   fillHeight = false,
+  titleClassName,
 }: {
   title: string;
   titleIcon?: ReactNode;
@@ -79,11 +120,13 @@ const ScheduleWidgetChrome = ({
   children: React.ReactNode;
   variant?: WidgetChromeVariant;
   fillHeight?: boolean;
+  /** Override default `text-sm` title (e.g. compact priority header). */
+  titleClassName?: string;
 }) => {
   const shell =
     variant === "glass"
-      ? "rounded-lg border border-white/40 bg-white/10 p-4 shadow-sm backdrop-blur-md"
-      : "rounded-lg border border-emerald-700/60 bg-emerald-800/30 p-4";
+      ? "min-w-0 overflow-hidden rounded-lg border border-white/40 bg-white/10 p-4 shadow-sm backdrop-blur-md"
+      : "min-w-0 overflow-hidden rounded-lg border border-emerald-700/60 bg-emerald-800/30 p-4";
   const trashMuted =
     variant === "glass" ? "text-white/35" : "text-emerald-300/40";
   const trashBtn =
@@ -101,8 +144,12 @@ const ScheduleWidgetChrome = ({
 
   return (
     <div className={`${shell} ${fillClass}`.trim()}>
-      <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
-        <h3 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-white">
+      <div className="mb-3 flex min-w-0 shrink-0 items-center justify-between gap-2">
+        <h3
+          className={`flex min-w-0 items-center gap-1.5 font-semibold leading-tight text-white ${
+            titleClassName ?? "text-sm"
+          }`}
+        >
           {titleIcon ? (
             <span
               className={`inline-flex shrink-0 items-center ${titleIconWrapClass}`}
@@ -116,18 +163,24 @@ const ScheduleWidgetChrome = ({
           <button
             type="button"
             onClick={onRemove}
-            className={trashBtn}
+            className={`shrink-0 ${trashBtn}`}
             aria-label={`Remove ${title} widget`}
           >
             <TrashIcon className="h-4 w-4" />
           </button>
         ) : (
-          <span className={trashMuted} aria-hidden>
+          <span className={`shrink-0 ${trashMuted}`} aria-hidden>
             <TrashIcon className="h-4 w-4" />
           </span>
         )}
       </div>
-      <div className={fillHeight ? "flex min-h-0 flex-1 flex-col" : undefined}>
+      <div
+        className={
+          fillHeight
+            ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+            : "min-w-0 overflow-hidden"
+        }
+      >
         {children}
       </div>
     </div>
@@ -217,6 +270,210 @@ const NearestDeadlineWidgetCard = ({
           </div>
         </div>
         <div className={progressBlockClass}>
+          <div
+            className={`rounded-full p-0.5 ${trackOuterClass}`}
+            role="progressbar"
+            aria-valuenow={urgencyPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Deadline closeness, ${urgencyPercent} percent`}
+          >
+            <div
+              className={`h-2 w-full overflow-hidden rounded-full ${trackInnerClass}`}
+            >
+              <div
+                className={`h-full rounded-full transition-[width] duration-500 ease-out ${fillClass}`}
+                style={{ width: `${urgencyPercent}%` }}
+              />
+            </div>
+          </div>
+          <p
+            className={`text-center font-mono text-xs tabular-nums tracking-wide ${
+              variant === "glass" ? "text-white/90" : "text-emerald-100"
+            }`}
+            aria-live="polite"
+            aria-label={`Time remaining ${remainingClock}`}
+          >
+            {remainingClock}
+          </p>
+        </div>
+      </div>
+    </ScheduleWidgetChrome>
+  );
+};
+
+const PriorityFocusCard = ({
+  taskTitle,
+  taskDescription,
+  nextDeadline,
+  personEmail,
+  urgencyPercent,
+  remainingClock,
+  periodComplete,
+  periodLabel,
+  onRemove,
+  onTogglePeriodComplete,
+  toggleDisabled = false,
+  togglePending = false,
+  variant = "sidebar",
+  fillHeight = false,
+}: {
+  taskTitle: string;
+  taskDescription: string;
+  nextDeadline: Date;
+  personEmail: string;
+  urgencyPercent: number;
+  remainingClock: string;
+  periodComplete: boolean;
+  periodLabel: string;
+  onRemove?: () => void;
+  /** Omit in modal previews so the card stays read-only. */
+  onTogglePeriodComplete?: () => void;
+  toggleDisabled?: boolean;
+  togglePending?: boolean;
+  variant?: WidgetChromeVariant;
+  fillHeight?: boolean;
+}) => {
+  const descriptionTrimmed = taskDescription.trim();
+  const metaClass =
+    variant === "glass" ? "text-xs text-white/80" : "text-xs text-emerald-300/80";
+  const descClass =
+    variant === "glass" ? "text-xs text-white/70" : "text-xs text-emerald-200/75";
+  const descPlaceholderClass =
+    variant === "glass"
+      ? "text-xs italic text-white/50"
+      : "text-xs italic text-emerald-300/55";
+  const trackOuterClass =
+    variant === "glass"
+      ? "border border-white/45 bg-white/10"
+      : "border border-emerald-600/55 bg-emerald-950/60";
+  const trackInnerClass =
+    variant === "glass" ? "bg-white/10" : "bg-emerald-950/80";
+  const fillClass = "bg-amber-400";
+
+  const outerBodyClass = fillHeight
+    ? "flex min-h-0 flex-1 flex-col"
+    : "";
+  const progressBlockClass = fillHeight
+    ? "mt-auto flex min-h-[3.25rem] flex-col justify-end gap-1.5 pt-1"
+    : "mt-3 space-y-1.5";
+
+  const periodShell =
+    variant === "glass"
+      ? periodComplete
+        ? "border-emerald-400/45 bg-emerald-500/20 text-emerald-50"
+        : "border-white/35 bg-white/10 text-white/90"
+      : periodComplete
+        ? "border-amber-400/50 bg-amber-500/15 text-amber-50"
+        : "border-emerald-600/50 bg-emerald-950/50 text-emerald-100";
+
+  const markDoneBtnClass =
+    variant === "glass"
+      ? periodComplete
+        ? "border-white/40 bg-white/10 text-white hover:bg-white/15"
+        : "border-emerald-300/50 bg-emerald-400/90 text-emerald-950 hover:bg-emerald-300"
+      : periodComplete
+        ? "border-amber-400/50 bg-amber-500/20 text-amber-50 hover:bg-amber-500/30"
+        : "border-emerald-500/60 bg-emerald-600 text-white hover:bg-emerald-500";
+
+  return (
+    <ScheduleWidgetChrome
+      title="Priority focus"
+      titleIcon={priorityFocusTitleIcon}
+      onRemove={onRemove}
+      variant={variant}
+      fillHeight={fillHeight}
+      titleClassName="text-xs"
+    >
+      <div className={`min-w-0 ${outerBodyClass}`.trim()}>
+        <div className={`min-w-0 space-y-2 ${fillHeight ? "shrink-0" : ""}`}>
+          <p className="line-clamp-2 min-w-0 text-sm font-medium text-white">
+            {taskTitle}
+          </p>
+          {descriptionTrimmed ? (
+            <p className={`line-clamp-3 leading-snug ${descClass}`}>
+              {descriptionTrimmed}
+            </p>
+          ) : (
+            <p className={descPlaceholderClass}>No Description Written</p>
+          )}
+          <div
+            className={`flex min-w-0 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium ${periodShell}`}
+            role="status"
+            aria-label={
+              periodComplete
+                ? `Completed for ${periodLabel}`
+                : `Not yet completed for ${periodLabel}`
+            }
+          >
+            {periodComplete ? (
+              <CheckCircleIcon className="h-3.5 w-3.5 shrink-0" weight="fill" aria-hidden />
+            ) : (
+              <ListChecksIcon className="h-3.5 w-3.5 shrink-0 opacity-90" weight="duotone" aria-hidden />
+            )}
+            <span className="min-w-0 truncate">
+              {periodComplete
+                ? `Done for ${periodLabel}`
+                : `Still due for ${periodLabel}`}
+            </span>
+          </div>
+          {onTogglePeriodComplete ? (
+            <button
+              type="button"
+              onClick={onTogglePeriodComplete}
+              disabled={toggleDisabled || togglePending}
+              className={`flex w-full min-w-0 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${markDoneBtnClass}`}
+              aria-label={
+                periodComplete
+                  ? `Mark incomplete for ${periodLabel}`
+                  : `Mark as done for ${periodLabel}`
+              }
+            >
+              {togglePending ? (
+                <span
+                  className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  aria-hidden
+                />
+              ) : periodComplete ? (
+                <ListChecksIcon className="h-4 w-4 shrink-0" weight="duotone" aria-hidden />
+              ) : (
+                <CheckIcon className="h-4 w-4 shrink-0" weight="bold" aria-hidden />
+              )}
+              <span className="min-w-0 truncate">
+                {togglePending
+                  ? "Saving…"
+                  : periodComplete
+                    ? `Mark incomplete (${periodLabel})`
+                    : `Mark as done (${periodLabel})`}
+              </span>
+            </button>
+          ) : null}
+          <div className={`flex min-w-0 items-center gap-2 ${metaClass}`}>
+            <CalendarCheckIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span className="min-w-0 truncate">
+              {nextDeadline.toLocaleString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })}
+            </span>
+          </div>
+          <div className={`flex min-w-0 items-start gap-2 ${metaClass}`}>
+            <EnvelopeIcon className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span className="min-w-0 break-all">{personEmail}</span>
+          </div>
+        </div>
+        <div className={`min-w-0 ${progressBlockClass}`.trim()}>
+          <p
+            className={`mb-1 text-center text-[10px] font-medium uppercase tracking-wide ${
+              variant === "glass" ? "text-white/55" : "text-emerald-300/65"
+            }`}
+          >
+            Time until next deadline
+          </p>
           <div
             className={`rounded-full p-0.5 ${trackOuterClass}`}
             role="progressbar"
@@ -497,6 +754,355 @@ function TasksThisMonthWidget({ onRemove }: { onRemove: () => void }) {
   );
 }
 
+function PriorityFocusWidget({
+  scheduleId,
+  onRemove,
+}: {
+  scheduleId: string;
+  onRemove: () => void;
+}) {
+  const { data: schedules = [], isLoading: schedulesLoading } =
+    useAllSchedulesForTaskManager();
+  const {
+    data: completions = [],
+    isLoading: completionsLoading,
+    mutate: mutateCompletions,
+  } = useScheduleCompletions();
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [optimisticKeys, setOptimisticKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const schedule = useMemo(
+    () => schedules.find((s) => s.id === scheduleId) ?? null,
+    [schedules, scheduleId],
+  );
+
+  const completionByPeriodKey = useMemo(
+    () => buildCompletionLookup(completions),
+    [completions],
+  );
+
+  const periodMeta = useMemo(() => {
+    if (!schedule) return null;
+    const period = getCurrentPeriod(schedule.deadline.type);
+    const key = completionPeriodKey(schedule.id, period.start, period.end);
+    const completion = completionByPeriodKey.get(key);
+    const isOptimistic = optimisticKeys.has(key);
+    const effectiveComplete = isOptimistic ? !completion : !!completion;
+    return {
+      periodKey: key,
+      completion,
+      effectiveComplete,
+      isOptimistic,
+      periodLabel: getPeriodLabel(schedule.deadline.type),
+    };
+  }, [schedule, completionByPeriodKey, optimisticKeys]);
+
+  const handleTogglePeriodComplete = useCallback(async () => {
+    if (!schedule || schedule.status !== "active") return;
+    const period = getCurrentPeriod(schedule.deadline.type);
+    const periodKey = completionPeriodKey(
+      schedule.id,
+      period.start,
+      period.end,
+    );
+
+    if (optimisticKeys.has(periodKey)) return;
+
+    const existingCompletion = completionByPeriodKey.get(periodKey);
+    const isCurrentlyCompleted = !!existingCompletion;
+
+    setOptimisticKeys((prev) => {
+      const next = new Set(prev);
+      next.add(periodKey);
+      return next;
+    });
+
+    const clearOptimistic = () => {
+      setOptimisticKeys((prev) => {
+        const next = new Set(prev);
+        next.delete(periodKey);
+        return next;
+      });
+    };
+
+    try {
+      if (isCurrentlyCompleted) {
+        if (!existingCompletion) {
+          clearOptimistic();
+          return;
+        }
+        await apiDelete<{ ok: boolean }>(
+          `/api/v1/completions/${encodeURIComponent(existingCompletion.id)}`,
+        );
+        await mutateCompletions(
+          (prev) =>
+            (prev ?? []).filter((c) => c.id !== existingCompletion.id),
+          { revalidate: false },
+        );
+      } else {
+        const { completion } = await apiPost<{ completion: TaskCompletion }>(
+          "/api/v1/completions",
+          {
+            scheduleId: schedule.id,
+            periodStart: period.start,
+            periodEnd: period.end,
+            deadlineType: schedule.deadline.type,
+          },
+        );
+        await mutateCompletions(
+          (prev) => [...(prev ?? []), completion],
+          { revalidate: false },
+        );
+      }
+    } catch (err) {
+      console.error("Priority widget toggle completion failed:", err);
+    } finally {
+      clearOptimistic();
+    }
+  }, [schedule, completionByPeriodKey, mutateCompletions, optimisticKeys]);
+
+  const nextDeadline = useMemo(() => {
+    if (!schedule) return null;
+    try {
+      return calculateNextDeadline(
+        schedule.deadline,
+        currentTime,
+        schedule.createdAt,
+      );
+    } catch {
+      return null;
+    }
+  }, [schedule, currentTime]);
+
+  const isLoading = schedulesLoading || completionsLoading;
+
+  if (isLoading) {
+    return (
+      <ScheduleWidgetChrome
+        title="Priority focus"
+        titleIcon={priorityFocusTitleIcon}
+        onRemove={onRemove}
+      >
+        <div className="flex items-center justify-center py-4">
+          <div
+            className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"
+            aria-hidden
+          />
+        </div>
+      </ScheduleWidgetChrome>
+    );
+  }
+
+  if (!schedule) {
+    return (
+      <ScheduleWidgetChrome
+        title="Priority focus"
+        titleIcon={priorityFocusTitleIcon}
+        onRemove={onRemove}
+      >
+        <p className="py-4 text-center text-xs text-emerald-200/70">
+          This schedule is no longer available. Remove the widget or pick another
+          in Add widget.
+        </p>
+      </ScheduleWidgetChrome>
+    );
+  }
+
+  if (!nextDeadline) {
+    return (
+      <ScheduleWidgetChrome
+        title="Priority focus"
+        titleIcon={priorityFocusTitleIcon}
+        onRemove={onRemove}
+      >
+        <p className="py-4 text-center text-xs text-emerald-200/70">
+          Could not compute the next deadline for this schedule.
+        </p>
+      </ScheduleWidgetChrome>
+    );
+  }
+
+  const timeUntil = nextDeadline.getTime() - currentTime.getTime();
+  const urgencyPercent = computeDeadlineUrgencyPercent(timeUntil);
+  const remainingClock = formatRemainingClock(timeUntil);
+  const assigneeEmail =
+    schedule.personEmail.trim() || schedule.personAssigned;
+
+  return (
+    <PriorityFocusCard
+      taskTitle={schedule.title}
+      taskDescription={schedule.description}
+      nextDeadline={nextDeadline}
+      personEmail={assigneeEmail}
+      urgencyPercent={urgencyPercent}
+      remainingClock={remainingClock}
+      periodComplete={periodMeta?.effectiveComplete ?? false}
+      periodLabel={periodMeta?.periodLabel ?? "Current Period"}
+      onRemove={onRemove}
+      onTogglePeriodComplete={
+        schedule.status === "active" ? handleTogglePeriodComplete : undefined
+      }
+      togglePending={periodMeta?.isOptimistic ?? false}
+    />
+  );
+}
+
+function QuickAccomplishmentSidebarWidget({
+  onRemove,
+}: {
+  onRemove: () => void;
+}) {
+  const formId = useId();
+  const { data: templates = [], isLoading: templatesLoading } =
+    useTemplates("accomplishment-report");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [taskText, setTaskText] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    if (templates.length > 0 && !selectedTemplateId) {
+      setSelectedTemplateId(templates[0].id);
+    }
+  }, [templates, selectedTemplateId]);
+
+  const handleGenerate = async () => {
+    const name = fullName.trim();
+    const task = taskText.trim();
+    if (!name) {
+      toast.error("Please enter your full name.");
+      return;
+    }
+    if (!task) {
+      toast.error("Please enter the task text for your report.");
+      return;
+    }
+    if (!selectedTemplateId) {
+      toast.error(
+        "No accomplishment template available. Add one in Template Manager.",
+      );
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const result = await generateAccomplishmentReport({
+        templateId: selectedTemplateId,
+        firstName: name,
+        lastName: "",
+        designation: "SWRFT",
+        months: [...ALL_MONTHS_ACCOMPLISHMENT],
+        includeFirstHalf: true,
+        includeSecondHalf: true,
+        customTasks: [task],
+      });
+      downloadBlob(result.blob, result.fileName);
+      const periodCount = ALL_MONTHS_ACCOMPLISHMENT.length * 2;
+      toast.success(
+        `Downloaded accomplishment report with ${String(periodCount)} period sheets.`,
+      );
+    } catch (err) {
+      toast.error(
+        getErrorMessage(err, "Failed to generate accomplishment report."),
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <ScheduleWidgetChrome
+      title="Quick accomplishment"
+      titleIcon={quickAccomplishmentTitleIcon}
+      titleClassName="text-xs"
+      onRemove={onRemove}
+    >
+      <div className="flex min-w-0 flex-col gap-3">
+        <p className="text-[11px] leading-snug text-emerald-200/75">
+          Jan–Dec, 1st and 2nd half each month. Uses your first available
+          accomplishment template.
+        </p>
+        {templatesLoading ? (
+          <div className="flex justify-center py-4">
+            <div
+              className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"
+              aria-hidden
+            />
+          </div>
+        ) : templates.length === 0 ? (
+          <p className="text-center text-xs text-emerald-200/70">
+            No accomplishment report templates yet. Upload one in Template
+            Manager, then try again.
+          </p>
+        ) : (
+          <>
+            <div>
+              <label
+                htmlFor={`${formId}-name`}
+                className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-emerald-200/65"
+              >
+                Full name
+              </label>
+              <input
+                id={`${formId}-name`}
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                autoComplete="name"
+                placeholder="Your full name"
+                className="w-full rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor={`${formId}-task`}
+                className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-emerald-200/65"
+              >
+                Task
+              </label>
+              <textarea
+                id={`${formId}-task`}
+                value={taskText}
+                onChange={(e) => setTaskText(e.target.value)}
+                rows={4}
+                placeholder="Describe accomplishments for weekdays in the report…"
+                className="w-full resize-y rounded-lg border border-emerald-700 bg-emerald-950/50 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleGenerate()}
+              disabled={isGenerating || !selectedTemplateId}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/60 bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <span
+                  className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white border-t-transparent"
+                  aria-hidden
+                />
+              ) : (
+                <DownloadSimpleIcon
+                  className="h-4 w-4 shrink-0"
+                  weight="bold"
+                  aria-hidden
+                />
+              )}
+              {isGenerating ? "Generating…" : "Generate Excel"}
+            </button>
+          </>
+        )}
+      </div>
+    </ScheduleWidgetChrome>
+  );
+}
+
 const PREVIEW_SAMPLE = {
   taskTitle: "Example: Quarterly compliance review",
   taskDescription:
@@ -718,6 +1324,331 @@ function AddWidgetModalScheduleSection({
   );
 }
 
+function AddWidgetModalPrioritySection({
+  isOpen,
+  onPickSchedule,
+  hasExistingPriority,
+}: {
+  isOpen: boolean;
+  onPickSchedule: (scheduleId: string) => void;
+  hasExistingPriority: boolean;
+}) {
+  const { data: schedules = [], isLoading: schedulesLoading } =
+    useAllSchedulesForTaskManager();
+  const { data: completions = [], isLoading: completionsLoading } =
+    useScheduleCompletions();
+  const [search, setSearch] = useState("");
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setNow(new Date());
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, [isOpen]);
+
+  const activeSchedules = useMemo(
+    () =>
+      [...schedules]
+        .filter((s) => s.status === "active")
+        .sort((a, b) => a.title.localeCompare(b.title)),
+    [schedules],
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return activeSchedules;
+    return activeSchedules.filter(
+      (s) =>
+        s.title.toLowerCase().includes(q) ||
+        (s.description || "").toLowerCase().includes(q) ||
+        s.personAssigned.toLowerCase().includes(q) ||
+        s.personEmail.toLowerCase().includes(q),
+    );
+  }, [activeSchedules, search]);
+
+  const completionByPeriodKey = useMemo(
+    () => buildCompletionLookup(completions),
+    [completions],
+  );
+
+  const previewForSchedule = (s: Schedule): ReactNode => {
+    const period = getCurrentPeriod(s.deadline.type);
+    const key = completionPeriodKey(s.id, period.start, period.end);
+    const periodComplete = completionByPeriodKey.has(key);
+    const periodLabel = getPeriodLabel(s.deadline.type);
+    let nd: Date;
+    try {
+      nd = calculateNextDeadline(s.deadline, now, s.createdAt);
+    } catch {
+      return (
+        <ScheduleWidgetChrome
+          title="Priority focus"
+          titleIcon={priorityFocusTitleIcon}
+          variant="glass"
+          fillHeight
+        >
+          <p className="flex flex-1 items-center justify-center px-1 py-4 text-center text-xs text-white/70">
+            Could not compute a preview deadline for this schedule.
+          </p>
+        </ScheduleWidgetChrome>
+      );
+    }
+    const timeUntil = nd.getTime() - now.getTime();
+    const assigneeEmail = s.personEmail.trim() || s.personAssigned;
+    return (
+      <PriorityFocusCard
+        taskTitle={s.title}
+        taskDescription={s.description}
+        nextDeadline={nd}
+        personEmail={assigneeEmail}
+        urgencyPercent={computeDeadlineUrgencyPercent(timeUntil)}
+        remainingClock={formatRemainingClock(timeUntil)}
+        periodComplete={periodComplete}
+        periodLabel={periodLabel}
+        variant="glass"
+        fillHeight
+      />
+    );
+  };
+
+  const priorityPreview = (() => {
+    const loading = schedulesLoading || completionsLoading;
+    if (loading) {
+      return (
+        <ScheduleWidgetChrome
+          title="Priority focus"
+          titleIcon={priorityFocusTitleIcon}
+          variant="glass"
+          fillHeight
+        >
+          <div className="flex flex-1 items-center justify-center py-8">
+            <div
+              className="h-6 w-6 animate-spin rounded-full border-2 border-white/50 border-t-transparent"
+              aria-hidden
+            />
+          </div>
+        </ScheduleWidgetChrome>
+      );
+    }
+    if (activeSchedules.length === 0) {
+      const mockUntil = Math.max(
+        0,
+        PREVIEW_SAMPLE.nextDeadline.getTime() - now.getTime(),
+      );
+      return (
+        <PriorityFocusCard
+          taskTitle={PREVIEW_SAMPLE.taskTitle}
+          taskDescription={PREVIEW_SAMPLE.taskDescription}
+          nextDeadline={PREVIEW_SAMPLE.nextDeadline}
+          personEmail={PREVIEW_SAMPLE.personEmail}
+          urgencyPercent={computeDeadlineUrgencyPercent(mockUntil)}
+          remainingClock={formatRemainingClock(mockUntil)}
+          periodComplete={false}
+          periodLabel="This Month"
+          variant="glass"
+          fillHeight
+        />
+      );
+    }
+    const first = filtered[0] ?? activeSchedules[0];
+    return previewForSchedule(first);
+  })();
+
+  const handleRowKeyDown = (
+    e: KeyboardEvent<HTMLButtonElement>,
+    scheduleId: string,
+  ) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    onPickSchedule(scheduleId);
+  };
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="w-full">
+        <h4 className="flex items-center gap-2 text-lg font-medium text-white sm:text-xl">
+          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+            <StarIcon size={20} className="text-white" weight="duotone" aria-hidden />
+          </span>
+          Priority focus
+        </h4>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <StarIcon size={12} className="text-white" weight="duotone" aria-hidden />
+            One schedule
+          </span>
+          {hasExistingPriority ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/45 bg-amber-500/15 px-3 py-1 text-xs font-medium text-amber-100">
+              Replacing current priority
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-2 max-w-3xl text-sm text-white/85">
+          Choose one active schedule to pin in the sidebar. It shows a live countdown
+          to the next deadline, urgency, and whether you have finished it for the
+          current period. Only one priority is kept—picking another replaces it.
+        </p>
+      </div>
+
+      <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2 lg:grid-rows-1 lg:items-stretch lg:h-[min(52dvh,26rem)]">
+        <div className="flex h-full min-h-0 min-w-0 flex-col rounded-xl border border-white/35 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+          <p className="mb-2 shrink-0 text-[10px] font-medium uppercase tracking-wide text-white/50">
+            Live preview
+          </p>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col [&>*]:min-h-0 [&>*]:flex-1">
+            {priorityPreview}
+          </div>
+        </div>
+
+        <div className="flex h-full min-h-0 min-w-0 flex-col rounded-xl border border-white/35 bg-white/10 p-3 shadow-sm backdrop-blur-md">
+          <label className="mb-2 block shrink-0 text-[10px] font-medium uppercase tracking-wide text-white/50">
+            Pick a schedule
+          </label>
+          <div className="relative mb-2 shrink-0">
+            <MagnifyingGlassIcon
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50"
+              aria-hidden
+            />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by title, assignee…"
+              className="w-full rounded-lg border border-white/30 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/40 focus:border-white/50 focus:outline-none focus:ring-2 focus:ring-white/25"
+              aria-label="Filter schedules for priority"
+            />
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-white/20 bg-emerald-950/40">
+            {schedulesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div
+                  className="h-6 w-6 animate-spin rounded-full border-2 border-white/50 border-t-transparent"
+                  aria-hidden
+                />
+              </div>
+            ) : activeSchedules.length === 0 ? (
+              <p className="p-4 text-center text-xs text-white/65">
+                No active schedules yet. Create one in the workspace, then choose it
+                here.
+              </p>
+            ) : filtered.length === 0 ? (
+              <p className="p-4 text-center text-xs text-white/65">
+                No schedules match your search.
+              </p>
+            ) : (
+              <ul className="divide-y divide-white/10 p-0">
+                {filtered.map((s) => (
+                  <li key={s.id} className="list-none">
+                    <button
+                      type="button"
+                      onClick={() => onPickSchedule(s.id)}
+                      onKeyDown={(e) => handleRowKeyDown(e, s.id)}
+                      className="flex w-full flex-col gap-0.5 px-3 py-2.5 text-left transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/30"
+                      aria-label={`Set priority to ${s.title}`}
+                    >
+                      <span className="line-clamp-2 text-sm font-medium text-white">
+                        {s.title}
+                      </span>
+                      <span className="text-xs text-white/60">
+                        {s.personAssigned}
+                        <span aria-hidden> · </span>
+                        <span className="capitalize">
+                          {s.deadline.type.replace(/-/g, " ")}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddWidgetModalQuickAccomplishmentSection({
+  onAdd,
+  hasExisting,
+}: {
+  onAdd: () => void;
+  hasExisting: boolean;
+}) {
+  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    onAdd();
+  };
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="w-full">
+        <h4 className="flex items-center gap-2 text-lg font-medium text-white sm:text-xl">
+          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+            <FileXlsIcon
+              size={20}
+              className="text-white"
+              weight="duotone"
+              aria-hidden
+            />
+          </span>
+          Quick accomplishment report
+        </h4>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <FileXlsIcon size={12} className="text-white" aria-hidden />
+            Excel · Accomplishment report
+          </span>
+          {hasExisting ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/45 bg-amber-500/15 px-3 py-1 text-xs font-medium text-amber-100">
+              Replaces current shortcut
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-2 max-w-3xl text-sm text-white/85">
+          Add a compact sidebar form: full name and one task description. Months
+          default to January through December, with first and second half of each
+          month included. The first available accomplishment template is used.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={onAdd}
+        onKeyDown={handleKeyDown}
+        className="group flex w-full flex-col rounded-xl border border-white/35 bg-white/10 p-4 text-left shadow-sm backdrop-blur-md transition-all hover:border-white/50 hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35 sm:flex-row sm:items-center sm:gap-4"
+        aria-label="Add Quick accomplishment widget to sidebar"
+      >
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <span className="inline-flex shrink-0 items-center justify-center rounded-lg border border-white/35 bg-white/10 p-2.5">
+            <FileXlsIcon
+              className="h-6 w-6 text-white"
+              weight="duotone"
+              aria-hidden
+            />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white">Sidebar shortcut</p>
+            <p className="mt-1 text-xs font-normal leading-snug text-white/80">
+              Generate the full-year workbook from the sidebar with two fields
+              only—no stepper.
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 flex shrink-0 items-center justify-end gap-1 text-xs font-medium text-emerald-200/95 sm:mt-0 sm:flex-col sm:items-end">
+          <span className="flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+            <PlusIcon className="h-3.5 w-3.5" weight="bold" aria-hidden />
+            Add to sidebar
+          </span>
+        </div>
+      </button>
+    </div>
+  );
+}
+
 const AddScheduleWidgetOption = ({
   scheduleType,
   description,
@@ -789,14 +1720,60 @@ export function WidgetSidebar() {
     setIsAddModalOpen(false);
   };
 
+  const handleSetPrioritySchedule = (scheduleId: string) => {
+    addWidget({
+      id: `priority-${Date.now()}`,
+      type: "priority",
+      scheduleId,
+    });
+    setIsAddModalOpen(false);
+  };
+
+  const handleAddQuickAccomplishmentWidget = () => {
+    addWidget({
+      id: `quick-accomplishment-${Date.now()}`,
+      type: "quick-accomplishment",
+    });
+    setIsAddModalOpen(false);
+  };
+
+  const hasExistingPriority = useMemo(
+    () => widgets.some((w) => w.type === "priority"),
+    [widgets],
+  );
+
+  const hasExistingQuickAccomplishment = useMemo(
+    () => widgets.some((w) => w.type === "quick-accomplishment"),
+    [widgets],
+  );
+
+  const orderedWidgets = useMemo(() => {
+    const priority = widgets.filter((w) => w.type === "priority");
+    const quickAccomplishment = widgets.filter(
+      (w) => w.type === "quick-accomplishment",
+    );
+    const rest = widgets.filter(
+      (w) => w.type !== "priority" && w.type !== "quick-accomplishment",
+    );
+    return [...priority, ...quickAccomplishment, ...rest];
+  }, [widgets]);
+
   if (!isDesktop) {
     return null;
   }
 
   return (
     <>
+      {/* In-flow width only: keeps main column clear while the real panel is viewport-fixed */}
+      <div
+        aria-hidden
+        className={`shrink-0 transition-[width] duration-300 ${
+          isOpen ? "w-96" : "w-0"
+        }`}
+      />
+
       <aside
-        className={`relative flex-shrink-0 border-l border-emerald-700/60 bg-emerald-900 transition-all duration-300 ${
+        className={`fixed right-0 top-0 z-30 flex h-screen max-h-screen flex-col overflow-visible border-l border-emerald-700/60 bg-emerald-900 transition-[width] duration-300 ${
           isOpen ? "w-96" : "w-0"
         }`}
       >
@@ -814,7 +1791,7 @@ export function WidgetSidebar() {
         </button>
 
         {isOpen && (
-          <div className="flex h-screen flex-col">
+          <div className="flex min-h-0 flex-1 flex-col">
             <div className="border-b border-emerald-700/60 p-4">
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
@@ -832,7 +1809,7 @@ export function WidgetSidebar() {
                   type="button"
                   onClick={() => setIsTaskManagerOpen(true)}
                   className="group flex shrink-0 flex-col items-center gap-1 rounded-xl border border-emerald-600/50 bg-emerald-800/40 px-3 py-2.5 text-center shadow-sm transition hover:border-emerald-500/60 hover:bg-emerald-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/45"
-                  aria-label="Open task manager with checkboxes in a side panel"
+                  aria-label="Open tasks and calendar in a side panel"
                 >
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/10 transition group-hover:bg-white/15">
                     <ListChecksIcon
@@ -866,7 +1843,24 @@ export function WidgetSidebar() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {widgets.map((widget) => {
+                  {orderedWidgets.map((widget) => {
+                    if (widget.type === "priority") {
+                      return (
+                        <PriorityFocusWidget
+                          key={widget.id}
+                          scheduleId={widget.scheduleId}
+                          onRemove={() => removeWidget(widget.id)}
+                        />
+                      );
+                    }
+                    if (widget.type === "quick-accomplishment") {
+                      return (
+                        <QuickAccomplishmentSidebarWidget
+                          key={widget.id}
+                          onRemove={() => removeWidget(widget.id)}
+                        />
+                      );
+                    }
                     if (widget.type === "schedule") {
                       if (widget.scheduleType === "nearest-deadline") {
                         return (
@@ -971,6 +1965,17 @@ export function WidgetSidebar() {
             <AddWidgetModalScheduleSection
               isOpen={isAddModalOpen}
               onAdd={handleAddScheduleWidget}
+            />
+
+            <AddWidgetModalPrioritySection
+              isOpen={isAddModalOpen}
+              onPickSchedule={handleSetPrioritySchedule}
+              hasExistingPriority={hasExistingPriority}
+            />
+
+            <AddWidgetModalQuickAccomplishmentSection
+              onAdd={handleAddQuickAccomplishmentWidget}
+              hasExisting={hasExistingQuickAccomplishment}
             />
 
             <div className="w-full rounded-lg border border-white/30 bg-white/10 p-4 text-center backdrop-blur-sm">

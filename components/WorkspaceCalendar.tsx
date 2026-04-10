@@ -35,7 +35,13 @@ const MONTHS = [
 ];
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function WorkspaceCalendar() {
+export type WorkspaceCalendarProps = {
+  /** `drawer` = embedded in the task sidebar panel (scrollable, no outer card chrome). */
+  variant?: "page" | "drawer";
+};
+
+export function WorkspaceCalendar({ variant = "page" }: WorkspaceCalendarProps) {
+  const isDrawer = variant === "drawer";
   const user = useWorkspaceUser();
   const {
     year,
@@ -93,12 +99,30 @@ export function WorkspaceCalendar() {
 
   const MAX_VISIBLE_NOTES = 3;
 
+  const sectionClass = isDrawer
+    ? "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-emerald-900"
+    : "flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6";
+
+  const scrollInnerClass = isDrawer
+    ? "min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 pb-4 pt-2 sm:px-4"
+    : "contents";
+
+  const cellMinH = isDrawer ? "min-h-[68px]" : "min-h-[80px]";
+
   return (
-    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
-      <header className="mb-6">
-        <h2 className="flex items-center gap-2 text-xl font-medium text-white sm:text-2xl">
+    <section className={sectionClass}>
+      <div className={scrollInnerClass}>
+      <header className={isDrawer ? "mb-4" : "mb-6"}>
+        <h2
+          className={`flex items-center gap-2 font-medium text-white ${
+            isDrawer ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"
+          }`}
+        >
           <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
-            <NotePencilIcon size={20} className="text-white" />
+            <NotePencilIcon
+              size={isDrawer ? 18 : 20}
+              className="text-white"
+            />
           </span>
           Calendar & Notes
         </h2>
@@ -112,8 +136,16 @@ export function WorkspaceCalendar() {
             {totalSchedules} Schedule{totalSchedules === 1 ? "" : "s"}
           </span>
         </div>
-        <p className="mt-2 max-w-3xl text-sm text-white/85">
-          Track important dates, deadlines, and reminders with color-coded notes.
+        <p
+          className={
+            isDrawer
+              ? "mt-2 text-xs text-white/80"
+              : "mt-2 max-w-3xl text-sm text-white/85"
+          }
+        >
+          {isDrawer
+            ? "Same calendar as the workspace—notes, deadlines, and schedule-only view."
+            : "Track important dates, deadlines, and reminders with color-coded notes."}
         </p>
       </header>
 
@@ -158,7 +190,13 @@ export function WorkspaceCalendar() {
           items={scheduleOnlyItems}
         />
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-[auto_repeat(6,1fr)] gap-px text-center">
+        <div
+          className={`grid grid-cols-7 grid-rows-[auto_repeat(6,1fr)] gap-px text-center ${
+            isDrawer
+              ? "min-h-[26rem] sm:min-h-[32rem]"
+              : "min-h-0 flex-1"
+          }`}
+        >
           {DAYS.map((d) => (
             <div
               key={d}
@@ -175,7 +213,7 @@ export function WorkspaceCalendar() {
             return (
               <div
                 key={`${isCurrentMonth ? "cur" : "other"}-${d}-${i}`}
-                className={`relative flex min-h-[80px] flex-col overflow-hidden rounded-md p-2 text-sm ${
+                className={`relative flex ${cellMinH} flex-col overflow-hidden rounded-md p-2 text-sm ${
                   !isCurrentMonth
                     ? "border border-emerald-700/30 bg-emerald-950/30 text-white/40"
                     : isToday(d)
@@ -361,6 +399,8 @@ export function WorkspaceCalendar() {
             })}
           </div>
         )}
+      </div>
+
       </div>
 
       {addModalDate && (

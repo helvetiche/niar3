@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { WorkspaceLoadingScreen } from "@/components/WorkspaceLoadingScreen";
 import { GenerateProfilesToolStepped } from "@/components/GenerateProfilesToolStepped";
 import { MergeFilesToolStepped } from "@/components/MergeFilesToolStepped";
-import { SwrftToolStepped } from "@/components/SwrftToolStepped";
+import { AccomplishmentReportToolStepped } from "@/components/AccomplishmentReportToolStepped";
 import { LipaSummaryToolStepped } from "@/components/LipaSummaryToolStepped";
 import { WorkspaceHub } from "@/components/WorkspaceHub";
 import { TemplatesTool } from "@/components/TemplatesTool";
@@ -42,7 +42,7 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
     description:
       "Merge PDF files with page ordering and combine Excel files into one workbook.",
   },
-  swrft: {
+  "accomplishment-report": {
     name: "ACCOMPLISHMENT REPORT",
     description: "Generate quincena accomplishment reports.",
   },
@@ -137,9 +137,9 @@ export default function WorkspacePage() {
             <PermissionGuard toolId="merge-files">
               <MergeFilesToolStepped />
             </PermissionGuard>
-          ) : selectedTab === "swrft" ? (
-            <PermissionGuard toolId="swrft">
-              <SwrftToolStepped />
+          ) : selectedTab === "accomplishment-report" ? (
+            <PermissionGuard toolId="accomplishment-report">
+              <AccomplishmentReportToolStepped />
             </PermissionGuard>
           ) : selectedTab === "accounts" ? (
             <PermissionGuard toolId="accounts">

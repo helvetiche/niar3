@@ -1,0 +1,538 @@
+"use client";
+
+import {
+  CalendarBlankIcon,
+  CalendarCheckIcon,
+  CalendarDotsIcon,
+  CircleNotchIcon,
+  DownloadSimpleIcon,
+  FileXlsIcon,
+  ListChecksIcon,
+  MagnifyingGlassIcon,
+  PencilSimpleIcon,
+  PlusIcon,
+  TagIcon,
+  TrashIcon,
+  UserIcon,
+  XIcon,
+} from "@phosphor-icons/react";
+import { WorkspaceStepper } from "@/components/WorkspaceStepper";
+import { MasonryModal } from "@/components/MasonryModal";
+import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
+import { useAccomplishmentReportTool } from "@/hooks/useAccomplishmentReportTool";
+import type { AccomplishmentTaskDesignation } from "@/lib/api/accomplishment-tasks";
+
+const DESIGNATION_OPTIONS = [
+  "SWRFT",
+  "WRFOB",
+  "Senior Engineer A",
+  "Senior Engineer B",
+  "Engineer A",
+  "Administrative Aide",
+] as const;
+
+const MONTH_LABELS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+const ALL_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+
+export function AccomplishmentReportToolStepped() {
+  const {
+    selectedTemplateId,
+    fullName,
+    selectedMonths,
+    includeFirstHalf,
+    includeSecondHalf,
+    isSubmitting,
+    selectedTaskId,
+    selectedTask,
+    designation,
+    newTaskLabel,
+    newTaskDesignation,
+    isAddingTask,
+    deletingTaskId,
+    taskSearchQuery,
+    taskDesignationFilter,
+    isTaskModalOpen,
+    isTasksLoading,
+    accomplishmentReportTemplates,
+    filteredTasks,
+    isOverlayVisible,
+    isOverlayOpaque,
+    elapsedSeconds,
+    isFinalizing,
+    setFullName,
+    setIncludeFirstHalf,
+    setIncludeSecondHalf,
+    setNewTaskLabel,
+    setNewTaskDesignation,
+    setTaskSearchQuery,
+    setTaskDesignationFilter,
+    setIsTaskModalOpen,
+    handleTaskToggle,
+    handleAddTask,
+    handleDeleteTask,
+    handleMonthToggle,
+    handleSelectAllMonths,
+    handleDeselectAllMonths,
+    handleGenerate,
+    canProceedToStep,
+  } = useAccomplishmentReportTool();
+
+  const steps = [
+    {
+      title: "Personal Info",
+      description: "Enter your name",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Personal Information
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Enter your name for the report.
+            </p>
+          </div>
+
+          <label className="block" htmlFor="accomplishment-report-full-name">
+            <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+              <UserIcon size={16} className="text-white" />
+              Full Name
+            </span>
+            <input
+              id="accomplishment-report-full-name"
+              type="text"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              placeholder="Enter your full name"
+              className="w-full rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/70 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+            />
+          </label>
+          <p className="text-xs text-white/70">
+            This appears in the report header and output filename.
+          </p>
+        </div>
+      ),
+    },
+    {
+      title: "Task Selection",
+      description: "Optional",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">Task Selection</h3>
+            <p className="mt-1 text-sm text-white/80">
+              Optionally select a task. Its designation will be used in the
+              report.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span className="flex items-center gap-2 text-sm font-medium text-white/90">
+              <ListChecksIcon size={16} className="text-white" />
+              Available Tasks
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsTaskModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              <PlusIcon size={18} />
+              Add task
+            </button>
+          </div>
+
+          {selectedTask && (
+            <p className="text-xs font-medium text-white">
+              Report designation: {designation}
+            </p>
+          )}
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <MagnifyingGlassIcon
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60"
+              />
+              <input
+                type="search"
+                value={taskSearchQuery}
+                onChange={(e) => setTaskSearchQuery(e.target.value)}
+                placeholder="Search tasks..."
+                className="w-full rounded-lg border border-white/40 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="designation-filter"
+                className="text-xs text-white/70"
+              >
+                Filter:
+              </label>
+              <select
+                id="designation-filter"
+                value={taskDesignationFilter}
+                onChange={(e) =>
+                  setTaskDesignationFilter(
+                    e.target.value as "all" | AccomplishmentTaskDesignation,
+                  )
+                }
+                className="rounded-lg border border-white/40 bg-white/5 px-3 py-1.5 text-xs text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+              >
+                <option value="all" className="bg-gray-800">
+                  All
+                </option>
+                {DESIGNATION_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt} className="bg-gray-800">
+                    {opt}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {isTasksLoading ? (
+              <span className="col-span-full text-xs text-white/70">
+                Loading tasks...
+              </span>
+            ) : filteredTasks.length === 0 ? (
+              <span className="col-span-full text-xs text-white/70">
+                No tasks found. Click Add task to create one.
+              </span>
+            ) : (
+              filteredTasks.map((task) => {
+                const isSelected = selectedTaskId === task.id;
+                return (
+                  <div
+                    key={task.id}
+                    className={`relative flex flex-col gap-2 rounded-xl border px-3 py-3 transition ${
+                      isSelected
+                        ? "border-2 border-white bg-white/30"
+                        : "border border-white/40 bg-white/5 hover:bg-white/10"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleTaskToggle(task.id)}
+                      className="flex min-w-0 flex-1 flex-col items-start gap-2 pr-6 text-left"
+                    >
+                      <span className="line-clamp-2 text-sm font-medium text-white">
+                        {task.label}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteTask(e, task.id)}
+                      disabled={deletingTaskId === task.id}
+                      className="absolute right-2 top-2 rounded p-1 transition hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {deletingTaskId === task.id ? (
+                        <CircleNotchIcon
+                          size={14}
+                          className="animate-spin text-white"
+                        />
+                      ) : (
+                        <TrashIcon size={14} className="text-white" />
+                      )}
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Months & Periods",
+      description: "Select range",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">Months & Periods</h3>
+            <p className="mt-1 text-sm text-white/80">
+              Select which months and periods to include in your report.
+            </p>
+          </div>
+
+          <div>
+            <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+              Months to include
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {ALL_MONTHS.map((month) => {
+                const isSelected = selectedMonths.includes(month);
+                return (
+                  <button
+                    key={month}
+                    type="button"
+                    onClick={() => handleMonthToggle(month)}
+                    className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition sm:gap-2 sm:px-3 sm:py-2 ${
+                      isSelected
+                        ? "border-2 border-white bg-white/30 text-white"
+                        : "border border-white/40 bg-white/5 text-white/90 hover:bg-white/10"
+                    }`}
+                  >
+                    <CalendarBlankIcon
+                      size={14}
+                      weight="duotone"
+                      className="sm:hidden"
+                    />
+                    <CalendarBlankIcon
+                      size={16}
+                      weight="duotone"
+                      className="hidden sm:block"
+                    />
+                    <span className="text-xs sm:text-sm">
+                      {MONTH_LABELS[month - 1]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={handleSelectAllMonths}
+                className="rounded-lg border border-white/40 bg-white/5 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/10"
+              >
+                Select all
+              </button>
+              <button
+                type="button"
+                onClick={handleDeselectAllMonths}
+                className="rounded-lg border border-white/40 bg-white/5 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/10"
+              >
+                Deselect all
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <span className="mb-2 flex items-center gap-2 text-sm font-medium text-white/90">
+              Period (half of month)
+            </span>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setIncludeFirstHalf((prev) => !prev)}
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+                  includeFirstHalf
+                    ? "border-2 border-white bg-white/30 text-white"
+                    : "border border-white/40 bg-white/5 text-white/90 hover:bg-white/10"
+                }`}
+              >
+                <CalendarDotsIcon size={18} weight="duotone" />
+                <span>First half (1-15)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIncludeSecondHalf((prev) => !prev)}
+                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
+                  includeSecondHalf
+                    ? "border-2 border-white bg-white/30 text-white"
+                    : "border border-white/40 bg-white/5 text-white/90 hover:bg-white/10"
+                }`}
+              >
+                <CalendarCheckIcon size={18} weight="duotone" />
+                <span>Second half (16-30/31)</span>
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-white/70">
+              Select at least one period. Both can be selected for full month
+              reports.
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Review",
+      description: "Generate report",
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-medium text-white">
+              Review & Generate
+            </h3>
+            <p className="mt-1 text-sm text-white/80">
+              Review your selections and generate the report.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+            <h4 className="mb-3 text-sm font-medium text-white">Summary</h4>
+            <div className="space-y-2 text-sm text-white/90">
+              <p>
+                <span className="text-white/70">Template:</span>{" "}
+                {selectedTemplateId
+                  ? accomplishmentReportTemplates.find(
+                      (t) => t.id === selectedTemplateId,
+                    )
+                      ?.name || "Auto-selected"
+                  : "Auto-selected"}
+              </p>
+              <p>
+                <span className="text-white/70">Name:</span> {fullName}
+              </p>
+              <p>
+                <span className="text-white/70">Task:</span>{" "}
+                {selectedTask?.label || "None"}
+              </p>
+              <p>
+                <span className="text-white/70">Designation:</span>{" "}
+                {designation}
+              </p>
+              <p>
+                <span className="text-white/70">Months:</span>{" "}
+                {selectedMonths.length > 0
+                  ? selectedMonths.map((m) => MONTH_LABELS[m - 1]).join(", ")
+                  : "None"}
+              </p>
+              <p>
+                <span className="text-white/70">Periods:</span>{" "}
+                {includeFirstHalf && includeSecondHalf
+                  ? "Both halves"
+                  : includeFirstHalf
+                    ? "First half"
+                    : includeSecondHalf
+                      ? "Second half"
+                      : "None"}
+              </p>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-3 shadow-xl shadow-emerald-950/30 sm:p-4 md:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="flex items-center gap-2 text-xl font-medium text-white">
+          <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+            <FileXlsIcon size={18} className="text-white" />
+          </span>
+          Accomplishment Report
+        </h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <CalendarBlankIcon size={12} className="text-white" />
+            Quincena Report
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <DownloadSimpleIcon size={12} className="text-white" />
+            Excel Output
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-white/85">
+          Follow the steps below to generate your accomplishment report.
+        </p>
+      </div>
+
+      <WorkspaceStepper
+        steps={steps}
+        onComplete={() => void handleGenerate()}
+        canProceed={canProceedToStep}
+        completeButtonText={isSubmitting ? "Generating..." : "Generate"}
+      />
+
+      <ProcessingOverlay
+        isVisible={isOverlayVisible}
+        isOpaque={isOverlayOpaque}
+        isFinalizing={isFinalizing}
+        elapsedSeconds={elapsedSeconds}
+      />
+
+      <MasonryModal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        panelClassName="max-w-md"
+        animateFrom="bottom"
+      >
+        {(close) => (
+          <div className="rounded-2xl border border-white/40 bg-emerald-900 p-4 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-lg font-medium text-white">
+                <span className="inline-flex rounded-lg border border-white/40 bg-white/10 p-2">
+                  <PlusIcon size={20} className="text-white" />
+                </span>
+                Add task
+              </h3>
+              <button
+                type="button"
+                onClick={close}
+                className="rounded p-1.5 text-white/80 transition hover:bg-white/20 hover:text-white"
+              >
+                <XIcon size={20} weight="bold" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3">
+              <label className="block" htmlFor="add-task-label">
+                <span className="mb-1 flex items-center gap-2 text-xs font-medium text-white/90">
+                  <PencilSimpleIcon size={14} className="text-white" />
+                  Task label
+                </span>
+                <textarea
+                  id="add-task-label"
+                  value={newTaskLabel}
+                  onChange={(e) => setNewTaskLabel(e.target.value)}
+                  rows={4}
+                  placeholder="e.g. Supervise IA meeting"
+                  className="w-full resize-y rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                />
+              </label>
+              <div>
+                <label
+                  htmlFor="task-designation"
+                  className="mb-2 flex items-center gap-2 text-xs font-medium text-white/90"
+                >
+                  <TagIcon size={14} className="text-white" />
+                  Designation
+                </label>
+                <select
+                  id="task-designation"
+                  value={newTaskDesignation}
+                  onChange={(e) =>
+                    setNewTaskDesignation(
+                      e.target.value as AccomplishmentTaskDesignation,
+                    )
+                  }
+                  className="w-full rounded-lg border border-white/40 bg-white/10 px-3 py-2 text-sm text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                >
+                  {DESIGNATION_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt} className="bg-gray-800">
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleAddTask()}
+                disabled={!newTaskLabel.trim() || isAddingTask}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80"
+              >
+                <PlusIcon size={18} />
+                {isAddingTask ? "Adding..." : "Add task"}
+              </button>
+            </div>
+          </div>
+        )}
+      </MasonryModal>
+    </section>
+  );
+}

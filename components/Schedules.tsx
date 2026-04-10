@@ -5,9 +5,11 @@ import {
   ClockIcon,
   EnvelopeIcon,
   MagnifyingGlassIcon,
+  PencilSimpleIcon,
   PlusIcon,
   TrashIcon,
   UserIcon,
+  WarningCircleIcon,
   XIcon,
   CircleNotchIcon,
   CaretLeftIcon,
@@ -22,6 +24,47 @@ import { useWorkspaceUser } from "@/contexts/WorkspaceContext";
 import { useSchedules } from "@/hooks/useSchedules";
 
 const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+const SCHEDULE_FORM_DEADLINE_TYPES = ["daily", "weekly", "monthly"] as const;
+
+const populateFormFromSchedule = (
+  schedule: Schedule,
+  setters: {
+    setTitle: (v: string) => void;
+    setDescription: (v: string) => void;
+    setStatus: (v: "active" | "inactive") => void;
+    setDeadlineType: (v: "daily" | "weekly" | "monthly") => void;
+    setDeadlineTime: (v: string) => void;
+    setDayOfWeek: (v: number) => void;
+    setDayOfMonth: (v: number) => void;
+    setReminderDaysBefore: (v: number) => void;
+    setReminderTime: (v: string) => void;
+  },
+) => {
+  const { deadline, reminderDate } = schedule;
+  setters.setTitle(schedule.title);
+  setters.setDescription(schedule.description ?? "");
+  setters.setStatus(schedule.status === "inactive" ? "inactive" : "active");
+  setters.setDeadlineType(
+    SCHEDULE_FORM_DEADLINE_TYPES.includes(deadline.type as (typeof SCHEDULE_FORM_DEADLINE_TYPES)[number])
+      ? (deadline.type as "daily" | "weekly" | "monthly")
+      : "daily",
+  );
+  setters.setDeadlineTime(deadline.time ?? "17:00");
+  setters.setDayOfWeek(typeof deadline.dayOfWeek === "number" ? deadline.dayOfWeek : 1);
+  setters.setDayOfMonth(
+    typeof deadline.dayOfMonth === "number" ? Math.min(31, Math.max(1, deadline.dayOfMonth)) : 1,
+  );
+  if (reminderDate.type === "relative") {
+    setters.setReminderDaysBefore(
+      typeof reminderDate.daysBefore === "number" ? reminderDate.daysBefore : 1,
+    );
+    setters.setReminderTime(reminderDate.time ?? "08:00");
+  } else {
+    setters.setReminderDaysBefore(1);
+    setters.setReminderTime("08:00");
+  }
+};
 
 export function Schedules() {
   const user = useWorkspaceUser();
@@ -40,11 +83,14 @@ export function Schedules() {
   } = useSchedules();
 
   // Modal states
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isScheduleFormOpen, setIsScheduleFormOpen] = useState(false);
+  const [scheduleFormMode, setScheduleFormMode] = useState<"add" | "edit">("add");
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deletingScheduleId, setDeletingScheduleId] = useState<string | null>(null);
+  const [schedulePendingDelete, setSchedulePendingDelete] = useState<Schedule | null>(null);
+  const [isDeletingSchedule, setIsDeletingSchedule] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -77,67 +123,130 @@ export function Schedules() {
     setReminderTime("08:00");
   };
 
-  const handleAddSchedule = async () => {
-    if (!title.trim() || !user.email) return;
-
+  const buildSchedulePayload = () => {
+    if (!user.email) return null;
     const deadline: ScheduleDeadline = {
       type: deadlineType,
       time: deadlineTime,
       ...(deadlineType === "weekly" && { dayOfWeek }),
       ...(deadlineType === "monthly" && { dayOfMonth }),
     };
-
     const reminderDate: ReminderDate = {
       type: "relative",
       daysBefore: reminderDaysBefore,
       time: reminderTime,
     };
+    return {
+      title: title.trim(),
+      description: description.trim(),
+      deadline,
+      reminderDate,
+      personAssigned: user.email.split("@")[0],
+      personEmail: user.email,
+      status,
+    };
+  };
+
+  const handleOpenAddSchedule = () => {
+    resetForm();
+    setScheduleFormMode("add");
+    setEditingScheduleId(null);
+    setIsScheduleFormOpen(true);
+  };
+
+  const handleOpenEditSchedule = (schedule: Schedule) => {
+    populateFormFromSchedule(schedule, {
+      setTitle,
+      setDescription,
+      setStatus,
+      setDeadlineType,
+      setDeadlineTime,
+      setDayOfWeek,
+      setDayOfMonth,
+      setReminderDaysBefore,
+      setReminderTime,
+    });
+    setScheduleFormMode("edit");
+    setEditingScheduleId(schedule.id);
+    setIsDetailModalOpen(false);
+    setIsScheduleFormOpen(true);
+  };
+
+  const handleRowEditSchedule = (e: React.MouseEvent, schedule: Schedule) => {
+    e.stopPropagation();
+    handleOpenEditSchedule(schedule);
+  };
+
+  const handleCloseScheduleForm = () => {
+    setIsScheduleFormOpen(false);
+    setScheduleFormMode("add");
+    setEditingScheduleId(null);
+    resetForm();
+  };
+
+  const handleSubmitSchedule = async () => {
+    if (!title.trim() || !user.email) return;
+    const payload = buildSchedulePayload();
+    if (!payload) return;
+
+    const isEdit = scheduleFormMode === "edit" && editingScheduleId;
+    const url = isEdit ? `/api/v1/schedules/${editingScheduleId}` : "/api/v1/schedules";
+    const method = isEdit ? "PUT" : "POST";
 
     try {
       setIsSubmitting(true);
-      const response = await fetch("/api/v1/schedules", {
-        method: "POST",
+      const response = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          deadline,
-          reminderDate,
-          personAssigned: user.email.split("@")[0],
-          personEmail: user.email,
-          status,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        resetForm();
-        setIsAddModalOpen(false);
+        handleCloseScheduleForm();
         mutate();
       }
     } catch (error) {
-      console.error("Failed to add schedule:", error);
+      console.error(isEdit ? "Failed to update schedule:" : "Failed to add schedule:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteSchedule = async (e: React.MouseEvent, scheduleId: string) => {
+  const handleRequestDeleteSchedule = (e: React.MouseEvent, schedule: Schedule) => {
     e.stopPropagation();
-    if (deletingScheduleId) return;
+    setSchedulePendingDelete(schedule);
+  };
+
+  const handleCloseDeleteScheduleModal = () => {
+    if (isDeletingSchedule) return;
+    setSchedulePendingDelete(null);
+  };
+
+  const handleConfirmDeleteSchedule = async () => {
+    if (!schedulePendingDelete) return;
 
     try {
-      setDeletingScheduleId(scheduleId);
+      setIsDeletingSchedule(true);
+      const scheduleId = schedulePendingDelete.id;
       const response = await fetch(`/api/v1/schedules/${scheduleId}`, {
         method: "DELETE",
       });
 
       if (response.ok) {
+        setSchedulePendingDelete(null);
+        if (selectedSchedule?.id === scheduleId) {
+          setIsDetailModalOpen(false);
+          setSelectedSchedule(null);
+        }
+        if (editingScheduleId === scheduleId) {
+          handleCloseScheduleForm();
+        }
         mutate();
       }
     } catch (error) {
       console.error("Failed to delete schedule:", error);
     } finally {
-      setDeletingScheduleId(null);
+      setIsDeletingSchedule(false);
     }
   };
 
@@ -195,7 +304,7 @@ export function Schedules() {
           </div>
           <button
             type="button"
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={handleOpenAddSchedule}
             className="inline-flex items-center gap-2 rounded-lg border border-white bg-emerald-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-800"
           >
             <PlusIcon size={18} />
@@ -221,10 +330,10 @@ export function Schedules() {
           <div className="overflow-x-auto overflow-y-visible rounded-lg border border-emerald-700">
             <table className="w-full min-w-0 table-fixed border-collapse">
               <colgroup>
-                <col className="w-[34%]" />
-                <col className="w-[24%]" />
-                <col className="w-[30%]" />
-                <col className="w-[12%]" />
+                <col className="w-[32%]" />
+                <col className="w-[23%]" />
+                <col className="w-[27%]" />
+                <col className="w-[18%]" />
               </colgroup>
               <thead>
                 <tr className="border-b border-emerald-700 bg-emerald-950/70">
@@ -346,20 +455,27 @@ export function Schedules() {
                           </div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 align-top text-right">
-                        <button
-                          type="button"
-                          onClick={(e) => handleDeleteSchedule(e, schedule.id)}
-                          disabled={deletingScheduleId === schedule.id}
-                          className="inline-flex items-center justify-center rounded-lg p-2 text-white/60 transition hover:bg-red-500/20 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
-                          title="Delete schedule"
-                        >
-                          {deletingScheduleId === schedule.id ? (
-                            <CircleNotchIcon size={16} className="animate-spin" />
-                          ) : (
-                            <TrashIcon size={16} />
-                          )}
-                        </button>
+                      <td className="px-2 py-3 align-top sm:px-4">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => handleRowEditSchedule(e, schedule)}
+                            aria-label={`Edit schedule: ${schedule.title}`}
+                            className="inline-flex items-center justify-center rounded-lg p-2 text-white/60 transition hover:bg-white/15 hover:text-white"
+                            title="Edit schedule"
+                          >
+                            <PencilSimpleIcon size={16} aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleRequestDeleteSchedule(e, schedule)}
+                            aria-label={`Delete schedule: ${schedule.title}`}
+                            className="inline-flex items-center justify-center rounded-lg p-2 text-white/60 transition hover:bg-red-500/20 hover:text-red-300"
+                            title="Delete schedule"
+                          >
+                            <TrashIcon size={16} aria-hidden />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -411,13 +527,10 @@ export function Schedules() {
         </div>
       )}
 
-      {/* Add Schedule Modal */}
+      {/* Add / Edit Schedule Modal */}
       <MasonryModal
-        isOpen={isAddModalOpen}
-        onClose={() => {
-          setIsAddModalOpen(false);
-          resetForm();
-        }}
+        isOpen={isScheduleFormOpen}
+        onClose={handleCloseScheduleForm}
         panelClassName="max-w-2xl"
         animateFrom="bottom"
       >
@@ -426,9 +539,13 @@ export function Schedules() {
             <div className="mb-6 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-xl font-medium text-white">
                 <span className="inline-flex rounded-lg border border-white/40 bg-white/10 p-2">
-                  <PlusIcon size={24} className="text-white" />
+                  {scheduleFormMode === "edit" ? (
+                    <PencilSimpleIcon size={24} className="text-white" />
+                  ) : (
+                    <PlusIcon size={24} className="text-white" />
+                  )}
                 </span>
-                Add Schedule
+                {scheduleFormMode === "edit" ? "Edit Schedule" : "Add Schedule"}
               </h3>
               <button
                 type="button"
@@ -595,12 +712,22 @@ export function Schedules() {
               </button>
               <button
                 type="button"
-                onClick={() => void handleAddSchedule()}
+                onClick={() => void handleSubmitSchedule()}
                 disabled={!title.trim() || !user.email || isSubmitting}
                 className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-white/80"
               >
-                <PlusIcon size={18} />
-                {isSubmitting ? "Adding..." : "Add Schedule"}
+                {scheduleFormMode === "edit" ? (
+                  <PencilSimpleIcon size={18} />
+                ) : (
+                  <PlusIcon size={18} />
+                )}
+                {isSubmitting
+                  ? scheduleFormMode === "edit"
+                    ? "Saving..."
+                    : "Adding..."
+                  : scheduleFormMode === "edit"
+                    ? "Save changes"
+                    : "Add Schedule"}
               </button>
             </div>
           </div>
@@ -665,6 +792,73 @@ export function Schedules() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+      </MasonryModal>
+
+      {/* Delete schedule confirmation */}
+      <MasonryModal
+        isOpen={!!schedulePendingDelete}
+        onClose={handleCloseDeleteScheduleModal}
+        animateFrom="center"
+        blurToFocus={false}
+        panelClassName="max-w-md"
+        duration={0.35}
+      >
+        {(close) => (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="schedule-delete-dialog-title"
+            className="rounded-2xl border border-red-500/40 bg-emerald-950/95 p-5 shadow-2xl backdrop-blur-sm"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-red-500/50 bg-red-950/40">
+                <WarningCircleIcon
+                  size={24}
+                  weight="duotone"
+                  className="text-red-200"
+                  aria-hidden
+                />
+              </div>
+              <div>
+                <h3 id="schedule-delete-dialog-title" className="text-lg font-medium text-white">
+                  Delete schedule?
+                </h3>
+                <p className="mt-0.5 text-xs text-red-200/80">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-white/90">
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-white">
+                {schedulePendingDelete?.title ?? "this schedule"}
+              </span>
+              ? Reminders and history tied to this schedule will stop.
+            </p>
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={close}
+                disabled={isDeletingSchedule}
+                className="rounded-lg border border-white/35 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleConfirmDeleteSchedule()}
+                disabled={isDeletingSchedule}
+                aria-label="Confirm delete schedule"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-700 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-red-700/60"
+              >
+                {isDeletingSchedule ? (
+                  <CircleNotchIcon size={18} className="animate-spin" aria-hidden />
+                ) : (
+                  <TrashIcon size={18} aria-hidden />
+                )}
+                {isDeletingSchedule ? "Deleting..." : "Delete schedule"}
+              </button>
+            </div>
           </div>
         )}
       </MasonryModal>

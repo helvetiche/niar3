@@ -6,7 +6,10 @@ import {
   invalidateTemplateCache,
 } from "@/lib/services/template-cache";
 
-export type TemplateScope = "ifr-scanner" | "swrft" | "consolidation";
+export type TemplateScope =
+  | "ifr-scanner"
+  | "accomplishment-report"
+  | "consolidation";
 
 export type StoredTemplate = {
   id: string;

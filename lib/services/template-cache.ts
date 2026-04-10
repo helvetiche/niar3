@@ -34,6 +34,8 @@ export function setCachedTemplates(
 export function invalidateTemplateCache(scope?: string): void {
   if (scope) {
     cache.delete(scope);
+    if (scope === "accomplishment-report") cache.delete("swrft");
+    if (scope === "swrft") cache.delete("accomplishment-report");
   } else {
     cache.clear();
   }

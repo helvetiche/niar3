@@ -42,7 +42,7 @@ export const AVAILABLE_TOOLS: AvailableTool[] = [
     isBasic: true,
   },
   {
-    id: "swrft",
+    id: "accomplishment-report",
     name: "Accomplishment Report",
     description: "Generate quincena accomplishment reports",
     icon: FileXlsIcon,

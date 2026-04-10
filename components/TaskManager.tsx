@@ -235,45 +235,67 @@ export function TaskManager({
         tabIndex={0}
         onClick={(e) => void handleToggleComplete(task, e)}
         onKeyDown={(e) => handleCheckboxKeyDown(e, task)}
-        className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400/60 focus:ring-offset-2 focus:ring-offset-emerald-950 ${
+        className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-emerald-950 ${
           task.currentPeriodCompleted
-            ? "border-white bg-white"
-            : "border-white/40 hover:border-white/70"
+            ? "border-amber-200 bg-amber-400 focus:ring-amber-400/70"
+            : "border-white/40 hover:border-white/70 focus:ring-emerald-400/60"
         }`}
       >
         {task.currentPeriodCompleted ? (
-          <CheckIcon size={14} weight="bold" className="text-emerald-900" />
+          <CheckIcon size={14} weight="bold" className="text-amber-950" />
         ) : null}
       </button>
     );
   };
 
-  const renderTaskRow = (task: ScheduleWithCompletion) => (
-    <div
-      key={task.id}
-      className="flex items-center gap-3 rounded-lg border border-emerald-700/50 bg-emerald-900/50 p-2 transition hover:bg-emerald-800/50"
-    >
-      {renderCheckbox(task)}
-      <button
-        type="button"
-        onClick={() => handleTaskClick(task)}
-        className="min-w-0 flex-1 text-left"
+  const renderTaskRow = (task: ScheduleWithCompletion) => {
+    const finished = task.currentPeriodCompleted;
+    return (
+      <div
+        key={task.id}
+        className={`flex items-center gap-3 rounded-lg border p-2 transition ${
+          finished
+            ? "border-amber-400/55 bg-amber-500/[0.14] hover:bg-amber-500/[0.2]"
+            : "border-emerald-700/50 bg-emerald-900/50 hover:bg-emerald-800/50"
+        }`}
       >
-        <p
-          className={`mb-0.5 line-clamp-2 text-sm font-medium ${
-            task.currentPeriodCompleted ? "text-white/50 line-through" : "text-white"
-          }`}
+        {renderCheckbox(task)}
+        <button
+          type="button"
+          onClick={() => handleTaskClick(task)}
+          className="min-w-0 flex-1 text-left"
         >
-          {task.title}
-        </p>
-        <div className="flex flex-wrap items-center gap-1.5 text-xs text-white/60">
-          <span>{task.personAssigned}</span>
-          <span aria-hidden>·</span>
-          <span className="capitalize">{task.deadline.type.replace(/-/g, " ")}</span>
-        </div>
-      </button>
-    </div>
-  );
+          <p
+            className={`mb-0.5 line-clamp-2 text-sm font-medium ${
+              finished
+                ? "text-amber-50 line-through decoration-amber-200/80"
+                : "text-white"
+            }`}
+          >
+            {task.title}
+          </p>
+          <div
+            className={`flex flex-wrap items-center gap-1.5 text-xs ${
+              finished ? "text-amber-200/75" : "text-white/60"
+            }`}
+          >
+            <span>{task.personAssigned}</span>
+            <span aria-hidden>·</span>
+            <span className="capitalize">{task.deadline.type.replace(/-/g, " ")}</span>
+          </div>
+        </button>
+        {finished ? (
+          <span
+            className="flex shrink-0 items-center gap-1 rounded-md border border-amber-400/40 bg-amber-400/20 px-2 py-1 text-[11px] font-medium text-amber-100"
+            aria-hidden
+          >
+            <CheckCircleIcon className="h-4 w-4 text-amber-300" weight="fill" />
+            <span className="hidden sm:inline">Finished</span>
+          </span>
+        ) : null}
+      </div>
+    );
+  };
 
   const sectionClass = isDrawer
     ? "flex h-full min-h-0 w-full min-w-0 flex-col bg-emerald-900 px-4 pb-4 pt-4 sm:px-5 sm:pb-5"

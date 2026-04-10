@@ -14,11 +14,27 @@ export type ScheduleWidgetType =
   | "tasks-this-week"
   | "tasks-this-month";
 
-export interface Widget {
+export type ScheduleWidget = {
   id: string;
   type: "schedule";
-  scheduleType?: ScheduleWidgetType;
-}
+  scheduleType: ScheduleWidgetType;
+};
+
+export type PriorityWidget = {
+  id: string;
+  type: "priority";
+  scheduleId: string;
+};
+
+export type QuickAccomplishmentWidget = {
+  id: string;
+  type: "quick-accomplishment";
+};
+
+export type Widget =
+  | ScheduleWidget
+  | PriorityWidget
+  | QuickAccomplishmentWidget;
 
 type WidgetSidebarContextValue = {
   isOpen: boolean;
@@ -54,11 +70,50 @@ function saveSidebarState(isOpen: boolean) {
   }
 }
 
+function parseStoredWidgets(raw: string): Widget[] {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    const out: Widget[] = [];
+    let priorityKept = false;
+    let quickAccomplishmentKept = false;
+    for (const item of parsed) {
+      if (!item || typeof item !== "object") continue;
+      const rec = item as Record<string, unknown>;
+      if (rec.type === "quick-accomplishment" && typeof rec.id === "string") {
+        if (quickAccomplishmentKept) continue;
+        quickAccomplishmentKept = true;
+        out.push({ id: rec.id, type: "quick-accomplishment" });
+        continue;
+      }
+      if (rec.type === "priority" && typeof rec.id === "string" && typeof rec.scheduleId === "string") {
+        if (priorityKept) continue;
+        priorityKept = true;
+        out.push({ id: rec.id, type: "priority", scheduleId: rec.scheduleId });
+        continue;
+      }
+      if (rec.type === "schedule" && typeof rec.id === "string") {
+        const st = rec.scheduleType;
+        if (
+          st === "nearest-deadline" ||
+          st === "tasks-this-week" ||
+          st === "tasks-this-month"
+        ) {
+          out.push({ id: rec.id, type: "schedule", scheduleType: st });
+        }
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 function loadWidgets(): Widget[] {
   if (typeof window === "undefined") return [];
   try {
     const saved = localStorage.getItem(WIDGETS_KEY);
-    return saved ? JSON.parse(saved) : [];
+    return saved ? parseStoredWidgets(saved) : [];
   } catch {
     return [];
   }
@@ -97,7 +152,17 @@ export function WidgetSidebarProvider({ children }: { children: ReactNode }) {
 
   const addWidget = useCallback((widget: Widget) => {
     setWidgets((prev) => {
-      const next = [...prev, widget];
+      let next: Widget[];
+      if (widget.type === "priority") {
+        next = [...prev.filter((w) => w.type !== "priority"), widget];
+      } else if (widget.type === "quick-accomplishment") {
+        next = [
+          ...prev.filter((w) => w.type !== "quick-accomplishment"),
+          widget,
+        ];
+      } else {
+        next = [...prev, widget];
+      }
       saveWidgets(next);
       return next;
     });

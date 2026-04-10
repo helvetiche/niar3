@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFirestore } from "@/lib/firebase-admin";
 import { requireAuth } from "@/lib/auth";
 import { syncScheduleCache } from "@/lib/schedule-cache";
+import type { Schedule } from "@/types/schedule";
 
 export async function PUT(
   request: NextRequest,
@@ -37,27 +38,35 @@ export async function PUT(
       deadline,
       reminderDate,
       personAssigned,
-      personEmail,
       status,
     } = body;
 
-    const updateData = {
+    const userEmail = user.email;
+    if (!userEmail) {
+      return NextResponse.json(
+        { error: "User email required" },
+        { status: 400 }
+      );
+    }
+
+    const updateData: Record<string, unknown> = {
       ...(title !== undefined && { title }),
       ...(description !== undefined && { description }),
       ...(deadline !== undefined && { deadline }),
       ...(reminderDate !== undefined && { reminderDate }),
       ...(personAssigned !== undefined && { personAssigned }),
-      ...(personEmail !== undefined && { personEmail }),
       ...(status !== undefined && { status }),
+      personEmail: userEmail,
       updatedAt: new Date().toISOString(),
     };
 
     await scheduleRef.update(updateData);
 
     const updatedDoc = await scheduleRef.get();
-    const schedule = {
+    const data = updatedDoc.data();
+    const schedule: Schedule = {
       id: updatedDoc.id,
-      ...updatedDoc.data(),
+      ...(data as Omit<Schedule, "id">),
     };
 
     // Auto-sync cache after updating schedule

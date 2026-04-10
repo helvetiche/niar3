@@ -15,7 +15,7 @@ export const WORKSPACE_TABS = [
   "template-manager",
   "lipa-summary",
   "merge-files",
-  "swrft",
+  "accomplishment-report",
   "ifr-scanner",
   "accounts",
   "consolidate-land-profiles",

@@ -31,7 +31,10 @@ export function PermissionGuard({
   const userPermissions = user.customClaims?.permissions || [];
 
   // Check if user has permission for this tool
-  const hasPermission = userPermissions.includes(toolId);
+  const hasPermission =
+    userPermissions.includes(toolId) ||
+    (toolId === "accomplishment-report" &&
+      userPermissions.includes("swrft"));
 
   if (!hasPermission) {
     return (

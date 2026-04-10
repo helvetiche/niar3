@@ -27,7 +27,7 @@ export const PERMISSIONS = {
   TOOL_TEMPLATE_MANAGER: "template-manager",
   TOOL_LIPA_SUMMARY: "lipa-summary",
   TOOL_MERGE_FILES: "merge-files",
-  TOOL_SWRFT: "swrft",
+  TOOL_ACCOMPLISHMENT_REPORT: "accomplishment-report",
   TOOL_IFR_SCANNER: "ifr-scanner",
   TOOL_CONSOLIDATE_LAND_PROFILES: "consolidate-land-profiles",
   TOOL_IFR_CHECKER: "ifr-checker",

@@ -103,7 +103,7 @@ const HUB_TOOLS: HubTool[] = [
     ],
   },
   {
-    id: "swrft",
+    id: "accomplishment-report",
     name: "ACCOMPLISHMENT REPORT",
     description:
       "Generate quincena accomplishment reports. Select months and periods, populate tasks, and merge into one workbook.",
