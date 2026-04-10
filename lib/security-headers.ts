@@ -24,13 +24,15 @@ export const SECURITY_RESPONSE_HEADERS: Record<string, string> = {
   ...(process.env.NODE_ENV === "production" && {
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
   }),
-  // Content Security Policy - Strict configuration
-  // Note: In production, consider implementing nonce-based CSP for scripts
+  // Content Security Policy
+  // Next.js App Router emits inline bootstrap/hydration scripts; without 'unsafe-inline'
+  // (or a full nonce pipeline), the browser blocks them and the client bundle never runs.
+  // Prefer nonce-based script-src in the future; see docs/SECURITY.md.
   "Content-Security-Policy":
     "default-src 'self'; " +
     (process.env.NODE_ENV === "development"
       ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; "
-      : "script-src 'self' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; ") +
+      : "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com; ") +
     "style-src 'self' 'unsafe-inline'; " + // Tailwind requires inline styles
     "img-src 'self' data: https:; " +
     "font-src 'self' data:; " +
