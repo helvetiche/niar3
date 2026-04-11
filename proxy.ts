@@ -18,14 +18,14 @@ import { applySecurityHeaders } from "@/lib/security-headers";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isApiRoute = pathname.startsWith("/api/");
-  const isAuthRoute =
-    pathname.startsWith("/api/v1/auth/") ||
-    pathname.match(/^\/(login|register|forgot-password)/);
+  // Only auth *API* routes use the strict bucket. HTML pages like /login are prefetched
+  // and revalidated often; applying auth limits (e.g. 5/min) returns 429 JSON and breaks production.
+  const isAuthApiRoute = pathname.startsWith("/api/v1/auth/");
 
   // Distributed rate limiting (Upstash Redis)
   if (isRateLimitEnabled()) {
     const identifier = getClientIdentifier(request);
-    const limiter = isAuthRoute
+    const limiter = isAuthApiRoute
       ? authRateLimit
       : isApiRoute
         ? apiRateLimit

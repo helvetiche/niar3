@@ -150,40 +150,29 @@ const formatDeadlineForEmail = (deadlineDate: Date): string =>
     hour12: true,
   });
 
-/**
- * HTML body for schedule reminders — aligned with workspace UI (emerald shell, logo, Poppins).
- */
-export const buildScheduleReminderEmailHtml = (
-  schedule: Schedule,
-  deadlineDate: Date,
-  options?: ScheduleReminderEmailOptions
-): string => {
+type NiaTransactionalEmailShellParams = {
+  documentTitle: string;
+  preheaderPlain: string;
+  pillLabel: string;
+  mainColumnHtml: string;
+  options?: ScheduleReminderEmailOptions;
+};
+
+/** Shared HTML shell (logo, NIA header, footer) for all O&amp;M transactional mail. */
+const buildNiaTransactionalEmailShellHtml = ({
+  documentTitle,
+  preheaderPlain,
+  pillLabel,
+  mainColumnHtml,
+  options,
+}: NiaTransactionalEmailShellParams): string => {
   const assetBase = resolveEmailAssetBaseUrl(options?.assetBaseUrl);
   const logoUrl = encodeURI(`${assetBase}/logo.png`);
-
-  const formattedDeadline = formatDeadlineForEmail(deadlineDate);
-
   const currentYear = new Date().getFullYear();
-  const safeAssigned = escapeHtml(schedule.personAssigned);
-  const safeTitle = escapeHtml(schedule.title);
-  const safeDeadlineLabel = escapeHtml(formattedDeadline);
-  const scheduleLine = escapeHtml(formatDeadlineTypeForReminderEmail(schedule));
   const safeProduct = escapeHtml(SCHEDULE_REMINDER_PRODUCT_NAME);
-
-  const preheaderPlain = `${schedule.title} — due ${formattedDeadline}. ${SCHEDULE_REMINDER_PRODUCT_NAME}.`;
   const preheaderSafe = escapeHtml(preheaderPlain);
-
-  const descriptionBlock = schedule.description
-    ? `
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;border-collapse:collapse;">
-                  <tr>
-                    <td style="padding:16px 18px;background-color:${C.detailBg};border:1px solid ${C.borderStrong};border-radius:12px;">
-                      <p style="margin:0 0 8px;font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:${C.subtle};font-family:${fontStack};">Description</p>
-                      <p style="margin:0;font-size:14px;line-height:1.65;color:${C.muted};text-align:left;font-family:${fontStack};font-weight:400;">${escapeHtml(schedule.description)}</p>
-                    </td>
-                  </tr>
-                </table>`
-    : "";
+  const safePill = escapeHtml(pillLabel);
+  const safeDocTitle = escapeHtml(documentTitle);
 
   return `
   <!DOCTYPE html>
@@ -192,7 +181,7 @@ export const buildScheduleReminderEmailHtml = (
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title>Schedule reminder</title>
+    <title>${safeDocTitle}</title>
     <!--[if mso]>
     <noscript>
       <xml>
@@ -225,7 +214,7 @@ export const buildScheduleReminderEmailHtml = (
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0 0;border-collapse:separate;border-spacing:0;">
                   <tr>
                     <td align="left" style="padding:6px 14px;border:1px solid ${C.pillBorder};background-color:${C.pillBg};border-radius:999px;font-family:${fontStack};-webkit-border-radius:999px;">
-                      <span style="font-size:12px;font-weight:500;color:${C.white};line-height:1.35;">Schedule reminder</span>
+                      <span style="font-size:12px;font-weight:500;color:${C.white};line-height:1.35;">${safePill}</span>
                     </td>
                   </tr>
                 </table>
@@ -233,6 +222,54 @@ export const buildScheduleReminderEmailHtml = (
             </tr>
             <tr>
               <td style="padding:26px 28px 28px;font-family:${fontStack};">
+                ${mainColumnHtml}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 28px 22px;background-color:rgba(0,0,0,0.2);border-top:1px solid ${C.borderSoft};">
+                <p style="margin:0;font-size:12px;line-height:1.55;color:${C.subtle};text-align:center;font-family:${fontStack};font-weight:300;">Automated message from <strong style="font-weight:500;color:${C.muted};">${safeProduct}</strong> · NIA Region 3 O&amp;M</p>
+                <p style="margin:10px 0 0;font-size:11px;line-height:1.5;color:${C.subtle};text-align:center;font-family:${fontStack};font-weight:300;">&copy; ${currentYear} National Irrigation Administration. All rights reserved.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  `.trim();
+};
+
+/**
+ * HTML body for schedule reminders — aligned with workspace UI (emerald shell, logo, Poppins).
+ */
+export const buildScheduleReminderEmailHtml = (
+  schedule: Schedule,
+  deadlineDate: Date,
+  options?: ScheduleReminderEmailOptions
+): string => {
+  const formattedDeadline = formatDeadlineForEmail(deadlineDate);
+
+  const safeAssigned = escapeHtml(schedule.personAssigned);
+  const safeTitle = escapeHtml(schedule.title);
+  const safeDeadlineLabel = escapeHtml(formattedDeadline);
+  const scheduleLine = escapeHtml(formatDeadlineTypeForReminderEmail(schedule));
+
+  const preheaderPlain = `${schedule.title} — due ${formattedDeadline}. ${SCHEDULE_REMINDER_PRODUCT_NAME}.`;
+
+  const descriptionBlock = schedule.description
+    ? `
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0 0;border-collapse:collapse;">
+                  <tr>
+                    <td style="padding:16px 18px;background-color:${C.detailBg};border:1px solid ${C.borderStrong};border-radius:12px;">
+                      <p style="margin:0 0 8px;font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:${C.subtle};font-family:${fontStack};">Description</p>
+                      <p style="margin:0;font-size:14px;line-height:1.65;color:${C.muted};text-align:left;font-family:${fontStack};font-weight:400;">${escapeHtml(schedule.description)}</p>
+                    </td>
+                  </tr>
+                </table>`
+    : "";
+
+  const mainColumnHtml = `
                 <p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:${C.white};font-weight:400;">Hello <strong style="font-weight:500;color:${C.white};">${safeAssigned}</strong>,</p>
                 <p style="margin:0 0 22px;font-size:14px;line-height:1.65;color:${C.muted};font-weight:300;">The task below has an upcoming deadline. Please complete it on time to support compliance and day-to-day operations.</p>
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;border-spacing:0;">
@@ -263,21 +300,72 @@ export const buildScheduleReminderEmailHtml = (
                 </table>
                 ${descriptionBlock}
                 <p style="margin:22px 0 0;font-size:13px;line-height:1.55;color:${C.subtle};font-weight:300;">If you have already completed this task for the current period, you may disregard this message.</p>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:18px 28px 22px;background-color:rgba(0,0,0,0.2);border-top:1px solid ${C.borderSoft};">
-                <p style="margin:0;font-size:12px;line-height:1.55;color:${C.subtle};text-align:center;font-family:${fontStack};font-weight:300;">Automated message from <strong style="font-weight:500;color:${C.muted};">${safeProduct}</strong> · NIA Region 3 O&amp;M</p>
-                <p style="margin:10px 0 0;font-size:11px;line-height:1.5;color:${C.subtle};text-align:center;font-family:${fontStack};font-weight:300;">&copy; ${currentYear} National Irrigation Administration. All rights reserved.</p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-  </html>
-  `.trim();
+  `;
+
+  return buildNiaTransactionalEmailShellHtml({
+    documentTitle: "Schedule reminder",
+    preheaderPlain,
+    pillLabel: "Schedule reminder",
+    mainColumnHtml,
+    options,
+  });
+};
+
+export const buildSmtpTestEmailSubject = (): string =>
+  `Connection test · ${SCHEDULE_REMINDER_PRODUCT_NAME}`;
+
+/**
+ * HTML for the authenticated "test email" action — same shell as schedule reminders.
+ */
+export const buildSmtpTestEmailHtml = (options?: ScheduleReminderEmailOptions): string => {
+  const sentAt = formatDeadlineForEmail(new Date());
+  const safeSentAt = escapeHtml(sentAt);
+
+  const mainColumnHtml = `
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.65;color:${C.white};font-weight:400;">Hello,</p>
+                <p style="margin:0 0 22px;font-size:14px;line-height:1.65;color:${C.muted};font-weight:300;">This message confirms that outbound email for automated schedule reminders is configured and deliverable.</p>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                  <tr>
+                    <td style="padding:16px 18px;background-color:${C.detailBg};border:1px solid ${C.borderStrong};border-radius:12px;">
+                      <p style="margin:0 0 10px;font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:${C.subtle};font-family:${fontStack};">Verified</p>
+                      <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${C.muted};font-family:${fontStack};font-weight:300;">SMTP credentials and transport are working.</p>
+                      <p style="margin:0 0 8px;font-size:14px;line-height:1.6;color:${C.muted};font-family:${fontStack};font-weight:300;">Reminder emails use the same layout and branding as this test.</p>
+                      <p style="margin:0;font-size:14px;line-height:1.6;color:${C.muted};font-family:${fontStack};font-weight:300;">Sent at: <strong style="font-weight:500;color:${C.white};">${safeSentAt}</strong></p>
+                    </td>
+                  </tr>
+                </table>
+  `;
+
+  return buildNiaTransactionalEmailShellHtml({
+    documentTitle: "Email connection test",
+    preheaderPlain: `SMTP connection test · ${SCHEDULE_REMINDER_PRODUCT_NAME}`,
+    pillLabel: "Connection test",
+    mainColumnHtml,
+    options,
+  });
+};
+
+export const buildSmtpTestEmailText = (): string => {
+  const year = new Date().getFullYear();
+  const sentAt = formatDeadlineForEmail(new Date());
+  return [
+    SCHEDULE_REMINDER_PRODUCT_NAME.toUpperCase(),
+    "National Irrigation Administration · Region 3 · O&M",
+    "────────────────────────────────────────",
+    "",
+    "CONNECTION TEST",
+    "",
+    "This message confirms that outbound email for automated schedule reminders is configured.",
+    "",
+    "SMTP credentials and transport are working.",
+    "Reminder emails use the same layout and branding as this test.",
+    "",
+    `Sent at: ${sentAt}`,
+    "",
+    "---",
+    `Automated message from ${SCHEDULE_REMINDER_PRODUCT_NAME} (NIA Region 3).`,
+    `© ${year} National Irrigation Administration. All rights reserved.`,
+  ].join("\n");
 };
 
 export const buildScheduleReminderEmailText = (
