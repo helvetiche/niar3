@@ -32,7 +32,7 @@ const verifyCronSecret = (request: NextRequest): boolean => {
     return true;
   }
 
-  // Method 2: Check Authorization header (for Vercel cron)
+  // Method 2: Check Authorization header (Bearer CRON_SECRET)
   const authHeader = request.headers.get("authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
 

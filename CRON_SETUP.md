@@ -2,110 +2,84 @@
 
 ## Overview
 
-The scheduling system automatically sends email reminders based on schedule deadlines using a cron job that runs every minute.
+The scheduling system checks for due reminders when something **HTTP GET**s `/api/v1/cron/send-reminders` on your **deployed** app. This project is set up to use an **external** scheduler (for example [cron-job.org](https://cron-job.org)) — **not** Vercel’s built-in Cron product.
 
 ## Configuration
 
 ### Environment Variables
 
-Add to `.env.local`:
+Add to `.env.local` (use a long random secret; never commit the real value):
 
 ```env
-CRON_SECRET=887ab87853c3f4884c70aee0086ae4dcb234c0d0839c8d53f971fed854ac92fa
+CRON_SECRET=your-random-secret-at-least-16-chars
 ```
 
-### Vercel Deployment
+Set the **same** `CRON_SECRET` in your host’s production env (e.g. **Vercel → Project → Settings → Environment Variables**). The endpoint compares it to the `secret` query parameter or to a `Bearer` token in the `Authorization` header.
 
-The `vercel.json` file configures the cron job to run every minute:
+### Production URL (critical)
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/v1/cron/send-reminders",
-      "schedule": "* * * * *"
-    }
-  ]
-}
-```
+The job must call your **live HTTPS origin**, never `localhost`:
+
+`https://your-domain.com/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET`
+
+Use your real deployment host (`*.vercel.app` or custom domain). If cron-job.org (or any external service) is configured with `http://localhost:3000/...`, the request never reaches your production app.
+
+Set **`NEXT_PUBLIC_SITE_URL`** in production to that same public origin (no trailing slash) so reminder emails use correct absolute asset URLs. If it is missing or still `localhost`, the server falls back to `VERCEL_URL` when running on Vercel.
+
+## cron-job.org
+
+1. Create an account at [cron-job.org](https://cron-job.org).
+2. **Create cronjob** → **URL**:  
+   `https://YOUR_DEPLOYMENT_HOST/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET`  
+   (paste the exact secret you set in `CRON_SECRET`.)
+3. **Schedule**: every minute — use their UI equivalent of `* * * * *` (every minute / “Minutely”).
+4. **Request method**: **GET** (default).
+5. Save and enable the job. Use their execution history / logs to confirm **HTTP 200** and your app’s JSON response.
+
+Other services (EasyCron, UptimeRobot with a short interval, self-hosted curl, etc.) work the same way: **GET** your production URL with `?secret=...`.
 
 ## How It Works
 
-1. **Cron runs every minute** checking for schedules with reminders due
-2. **5-minute window**: Sends reminders if they're within -2 to +3 minutes of the reminder time
-3. **Idempotency**: Tracks sent reminders to avoid duplicates (one per day per schedule)
-4. **Active schedules only**: Only processes schedules with `status: "active"`
+1. **Trigger every minute** (from your external scheduler).
+2. **5-minute window**: Sends reminders if they’re within about -2 to +3 minutes of the reminder time.
+3. **Idempotency**: Tracks sent reminders to avoid duplicates (per schedule / granularity).
+4. **Active schedules only**: Processes schedules with `status: "active"`.
 
 ## API Endpoint
 
 ### GET `/api/v1/cron/send-reminders`
 
-**Authorization**: Requires `CRON_SECRET` via:
+**Authorization** (either is valid):
 
-- Query parameter: `?secret=YOUR_CRON_SECRET`
-- Authorization header: `Bearer YOUR_CRON_SECRET`
-
-**Response**:
-
-```json
-{
-  "success": true,
-  "data": {
-    "checked": 5,
-    "sent": 2,
-    "skipped": 3,
-    "errors": 0,
-    "duration": 1234,
-    "timestamp": "2024-03-26T10:00:00.000Z",
-    "details": [
-      {
-        "scheduleId": "abc123",
-        "title": "Submit Report",
-        "status": "sent",
-        "reason": "Sent to user@example.com"
-      }
-    ]
-  }
-}
-```
+- Query: `?secret=YOUR_CRON_SECRET` (what cron-job.org typically uses in the URL)
+- Header: `Authorization: Bearer YOUR_CRON_SECRET`
 
 ## Testing Locally
 
-Test the cron endpoint manually:
+From your machine while `next dev` is running:
 
 ```bash
 curl "http://localhost:3000/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET"
 ```
 
-## Deployment
+## Deployment Checklist
 
-1. **Push to Vercel**: The cron job will automatically be configured
-2. **Set Environment Variable**: Add `CRON_SECRET` in Vercel dashboard
-3. **Verify**: Check Vercel logs to see cron executions
+1. Deploy the app and set `CRON_SECRET` (and email vars) in the hosting dashboard.
+2. Point cron-job.org at the **production** URL with the same secret.
+3. Confirm runs in cron-job.org and, if needed, function logs on your host.
 
 ## Monitoring
 
-- Check Vercel logs for cron execution
-- Review the response data for sent/skipped/error counts
-- Monitor the `remindersSent` collection in Firestore
-
-## Schedule Calculation
-
-The system calculates:
-
-1. **Next Deadline**: Based on deadline type (daily, weekly, monthly, etc.)
-2. **Reminder Time**: X days before deadline at specified time
-3. **Send Window**: If current time is within 5 minutes of reminder time
+- cron-job.org: job history, status codes, response body snippets.
+- Hosting logs (e.g. Vercel function logs) for server errors.
+- Firestore: `cronLogs`, `remindersSent` (or equivalent idempotency collection).
 
 ## Firestore Collections
 
 ### `schedules`
 
-Stores all schedules with deadline and reminder configurations
+Stores all schedules with deadline and reminder configurations.
 
 ### `remindersSent`
 
-Tracks sent reminders to prevent duplicates:
-
-- Document ID: `{scheduleId}_{YYYY-MM-DD}`
-- Contains: scheduleId, personEmail, sentAt, deadline
+Tracks sent reminders to prevent duplicates (see app code for exact ID shape).

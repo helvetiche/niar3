@@ -14,6 +14,7 @@ import {
   CircleNotchIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  PaperPlaneTiltIcon,
 } from "@phosphor-icons/react";
 import { useState, useEffect, useMemo } from "react";
 import { MasonryModal } from "@/components/MasonryModal";
@@ -128,6 +129,11 @@ export function Schedules() {
   const [emailPreviewAssetOrigin, setEmailPreviewAssetOrigin] = useState<string | null>(
     null
   );
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+  const [testEmailNotice, setTestEmailNotice] = useState<{
+    ok: boolean;
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
     setEmailPreviewAssetOrigin(window.location.origin);
@@ -259,7 +265,46 @@ export function Schedules() {
     setIsScheduleFormOpen(false);
     setScheduleFormMode("add");
     setEditingScheduleId(null);
+    setTestEmailNotice(null);
+    setIsSendingTestEmail(false);
     resetForm();
+  };
+
+  const handleSendTemplateTestEmail = async () => {
+    if (!user.email || isSendingTestEmail) return;
+    setTestEmailNotice(null);
+    try {
+      setIsSendingTestEmail(true);
+      const response = await fetch("/api/v1/schedules/test-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        message?: string;
+        error?: string;
+        details?: string;
+      };
+      if (response.ok) {
+        setTestEmailNotice({
+          ok: true,
+          text:
+            data.message ??
+            `Test email sent to ${user.email}. Check your inbox for the O&M branded layout.`,
+        });
+        return;
+      }
+      const errText = [data.error, data.details].filter(Boolean).join(" — ") || "Request failed";
+      setTestEmailNotice({ ok: false, text: errText });
+    } catch (error) {
+      console.error("Failed to send template test email:", error);
+      setTestEmailNotice({
+        ok: false,
+        text: "Network error. Try again in a moment.",
+      });
+    } finally {
+      setIsSendingTestEmail(false);
+    }
   };
 
   const handleSubmitSchedule = async () => {
@@ -823,9 +868,41 @@ export function Schedules() {
                   className="h-[min(380px,52vh)] w-full min-h-[240px] rounded-lg border border-emerald-700/60 bg-[#064e3b]"
                   srcDoc={scheduleEmailPreviewHtml}
                 />
-                <p className="mt-2 text-xs leading-relaxed text-white/50">
-                  Same HTML as the automated reminder. The deadline shown is the next
-                  occurrence from your deadline settings above.
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                  <p className="text-xs leading-relaxed text-white/50">
+                    Same HTML as the automated reminder. The deadline shown is the next
+                    occurrence from your deadline settings above.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void handleSendTemplateTestEmail()}
+                    disabled={!user.email || isSendingTestEmail}
+                    aria-busy={isSendingTestEmail}
+                    aria-label="Send a test email to your signed-in address with the same branded layout as schedule reminders"
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-white/50 bg-white/15 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSendingTestEmail ? (
+                      <CircleNotchIcon size={16} className="animate-spin" aria-hidden />
+                    ) : (
+                      <PaperPlaneTiltIcon size={16} weight="bold" aria-hidden />
+                    )}
+                    Send test email
+                  </button>
+                </div>
+                {testEmailNotice ? (
+                  <p
+                    role="status"
+                    aria-live="polite"
+                    className={`mt-2 text-xs leading-relaxed ${
+                      testEmailNotice.ok ? "text-emerald-200" : "text-amber-200"
+                    }`}
+                  >
+                    {testEmailNotice.text}
+                  </p>
+                ) : null}
+                <p className="mt-1 text-[11px] leading-relaxed text-white/45">
+                  The test uses the same header, logo, and footer as real reminders (short
+                  connection-test wording in the body).
                 </p>
               </div>
             </div>

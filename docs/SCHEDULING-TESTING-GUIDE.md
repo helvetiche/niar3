@@ -597,7 +597,7 @@ Your system is working correctly if:
 
 ## 🚀 Next Steps After Testing
 
-1. **Set up production cron** (Vercel Cron or external service)
+1. **Set up production cron** (e.g. cron-job.org — see `CRON_SETUP.md`)
 2. **Add monitoring** (alerts for failures)
 3. **Create UI** for cache management
 4. **Document** for team

@@ -200,27 +200,13 @@ const syncCache = async () => {
 
 ### Step 4: Set Up Cron Job
 
-#### Option A: Vercel Cron
-
-Update `vercel.json`:
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/v1/cron/send-reminders",
-      "schedule": "* * * * *"
-    }
-  ]
-}
-```
-
-#### Option B: External Cron
-
-Set up at cron-job.org or similar:
+Use an external scheduler (e.g. [cron-job.org](https://cron-job.org)), not Vercel Cron:
 
 - URL: `https://your-domain.com/api/v1/cron/send-reminders?secret=YOUR_SECRET`
-- Schedule: `* * * * *` (every minute)
+- Method: **GET**
+- Schedule: every minute (`* * * * *`)
+
+See `CRON_SETUP.md` for a cron-job.org walkthrough.
 
 ### Step 5: Test the System
 
@@ -367,7 +353,7 @@ vercel logs --follow
 
 ```bash
 # Verify CRON_SECRET is correct
-# Check Vercel cron dashboard
+# Check cron-job.org (or your scheduler) execution history and production URL (not localhost)
 # Test manually: /api/v1/cron/test
 ```
 
@@ -412,8 +398,7 @@ vercel logs --follow
 If you need to rollback:
 
 1. **Disable Cron Job**
-   - Remove from vercel.json
-   - Or disable external cron
+   - Disable or delete the job in cron-job.org (or your external scheduler)
 
 2. **Revert Code Changes**
 

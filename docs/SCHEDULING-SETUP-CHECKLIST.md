@@ -35,20 +35,11 @@ Quick checklist to get the NIA Tools scheduling system up and running.
 
 ### 4. Cron Job Setup
 
-Choose one option:
-
-#### Option A: Vercel Cron (Production)
-
-- [ ] Add cron configuration to `vercel.json`
-- [ ] Deploy to Vercel
-- [ ] Verify cron is running in Vercel dashboard
-
-#### Option B: External Cron Service (Development/Alternative)
-
-- [ ] Sign up for cron service (cron-job.org, EasyCron, etc.)
-- [ ] Configure cron to hit `/api/v1/cron/send-reminders?secret=YOUR_SECRET`
+- [ ] Sign up for an external scheduler (e.g. [cron-job.org](https://cron-job.org))
+- [ ] Configure a **GET** to production: `https://your-domain.com/api/v1/cron/send-reminders?secret=YOUR_SECRET` (never `localhost` for production)
 - [ ] Set schedule to every minute (`* * * * *`)
-- [ ] Test the endpoint
+- [ ] Confirm executions succeed in the scheduler’s history
+- [ ] See `CRON_SETUP.md` for full details
 
 ### 5. Testing
 

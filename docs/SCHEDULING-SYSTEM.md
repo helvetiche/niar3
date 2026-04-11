@@ -121,30 +121,15 @@ Or use the UI to click "Sync Cache" button (if implemented).
 
 ### 3. Set Up Cron Job
 
-#### Option A: Vercel Cron (Recommended for Production)
+Use an **external** scheduler (this project does **not** rely on Vercel Cron). Typical setup: [cron-job.org](https://cron-job.org).
 
-Add to `vercel.json`:
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/v1/cron/send-reminders",
-      "schedule": "* * * * *"
-    }
-  ]
-}
-```
-
-#### Option B: External Cron Service (Cron-job.org, EasyCron, etc.)
-
-Set up a cron job to hit:
+Create a job that **GET**s your **production** URL every minute:
 
 ```
 https://your-domain.com/api/v1/cron/send-reminders?secret=YOUR_CRON_SECRET
 ```
 
-Schedule: Every minute (`* * * * *`)
+Do **not** use `localhost` in the URL for production — the request must hit your deployed host. See `CRON_SETUP.md` for step-by-step cron-job.org instructions.
 
 ### 4. Test the System
 
