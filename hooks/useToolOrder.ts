@@ -26,10 +26,15 @@ export function useToolOrder(defaultOrder: WorkspaceTab[]) {
   const [toolOrder, setToolOrder] = useState<WorkspaceTab[]>(defaultOrder);
   const skipNextPersist = useRef(true);
   const defaultOrderRef = useRef(defaultOrder);
-  defaultOrderRef.current = defaultOrder;
 
   useEffect(() => {
-    setToolOrder(loadToolOrderFromStorage(defaultOrderRef.current));
+    defaultOrderRef.current = defaultOrder;
+  }, [defaultOrder]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setToolOrder(loadToolOrderFromStorage(defaultOrderRef.current));
+    });
   }, []);
 
   useEffect(() => {

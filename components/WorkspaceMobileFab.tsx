@@ -29,11 +29,13 @@ export function WorkspaceMobileFab() {
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    try {
-      setFabMinimized(localStorage.getItem(FAB_MINIMIZED_KEY) === "1");
-    } catch {
-      /* ignore */
-    }
+    queueMicrotask(() => {
+      try {
+        setFabMinimized(localStorage.getItem(FAB_MINIMIZED_KEY) === "1");
+      } catch {
+        /* ignore */
+      }
+    });
   }, []);
 
   useEffect(() => {

@@ -187,8 +187,10 @@ export function WidgetSidebarProvider({ children }: { children: ReactNode }) {
   const [isTaskDrawerOpen, setIsTaskDrawerOpen] = useState(false);
 
   useEffect(() => {
-    setIsOpen(loadSidebarStateAfterMount());
-    setWidgets(loadWidgets());
+    queueMicrotask(() => {
+      setIsOpen(loadSidebarStateAfterMount());
+      setWidgets(loadWidgets());
+    });
   }, []);
 
   const openTaskDrawer = useCallback(() => {

@@ -29,7 +29,9 @@ export function usePinnedTools() {
   const skipNextPersist = useRef(true);
 
   useEffect(() => {
-    setPinnedTools(loadPinnedToolsFromStorage());
+    queueMicrotask(() => {
+      setPinnedTools(loadPinnedToolsFromStorage());
+    });
   }, []);
 
   useEffect(() => {
