@@ -1,14 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import {
   RobotIcon,
   LightningIcon,
   ChartLineUpIcon,
   MapPinIcon,
-  SignInIcon,
-  UserIcon,
 } from "@phosphor-icons/react";
 import { BannerWithLoginClient } from "@/components/BannerWithLoginClient";
 
@@ -67,17 +64,6 @@ export const Hero = () => {
         </div>
         <header className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
           <div className="flex flex-col gap-2 sm:items-end">
-            <Link
-              href="/login"
-              className="inline-flex self-start items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all duration-200 hover:border-white/30 hover:bg-white/20 hover:shadow-lg hover:shadow-white/10 sm:self-end sm:gap-3 sm:rounded-full sm:pl-3 sm:pr-5"
-              aria-label="Go to login page"
-            >
-              <span className="hidden sm:flex sm:h-7 sm:w-7 sm:shrink-0 sm:items-center sm:justify-center sm:overflow-hidden sm:rounded-full sm:bg-white/15 sm:backdrop-blur-sm">
-                <UserIcon size={14} weight="fill" className="text-white" />
-              </span>
-              <SignInIcon size={16} weight="duotone" className="hidden sm:block" aria-hidden />
-              <span>Login</span>
-            </Link>
             <h2 className="text-base font-semibold tracking-tight text-white sm:text-right sm:text-lg md:text-xl">
               National Irrigation Administration R3
             </h2>

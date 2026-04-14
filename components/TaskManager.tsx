@@ -290,7 +290,7 @@ export function TaskManager({ variant = "page", onRequestClose }: TaskManagerPro
 
   const sectionClass = isDrawer
     ? "flex h-full min-h-0 w-full min-w-0 flex-col bg-emerald-900 px-4 pb-4 pt-4 sm:px-5 sm:pb-5"
-    : "flex h-full min-h-[420px] w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6";
+    : "flex h-full min-h-[420px] w-full min-w-0 flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6";
 
   return (
     <section className={sectionClass}>

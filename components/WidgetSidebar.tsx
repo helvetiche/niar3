@@ -2015,7 +2015,7 @@ function AddWidgetModalScheduleSection({
         </p>
       </div>
 
-      <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3 md:items-stretch md:auto-rows-fr">
+      <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 md:items-stretch md:auto-rows-fr">
         <AddScheduleWidgetOption
           scheduleType="nearest-deadline"
           description={
@@ -2244,7 +2244,7 @@ function AddWidgetModalPrioritySection({
         </p>
       </div>
 
-      <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2 lg:grid-rows-1 lg:items-stretch lg:h-[min(52dvh,26rem)]">
+      <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2 md:grid-rows-1 md:items-stretch md:h-[min(52dvh,26rem)]">
         <div className="flex h-full min-h-0 min-w-0 flex-col rounded-xl border border-white/35 bg-white/10 p-3 shadow-sm backdrop-blur-md">
           <p className="mb-2 shrink-0 text-[10px] font-medium uppercase tracking-wide text-white/50">
             Live preview
@@ -2464,18 +2464,17 @@ const AddScheduleWidgetOption = ({
 };
 
 export function WidgetSidebar() {
-  const { isOpen, toggleSidebar, widgets, addWidget, removeWidget } =
-    useWidgetSidebar();
+  const {
+    isOpen,
+    toggleSidebar,
+    widgets,
+    addWidget,
+    removeWidget,
+    isTaskDrawerOpen,
+    openTaskDrawer,
+    closeTaskDrawer,
+  } = useWidgetSidebar();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isTaskManagerOpen, setIsTaskManagerOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
-    checkDesktop();
-    window.addEventListener("resize", checkDesktop);
-    return () => window.removeEventListener("resize", checkDesktop);
-  }, []);
 
   const handleAddScheduleWidget = (scheduleType: ScheduleWidgetType) => {
     addWidget({
@@ -2564,29 +2563,36 @@ export function WidgetSidebar() {
     return [...priority, ...quickOrdered, ...rest];
   }, [widgets]);
 
-  if (!isDesktop) {
-    return null;
-  }
-
   return (
     <>
-      {/* In-flow width only: keeps main column clear while the real panel is viewport-fixed */}
+      {/* In-flow width only on lg+: reserves space so main content does not sit under the fixed panel */}
       <div
         aria-hidden
-        className={`shrink-0 transition-[width] duration-300 ${
-          isOpen ? "w-96" : "w-0"
+        className={`hidden shrink-0 transition-[width] duration-300 lg:block ${
+          isOpen ? "lg:w-96" : "lg:w-0"
         }`}
       />
 
+      {isOpen ? (
+        <button
+          type="button"
+          aria-label="Close widget sidebar"
+          className="fixed inset-0 z-20 bg-emerald-950/60 backdrop-blur-[2px] lg:hidden"
+          onClick={toggleSidebar}
+        />
+      ) : null}
+
       <aside
-        className={`fixed right-0 top-0 z-30 flex h-screen max-h-screen flex-col overflow-visible border-l border-emerald-700/60 bg-emerald-900 transition-[width] duration-300 ${
-          isOpen ? "w-96" : "w-0"
+        className={`fixed z-30 flex flex-col bg-emerald-900 transition-[width] duration-300 lg:border-l lg:border-emerald-700/60 lg:shadow-none ${
+          isOpen
+            ? "max-lg:inset-0 max-lg:w-full max-lg:min-w-0 max-lg:overflow-hidden max-lg:border-0 max-lg:shadow-none lg:inset-x-auto lg:bottom-auto lg:right-0 lg:top-0 lg:h-[100dvh] lg:max-h-[100dvh] lg:w-96 lg:overflow-visible"
+            : "max-lg:inset-y-0 max-lg:right-0 max-lg:left-auto max-lg:w-0 max-lg:overflow-hidden max-lg:border-0 lg:right-0 lg:top-0 lg:h-[100dvh] lg:overflow-visible"
         }`}
       >
         <button
           type="button"
           onClick={toggleSidebar}
-          className="absolute -left-10 top-4 z-10 rounded-l-lg border border-r-0 border-emerald-700/60 bg-emerald-900 p-2 text-white shadow-lg transition-all hover:bg-emerald-800"
+          className="absolute top-3 z-10 hidden rounded-l-lg border border-r-0 border-emerald-700/60 bg-emerald-900 p-2 text-white shadow-lg transition-all hover:bg-emerald-800 lg:inline-flex lg:top-4 lg:-left-10 lg:right-auto"
           aria-label={isOpen ? "Close widget sidebar" : "Open widget sidebar"}
         >
           {isOpen ? (
@@ -2597,24 +2603,24 @@ export function WidgetSidebar() {
         </button>
 
         {isOpen && (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="border-b border-emerald-700/60 p-4">
+          <div className="flex min-h-0 flex-1 flex-col max-lg:min-h-0 max-lg:flex-1 max-lg:pt-[var(--mobile-workspace-chrome)]">
+            <div className="border-b border-emerald-700/60 px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3 lg:px-4 lg:pb-4 lg:pt-4">
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
-                  <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
-                    <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
+                  <h2 className="flex items-center gap-2 text-base font-semibold leading-snug text-white sm:text-lg">
+                    <span className="inline-flex shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
                       <CalendarCheckIcon className="h-5 w-5" weight="duotone" />
                     </span>
-                    Widgets
+                    <span className="min-w-0">Widgets</span>
                   </h2>
-                  <p className="mt-1 text-xs font-normal text-emerald-200/70">
+                  <p className="mt-1.5 text-xs font-normal leading-relaxed text-emerald-200/75 sm:text-[13px]">
                     Productivity shortcuts and insights next to your workspace
                   </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setIsTaskManagerOpen(true)}
-                  className="group flex shrink-0 flex-col items-center gap-1 rounded-xl border border-emerald-600/50 bg-emerald-800/40 px-3 py-2.5 text-center shadow-sm transition hover:border-emerald-500/60 hover:bg-emerald-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/45"
+                  onClick={() => openTaskDrawer()}
+                  className="group flex shrink-0 flex-col items-center gap-1 rounded-xl border border-emerald-600/50 bg-emerald-800/40 px-2.5 py-2 text-center shadow-sm transition hover:border-emerald-500/60 hover:bg-emerald-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/45 sm:px-3 sm:py-2.5"
                   aria-label="Open tasks and calendar in a side panel"
                 >
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/10 transition group-hover:bg-white/15">
@@ -2631,7 +2637,7 @@ export function WidgetSidebar() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 sm:px-4 lg:px-4 lg:pb-[max(1rem,env(safe-area-inset-bottom))] lg:pt-2">
               {widgets.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <CalendarCheckIcon className="mb-3 h-16 w-16 text-emerald-700/50" />
@@ -2735,8 +2741,8 @@ export function WidgetSidebar() {
       </aside>
 
       <TaskAccomplishmentsDrawer
-        isOpen={isTaskManagerOpen}
-        onClose={() => setIsTaskManagerOpen(false)}
+        isOpen={isTaskDrawerOpen}
+        onClose={closeTaskDrawer}
       />
 
       <MasonryModal
@@ -2745,7 +2751,7 @@ export function WidgetSidebar() {
         panelClassName="w-full max-w-6xl px-1 sm:px-2"
         animateFrom="bottom"
       >
-        <section className="relative max-h-[85dvh] overflow-y-auto rounded-2xl border border-white/40 bg-emerald-900 p-5 shadow-xl sm:p-6 md:p-8">
+        <section className="relative max-h-[min(85dvh,90svh)] overflow-y-auto rounded-2xl border border-white/40 bg-emerald-900 p-4 shadow-xl sm:p-6 md:p-8">
           <button
             type="button"
             onClick={() => setIsAddModalOpen(false)}

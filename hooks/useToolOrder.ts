@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { WorkspaceTab } from "@/contexts/WorkspaceContext";
 
 const TOOL_ORDER_KEY = "workspace_tool_order";
@@ -23,19 +23,25 @@ function loadToolOrderFromStorage(defaultOrder: WorkspaceTab[]): WorkspaceTab[] 
 }
 
 export function useToolOrder(defaultOrder: WorkspaceTab[]) {
-  const [toolOrder, setToolOrder] = useState<WorkspaceTab[]>(() => {
-    // Initialize from localStorage on mount
-    return loadToolOrderFromStorage(defaultOrder);
-  });
+  const [toolOrder, setToolOrder] = useState<WorkspaceTab[]>(defaultOrder);
+  const skipNextPersist = useRef(true);
+  const defaultOrderRef = useRef(defaultOrder);
+  defaultOrderRef.current = defaultOrder;
 
-  // Save to localStorage whenever order changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(toolOrder));
-      } catch {
-        // Silently fail if localStorage is unavailable
-      }
+    setToolOrder(loadToolOrderFromStorage(defaultOrderRef.current));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (skipNextPersist.current) {
+      skipNextPersist.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem(TOOL_ORDER_KEY, JSON.stringify(toolOrder));
+    } catch {
+      /* ignore */
     }
   }, [toolOrder]);
 

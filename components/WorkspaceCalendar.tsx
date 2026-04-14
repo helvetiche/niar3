@@ -107,8 +107,6 @@ export function WorkspaceCalendar({ variant = "page" }: WorkspaceCalendarProps) 
     ? "min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 pb-4 pt-2 sm:px-4"
     : "contents";
 
-  const cellMinH = isDrawer ? "min-h-[68px]" : "min-h-[80px]";
-
   return (
     <section className={sectionClass}>
       <div className={scrollInnerClass}>
@@ -188,19 +186,36 @@ export function WorkspaceCalendar({ variant = "page" }: WorkspaceCalendarProps) 
           />
         ) : (
           <div
-            className={`grid grid-cols-7 grid-rows-[auto_repeat(6,1fr)] gap-px text-center ${
-              isDrawer ? "min-h-[26rem] sm:min-h-[32rem]" : "min-h-0 flex-1"
-            }`}
+            className={
+              isDrawer
+                ? "-mx-3 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-smooth pb-1 sm:-mx-4"
+                : "contents"
+            }
+            {...(isDrawer
+              ? {
+                  role: "region",
+                  "aria-label": "Month calendar — swipe sideways if columns are clipped",
+                }
+              : {})}
           >
-            {DAYS.map((d) => (
-              <div
-                key={d}
-                className="flex items-center justify-center py-2 text-xs font-medium uppercase tracking-wider text-white/70"
-              >
-                {d}
-              </div>
-            ))}
-            {calendarDates.map(({ day: d, isCurrentMonth }, i) => {
+            <div
+              className={`grid grid-cols-7 auto-rows-auto items-start gap-px text-center ${
+                isDrawer
+                  ? "w-full min-w-[40rem] sm:min-w-[44rem]"
+                  : "min-h-0 w-full max-w-full flex-1"
+              }`}
+            >
+              {DAYS.map((d) => (
+                <div
+                  key={d}
+                  className={`flex items-center justify-center py-2 font-medium uppercase tracking-wider text-white/70 ${
+                    isDrawer ? "px-0.5 text-[10px] sm:px-1 sm:text-xs" : "text-xs"
+                  }`}
+                >
+                  {d}
+                </div>
+              ))}
+              {calendarDates.map(({ day: d, isCurrentMonth }, i) => {
               const cellNotes = isCurrentMonth ? getNotesFor(year, month, d) : [];
               const visibleNotes = cellNotes.slice(0, MAX_VISIBLE_NOTES);
               const overflowCount = cellNotes.length - MAX_VISIBLE_NOTES;
@@ -208,7 +223,7 @@ export function WorkspaceCalendar({ variant = "page" }: WorkspaceCalendarProps) 
               return (
                 <div
                   key={`${isCurrentMonth ? "cur" : "other"}-${d}-${i}`}
-                  className={`relative flex ${cellMinH} flex-col overflow-hidden rounded-md p-2 text-sm ${
+                  className={`relative flex aspect-square h-auto w-full min-h-0 min-w-0 flex-col overflow-hidden rounded-md p-1.5 text-sm sm:p-2 ${
                     !isCurrentMonth
                       ? "border border-emerald-700/30 bg-emerald-950/30 text-white/40"
                       : isToday(d)
@@ -271,6 +286,7 @@ export function WorkspaceCalendar({ variant = "page" }: WorkspaceCalendarProps) 
                 </div>
               );
             })}
+            </div>
           </div>
         )}
 

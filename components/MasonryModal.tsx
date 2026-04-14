@@ -65,7 +65,7 @@ export function MasonryModal({
   const centerPanelDefault = "max-w-sm";
   const resolvedPanelClassName =
     placement === "right"
-      ? `relative flex h-full min-h-0 w-[50vw] min-w-[min(100%,18rem)] flex-col overflow-hidden rounded-l-2xl border-l border-y border-emerald-700/60 bg-emerald-900 shadow-xl shadow-emerald-950/30 ${panelClassName ?? ""}`.trimEnd()
+      ? `relative flex h-full min-h-0 w-full min-w-0 max-w-full flex-col overflow-hidden rounded-none border-l border-y border-emerald-700/60 bg-emerald-900 shadow-xl shadow-emerald-950/30 sm:rounded-l-2xl md:w-[50vw] md:min-w-[18rem] md:max-w-none ${panelClassName ?? ""}`.trimEnd()
       : `relative w-full ${panelClassName ?? centerPanelDefault}`;
   const [isMounted, setIsMounted] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);

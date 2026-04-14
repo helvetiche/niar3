@@ -382,7 +382,7 @@ export function Schedules() {
   };
 
   return (
-    <section className="flex h-full w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
+    <section className="flex h-full min-w-0 w-full flex-col rounded-2xl border border-emerald-700/60 bg-emerald-900 p-4 shadow-xl shadow-emerald-950/30 sm:p-6">
       <header className="mb-6">
         <h2 className="flex items-center gap-2 text-xl font-medium text-white sm:text-2xl">
           <span className="inline-flex items-center justify-center rounded-lg border-2 border-dashed border-white bg-white/10 p-1.5">
@@ -407,8 +407,8 @@ export function Schedules() {
       </header>
 
       <div className="mb-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="relative min-w-0 flex-1">
             <MagnifyingGlassIcon
               size={18}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50"
@@ -432,7 +432,7 @@ export function Schedules() {
           <button
             type="button"
             onClick={handleOpenAddSchedule}
-            className="inline-flex items-center gap-2 rounded-lg border border-white bg-emerald-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-800"
+            className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-white bg-emerald-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-800 sm:w-auto"
           >
             <PlusIcon size={18} />
             Add Schedule
@@ -455,7 +455,7 @@ export function Schedules() {
           </div>
         ) : schedules.length > 0 ? (
           <div className="overflow-x-auto overflow-y-visible rounded-lg border border-emerald-700">
-            <table className="w-full min-w-0 table-fixed border-collapse">
+            <table className="w-full min-w-[34rem] table-fixed border-collapse">
               <colgroup>
                 <col className="w-[32%]" />
                 <col className="w-[23%]" />
@@ -646,13 +646,13 @@ export function Schedules() {
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between border-t border-emerald-700/50 pt-4">
+        <div className="mt-4 flex flex-col gap-3 border-t border-emerald-700/50 pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
           <p className="text-xs text-white/60">
             Showing {(pagination.page - 1) * pagination.itemsPerPage + 1} to{" "}
             {Math.min(pagination.page * pagination.itemsPerPage, pagination.totalItems)}{" "}
             of {pagination.totalItems} schedules
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={prevPage}
@@ -686,9 +686,9 @@ export function Schedules() {
         animateFrom="bottom"
       >
         {(close) => (
-          <div className="rounded-2xl border border-white/40 bg-emerald-900 p-6 shadow-xl">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-xl font-medium text-white">
+          <div className="rounded-2xl border border-white/40 bg-emerald-900 p-4 shadow-xl sm:p-6">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <h3 className="flex min-w-0 items-center gap-2 text-lg font-medium text-white sm:text-xl">
                 <span className="inline-flex rounded-lg border border-white/40 bg-white/10 p-2">
                   {scheduleFormMode === "edit" ? (
                     <PencilSimpleIcon size={24} className="text-white" />
@@ -701,13 +701,13 @@ export function Schedules() {
               <button
                 type="button"
                 onClick={close}
-                className="rounded p-1.5 text-white/80 transition hover:bg-white/20 hover:text-white"
+                className="self-end rounded p-1.5 text-white/80 transition hover:bg-white/20 hover:text-white sm:self-start"
               >
                 <XIcon size={20} weight="bold" />
               </button>
             </div>
 
-            <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-2">
+            <div className="max-h-[min(70vh,70dvh)] space-y-4 overflow-y-auto pr-1 sm:pr-2">
               <div>
                 <label className="mb-2 block text-sm font-medium text-white">
                   Title <span className="text-red-400">*</span>
@@ -803,7 +803,7 @@ export function Schedules() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-white">
                     Reminder Days Before

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import {
   DndContext,
@@ -196,7 +196,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
     birthday: "",
   });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(loadSidebarCollapsed);
+  const [collapsed, setCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
@@ -204,7 +204,9 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
   const [isMounted, setIsMounted] = useState(false);
-  const [isDragMode, setIsDragMode] = useState(loadDragMode);
+  const [isDragMode, setIsDragMode] = useState(false);
+  const skipPersistCollapsed = useRef(true);
+  const skipPersistDragMode = useRef(true);
   const { selectedTab, setSelectedTab } = useWorkspaceTab();
   const { toolOrder, updateToolOrder, resetToolOrder } = useToolOrder(
     TOOLS.map((t) => t.id)
@@ -227,6 +229,11 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   }, []);
 
   useEffect(() => {
+    setCollapsed(loadSidebarCollapsed());
+    setIsDragMode(loadDragMode());
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     fetchProfile()
       .then((p) => {
@@ -241,10 +248,18 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   }, [user.uid]);
 
   useEffect(() => {
+    if (skipPersistCollapsed.current) {
+      skipPersistCollapsed.current = false;
+      return;
+    }
     saveSidebarCollapsed(collapsed);
   }, [collapsed]);
 
   useEffect(() => {
+    if (skipPersistDragMode.current) {
+      skipPersistDragMode.current = false;
+      return;
+    }
     saveDragMode(isDragMode);
   }, [isDragMode]);
 
@@ -371,7 +386,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
   const showSidebarContent = isDesktop || isMobileMenuOpen;
   const mobileNavPanelClassName = isDesktop
     ? "flex min-h-0 flex-1 flex-col"
-    : `absolute left-0 right-0 top-full z-40 origin-top border-b border-emerald-800 bg-emerald-900 shadow-2xl shadow-emerald-950/40 transition-all duration-300 ease-out motion-reduce:transition-none ${
+    : `absolute left-0 right-0 top-full z-40 flex max-h-[calc(100dvh-var(--mobile-workspace-chrome,4.75rem)-env(safe-area-inset-bottom,0px))] flex-col overflow-hidden origin-top border-b border-emerald-800 bg-emerald-900 shadow-2xl shadow-emerald-950/40 transition-all duration-300 ease-out motion-reduce:transition-none ${
         isMobileMenuOpen
           ? "pointer-events-auto translate-y-0 scale-y-100 opacity-100"
           : "pointer-events-none -translate-y-1 scale-y-95 opacity-0"
@@ -386,7 +401,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
 
   return (
     <aside
-      className={`sticky top-0 z-40 flex w-full shrink-0 flex-col overflow-visible border-b border-emerald-950/50 bg-emerald-900 lg:z-auto lg:h-screen lg:self-start lg:overflow-hidden lg:border-b-0 lg:border-r lg:transition-[width] lg:duration-200 lg:ease-out ${
+      className={`sticky top-0 z-40 flex w-full shrink-0 flex-col self-start overflow-visible border-b border-emerald-950/50 bg-emerald-900 pt-[env(safe-area-inset-top,0px)] lg:z-auto lg:h-screen lg:overflow-hidden lg:border-b-0 lg:border-r lg:pt-0 lg:transition-[width] lg:duration-200 lg:ease-out ${
         effectiveCollapsed ? "lg:w-[72px]" : "lg:w-96"
       }`}
     >
@@ -417,32 +432,34 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
               </div>
             )}
           </div>
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            className="hidden shrink-0 rounded-lg p-2 transition hover:bg-emerald-800 lg:inline-flex"
-            aria-label={effectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {effectiveCollapsed ? (
-              <CaretRightIcon size={20} weight="bold" className="text-white" />
-            ) : (
-              <CaretLeftIcon size={20} weight="bold" className="text-white" />
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={handleToggleMobileMenu}
-            className="inline-flex shrink-0 rounded-lg p-2 transition hover:bg-emerald-800 lg:hidden"
-            aria-label={
-              isMobileMenuOpen ? "Close workspace menu" : "Open workspace menu"
-            }
-          >
-            {isMobileMenuOpen ? (
-              <XIcon size={20} weight="bold" className="text-white" />
-            ) : (
-              <ListBulletsIcon size={20} weight="duotone" className="text-white" />
-            )}
-          </button>
+          <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              className="hidden shrink-0 rounded-lg p-2 transition hover:bg-emerald-800 lg:inline-flex"
+              aria-label={effectiveCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {effectiveCollapsed ? (
+                <CaretRightIcon size={20} weight="bold" className="text-white" />
+              ) : (
+                <CaretLeftIcon size={20} weight="bold" className="text-white" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleToggleMobileMenu}
+              className="inline-flex shrink-0 rounded-lg p-2 transition hover:bg-emerald-800 lg:hidden"
+              aria-label={
+                isMobileMenuOpen ? "Close workspace menu" : "Open workspace menu"
+              }
+            >
+              {isMobileMenuOpen ? (
+                <XIcon size={20} weight="bold" className="text-white" />
+              ) : (
+                <ListBulletsIcon size={20} weight="duotone" className="text-white" />
+              )}
+            </button>
+          </div>
         </div>
         {!effectiveCollapsed && isDesktop && showSidebarContent && (
           <div className="mt-3 flex flex-col gap-2">
@@ -523,9 +540,9 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
         onClick={() => setIsMobileMenuOpen(false)}
       />
       <div className={mobileNavPanelClassName} aria-hidden={!showSidebarContent}>
-        <div className="min-h-0 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
           {!effectiveCollapsed && showSidebarContent && (
-            <div className="flex items-center gap-2 border-b border-emerald-800 p-2 lg:hidden">
+            <div className="flex shrink-0 items-center gap-2 border-b border-emerald-800 p-2 lg:hidden">
               <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-white/60 bg-white/10 px-3 py-2">
                 <MagnifyingGlassIcon
                   size={18}
@@ -568,73 +585,74 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
               </div>
             </div>
           )}
-          <nav className="max-h-[65dvh] flex-1 overflow-y-auto p-2 lg:max-h-none">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              {viewMode === "grid" && !effectiveCollapsed ? (
-                <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {navItems.map((item) => {
-                    const isActive = selectedTab === item.id;
-                    return (
-                      <li key={item.id}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedTab(item.id)}
-                          title={"description" in item ? item.description : undefined}
-                          className={`flex w-full flex-col items-center gap-2 rounded-lg p-3 transition hover:bg-emerald-800 ${
-                            isActive ? "bg-emerald-800" : ""
-                          }`}
-                        >
-                          <div className="flex shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-white p-2.5">
-                            <item.icon
-                              size={24}
-                              weight="duotone"
-                              className="text-white"
-                            />
-                          </div>
-                          <p className="text-center text-xs font-medium text-white line-clamp-2">
-                            {item.name}
-                          </p>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <SortableContext
-                  items={navItems.map((item) => item.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <ul className="space-y-1">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:px-2 lg:pb-2 lg:pt-0">
+            <nav aria-label="Workspace tools">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                {viewMode === "grid" && !effectiveCollapsed ? (
+                  <ul className="grid grid-cols-3 gap-2">
                     {navItems.map((item) => {
                       const isActive = selectedTab === item.id;
                       return (
-                        <DraggableToolItem
-                          key={item.id}
-                          id={item.id}
-                          name={item.name}
-                          description={item.description}
-                          icon={item.icon}
-                          isActive={isActive}
-                          isCollapsed={effectiveCollapsed}
-                          isDragEnabled={isDragMode}
-                          isPinned={isPinned(item.id)}
-                          onTogglePin={(id) => togglePin(id as WorkspaceTab)}
-                          onClick={() => setSelectedTab(item.id)}
-                        />
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTab(item.id)}
+                            title={"description" in item ? item.description : undefined}
+                            className={`flex w-full flex-col items-center gap-2 rounded-lg p-3 transition hover:bg-emerald-800 ${
+                              isActive ? "bg-emerald-800" : ""
+                            }`}
+                          >
+                            <div className="flex shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-white p-2.5">
+                              <item.icon
+                                size={24}
+                                weight="duotone"
+                                className="text-white"
+                              />
+                            </div>
+                            <p className="text-center text-xs font-medium text-white line-clamp-2">
+                              {item.name}
+                            </p>
+                          </button>
+                        </li>
                       );
                     })}
                   </ul>
-                </SortableContext>
-              )}
-            </DndContext>
-          </nav>
-          <div
-            className={`border-t border-emerald-800 ${effectiveCollapsed ? "p-2" : "p-3"}`}
-          >
+                ) : (
+                  <SortableContext
+                    items={navItems.map((item) => item.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <ul className="space-y-1">
+                      {navItems.map((item) => {
+                        const isActive = selectedTab === item.id;
+                        return (
+                          <DraggableToolItem
+                            key={item.id}
+                            id={item.id}
+                            name={item.name}
+                            description={item.description}
+                            icon={item.icon}
+                            isActive={isActive}
+                            isCollapsed={effectiveCollapsed}
+                            isDragEnabled={isDragMode}
+                            isPinned={isPinned(item.id)}
+                            onTogglePin={(id) => togglePin(id as WorkspaceTab)}
+                            onClick={() => setSelectedTab(item.id)}
+                          />
+                        );
+                      })}
+                    </ul>
+                  </SortableContext>
+                )}
+              </DndContext>
+            </nav>
+            <div
+              className={`mt-2 border-t border-emerald-800 ${effectiveCollapsed ? "p-2" : "p-3"}`}
+            >
             <button
               type="button"
               onClick={() => setIsProfileOpen(true)}
@@ -708,6 +726,7 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
                 </div>
               )}
             </button>
+          </div>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { WORKSPACE_TABS, type WorkspaceTab } from "@/contexts/WorkspaceContext";
 
 const PINNED_TOOLS_KEY = "workspace_pinned_tools";
@@ -25,19 +25,23 @@ function loadPinnedToolsFromStorage(): WorkspaceTab[] {
 }
 
 export function usePinnedTools() {
-  const [pinnedTools, setPinnedTools] = useState<WorkspaceTab[]>(() => {
-    // Initialize from localStorage on mount
-    return loadPinnedToolsFromStorage();
-  });
+  const [pinnedTools, setPinnedTools] = useState<WorkspaceTab[]>([]);
+  const skipNextPersist = useRef(true);
 
-  // Save to localStorage whenever pinnedTools changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(PINNED_TOOLS_KEY, JSON.stringify(pinnedTools));
-      } catch {
-        // Silently fail if localStorage is unavailable
-      }
+    setPinnedTools(loadPinnedToolsFromStorage());
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (skipNextPersist.current) {
+      skipNextPersist.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem(PINNED_TOOLS_KEY, JSON.stringify(pinnedTools));
+    } catch {
+      /* ignore */
     }
   }, [pinnedTools]);
 

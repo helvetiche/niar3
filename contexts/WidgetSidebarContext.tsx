@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useState,
+  useEffect,
   useCallback,
   useMemo,
   type ReactNode,
@@ -74,6 +75,10 @@ type WidgetSidebarContextValue = {
   closeSidebar: () => void;
   addWidget: (widget: Widget) => void;
   removeWidget: (id: string) => void;
+  isTaskDrawerOpen: boolean;
+  openTaskDrawer: () => void;
+  closeTaskDrawer: () => void;
+  toggleTaskDrawer: () => void;
 };
 
 const WidgetSidebarContext = createContext<WidgetSidebarContextValue | null>(null);
@@ -81,11 +86,15 @@ const WidgetSidebarContext = createContext<WidgetSidebarContextValue | null>(nul
 const WIDGET_SIDEBAR_KEY = "widget_sidebar_open";
 const WIDGETS_KEY = "widget_sidebar_widgets";
 
-function loadSidebarState(): boolean {
-  if (typeof window === "undefined") return true;
+/** Desktop default: open when unset. Mobile default: closed unless user saved open. */
+function loadSidebarStateAfterMount(): boolean {
   try {
     const saved = localStorage.getItem(WIDGET_SIDEBAR_KEY);
-    return saved === null ? true : saved === "1";
+    const isDesktop = typeof window !== "undefined" && window.innerWidth >= 1024;
+    if (saved === null) {
+      return isDesktop;
+    }
+    return saved === "1";
   } catch {
     return true;
   }
@@ -172,8 +181,27 @@ function saveWidgets(widgets: Widget[]) {
 }
 
 export function WidgetSidebarProvider({ children }: { children: ReactNode }) {
-  const [isOpen, setIsOpen] = useState(loadSidebarState);
-  const [widgets, setWidgets] = useState<Widget[]>(loadWidgets);
+  /** Closed until hydrated so mobile does not flash the full sheet; desktop opens if unset. */
+  const [isOpen, setIsOpen] = useState(false);
+  const [widgets, setWidgets] = useState<Widget[]>([]);
+  const [isTaskDrawerOpen, setIsTaskDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    setIsOpen(loadSidebarStateAfterMount());
+    setWidgets(loadWidgets());
+  }, []);
+
+  const openTaskDrawer = useCallback(() => {
+    setIsTaskDrawerOpen(true);
+  }, []);
+
+  const closeTaskDrawer = useCallback(() => {
+    setIsTaskDrawerOpen(false);
+  }, []);
+
+  const toggleTaskDrawer = useCallback(() => {
+    setIsTaskDrawerOpen((prev) => !prev);
+  }, []);
 
   const toggleSidebar = useCallback(() => {
     setIsOpen((prev) => {
@@ -225,8 +253,24 @@ export function WidgetSidebarProvider({ children }: { children: ReactNode }) {
       closeSidebar,
       addWidget,
       removeWidget,
+      isTaskDrawerOpen,
+      openTaskDrawer,
+      closeTaskDrawer,
+      toggleTaskDrawer,
     }),
-    [isOpen, widgets, toggleSidebar, openSidebar, closeSidebar, addWidget, removeWidget]
+    [
+      isOpen,
+      widgets,
+      toggleSidebar,
+      openSidebar,
+      closeSidebar,
+      addWidget,
+      removeWidget,
+      isTaskDrawerOpen,
+      openTaskDrawer,
+      closeTaskDrawer,
+      toggleTaskDrawer,
+    ]
   );
 
   return (
