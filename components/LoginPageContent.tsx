@@ -4,11 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeftIcon,
-  SignInIcon,
-  PaperPlaneRightIcon,
-} from "@phosphor-icons/react";
+import { ArrowLeftIcon, SignInIcon, PaperPlaneRightIcon } from "@phosphor-icons/react";
 import { Footer } from "@/components/layout/footer";
 
 type PageView = "login" | "forgot-password";
@@ -79,7 +75,9 @@ export const LoginPageContent = () => {
     setError(null);
     setForgotMessage(null);
     const form = e.currentTarget;
-    const email = (form.querySelector("#reset-email") as HTMLInputElement)?.value?.trim();
+    const email = (
+      form.querySelector("#reset-email") as HTMLInputElement
+    )?.value?.trim();
     if (!email) {
       setError("Please enter your email.");
       return;
@@ -129,18 +127,18 @@ export const LoginPageContent = () => {
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         <div className="flex flex-1 flex-col justify-center px-4 py-6 sm:px-6">
           <div className="mx-auto w-full max-w-lg pb-2">
-          <div className="rounded-2xl border border-white/15 bg-emerald-900/95 p-5 shadow-xl backdrop-blur-sm sm:p-8">
-            <div className="mb-5 border-b border-white/10 pb-4">
-              <Link
-                href="/"
-                className="inline-flex w-fit items-center gap-2 rounded-lg px-1 py-0.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white"
-                aria-label="Back to home"
-              >
-                <ArrowLeftIcon size={18} weight="bold" aria-hidden />
-                Back to home
-              </Link>
-            </div>
-            <div className="mb-6 flex items-start gap-3">
+            <div className="rounded-2xl border border-white/15 bg-emerald-900/95 p-5 shadow-xl backdrop-blur-sm sm:p-8">
+              <div className="mb-5 border-b border-white/10 pb-4">
+                <Link
+                  href="/"
+                  className="inline-flex w-fit items-center gap-2 rounded-lg px-1 py-0.5 text-sm font-medium text-white/90 transition hover:bg-white/10 hover:text-white"
+                  aria-label="Back to home"
+                >
+                  <ArrowLeftIcon size={18} weight="bold" aria-hidden />
+                  Back to home
+                </Link>
+              </div>
+              <div className="mb-6 flex items-start gap-3">
                 <Image
                   src="/logo.png"
                   alt="NIA Logo"
@@ -166,8 +164,8 @@ export const LoginPageContent = () => {
               {view === "forgot-password" && (
                 <p className="mb-4 text-xs text-white/60">
                   After submitting, you&apos;ll receive the reset link at the email you
-                  provide. If you don&apos;t see it within a few minutes, check your spam
-                  or junk folder—it may have been filtered there.
+                  provide. If you don&apos;t see it within a few minutes, check your
+                  spam or junk folder—it may have been filtered there.
                 </p>
               )}
 
@@ -248,7 +246,7 @@ export const LoginPageContent = () => {
                   </button>
                 </form>
               )}
-          </div>
+            </div>
           </div>
         </div>
         <Footer />

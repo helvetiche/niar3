@@ -19,9 +19,7 @@ export default async function WorkspaceLayout({
   return (
     <WorkspaceProvider user={user}>
       <WidgetSidebarProvider>
-        <div
-          className="flex min-h-[100dvh] flex-col bg-emerald-900 [--mobile-workspace-chrome:calc(4.75rem+env(safe-area-inset-top,0px))] lg:flex-row lg:items-start"
-        >
+        <div className="flex min-h-[100dvh] flex-col bg-emerald-900 [--mobile-workspace-chrome:calc(4.75rem+env(safe-area-inset-top,0px))] lg:flex-row lg:items-start">
           <WorkspaceSidebar user={user} />
           <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-emerald-900">
             {children}

@@ -6,10 +6,10 @@ const nextConfig: NextConfig = {
     maxInactiveAge: 60 * 1000,
     pagesBufferLength: 5,
   },
-  // Increase body size limit for file uploads
+  // Large limit for Server Actions; Route Handlers are not capped here (host/runtime limits apply).
   experimental: {
     serverActions: {
-      bodySizeLimit: "100mb",
+      bodySizeLimit: "1gb",
     },
   },
 };

@@ -2740,10 +2740,7 @@ export function WidgetSidebar() {
         )}
       </aside>
 
-      <TaskAccomplishmentsDrawer
-        isOpen={isTaskDrawerOpen}
-        onClose={closeTaskDrawer}
-      />
+      <TaskAccomplishmentsDrawer isOpen={isTaskDrawerOpen} onClose={closeTaskDrawer} />
 
       <MasonryModal
         isOpen={isAddModalOpen}

@@ -194,7 +194,8 @@ export function WorkspaceCalendar({ variant = "page" }: WorkspaceCalendarProps) 
             {...(isDrawer
               ? {
                   role: "region",
-                  "aria-label": "Month calendar — swipe sideways if columns are clipped",
+                  "aria-label":
+                    "Month calendar — swipe sideways if columns are clipped",
                 }
               : {})}
           >
@@ -216,76 +217,76 @@ export function WorkspaceCalendar({ variant = "page" }: WorkspaceCalendarProps) 
                 </div>
               ))}
               {calendarDates.map(({ day: d, isCurrentMonth }, i) => {
-              const cellNotes = isCurrentMonth ? getNotesFor(year, month, d) : [];
-              const visibleNotes = cellNotes.slice(0, MAX_VISIBLE_NOTES);
-              const overflowCount = cellNotes.length - MAX_VISIBLE_NOTES;
+                const cellNotes = isCurrentMonth ? getNotesFor(year, month, d) : [];
+                const visibleNotes = cellNotes.slice(0, MAX_VISIBLE_NOTES);
+                const overflowCount = cellNotes.length - MAX_VISIBLE_NOTES;
 
-              return (
-                <div
-                  key={`${isCurrentMonth ? "cur" : "other"}-${d}-${i}`}
-                  className={`relative flex aspect-square h-auto w-full min-h-0 min-w-0 flex-col overflow-hidden rounded-md p-1.5 text-sm sm:p-2 ${
-                    !isCurrentMonth
-                      ? "border border-emerald-700/30 bg-emerald-950/30 text-white/40"
-                      : isToday(d)
-                        ? "border-2 border-white bg-white/20"
-                        : "border border-emerald-700 bg-emerald-950/50 text-white hover:border-white/40 hover:bg-emerald-800/50"
-                  }`}
-                >
-                  <div className="flex justify-end">
-                    {isToday(d) ? (
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-semibold text-emerald-900">
-                        {d}
-                      </span>
-                    ) : (
-                      <span
-                        className={!isCurrentMonth ? "text-white/40" : "text-white"}
-                      >
-                        {d}
-                      </span>
+                return (
+                  <div
+                    key={`${isCurrentMonth ? "cur" : "other"}-${d}-${i}`}
+                    className={`relative flex aspect-square h-auto w-full min-h-0 min-w-0 flex-col overflow-hidden rounded-md p-1.5 text-sm sm:p-2 ${
+                      !isCurrentMonth
+                        ? "border border-emerald-700/30 bg-emerald-950/30 text-white/40"
+                        : isToday(d)
+                          ? "border-2 border-white bg-white/20"
+                          : "border border-emerald-700 bg-emerald-950/50 text-white hover:border-white/40 hover:bg-emerald-800/50"
+                    }`}
+                  >
+                    <div className="flex justify-end">
+                      {isToday(d) ? (
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-semibold text-emerald-900">
+                          {d}
+                        </span>
+                      ) : (
+                        <span
+                          className={!isCurrentMonth ? "text-white/40" : "text-white"}
+                        >
+                          {d}
+                        </span>
+                      )}
+                    </div>
+                    {isCurrentMonth && (
+                      <>
+                        <div className="absolute left-2 top-2 z-10">
+                          <AddNoteTooltip
+                            onClick={() => openAddModal(year, month, d)}
+                            aria-label={`Add note for ${MONTHS[month]} ${d}`}
+                          >
+                            <PlusIcon size={14} weight="bold" />
+                          </AddNoteTooltip>
+                        </div>
+                        <div className="mt-1 flex min-h-0 min-w-0 flex-1 flex-col justify-end gap-1 overflow-hidden pt-6">
+                          {visibleNotes.map((item, idx) => (
+                            <NotePopover
+                              key={idx}
+                              note={item}
+                              onRemove={() => removeNote(year, month, d, idx)}
+                            >
+                              <div
+                                className={`min-w-0 cursor-pointer rounded px-2 py-0.5 text-left text-xs font-medium text-white transition-opacity hover:opacity-90 ${getNoteBg(item.color)} ${item.isSchedule ? "flex items-center gap-1" : ""}`}
+                              >
+                                {item.isSchedule && (
+                                  <CalendarCheckIcon
+                                    size={12}
+                                    weight="bold"
+                                    className="shrink-0"
+                                  />
+                                )}
+                                <span className="truncate">{item.text}</span>
+                              </div>
+                            </NotePopover>
+                          ))}
+                          {overflowCount > 0 && (
+                            <div className="text-xs font-medium text-white/70">
+                              +{overflowCount} more
+                            </div>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
-                  {isCurrentMonth && (
-                    <>
-                      <div className="absolute left-2 top-2 z-10">
-                        <AddNoteTooltip
-                          onClick={() => openAddModal(year, month, d)}
-                          aria-label={`Add note for ${MONTHS[month]} ${d}`}
-                        >
-                          <PlusIcon size={14} weight="bold" />
-                        </AddNoteTooltip>
-                      </div>
-                      <div className="mt-1 flex min-h-0 min-w-0 flex-1 flex-col justify-end gap-1 overflow-hidden pt-6">
-                        {visibleNotes.map((item, idx) => (
-                          <NotePopover
-                            key={idx}
-                            note={item}
-                            onRemove={() => removeNote(year, month, d, idx)}
-                          >
-                            <div
-                              className={`min-w-0 cursor-pointer rounded px-2 py-0.5 text-left text-xs font-medium text-white transition-opacity hover:opacity-90 ${getNoteBg(item.color)} ${item.isSchedule ? "flex items-center gap-1" : ""}`}
-                            >
-                              {item.isSchedule && (
-                                <CalendarCheckIcon
-                                  size={12}
-                                  weight="bold"
-                                  className="shrink-0"
-                                />
-                              )}
-                              <span className="truncate">{item.text}</span>
-                            </div>
-                          </NotePopover>
-                        ))}
-                        {overflowCount > 0 && (
-                          <div className="text-xs font-medium text-white/70">
-                            +{overflowCount} more
-                          </div>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
             </div>
           </div>
         )}

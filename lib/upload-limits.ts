@@ -110,6 +110,10 @@ export const validateUploads = (
 const MB = 1024 * 1024;
 const GB = 1024 * MB;
 
+/** No practical app-level cap; hosting/runtime/memory/timeouts still apply. */
+const NO_SIZE_CAP = Number.MAX_SAFE_INTEGER;
+const NO_COUNT_CAP = Number.MAX_SAFE_INTEGER;
+
 export const UPLOAD_LIMIT_PRESETS = {
   EXCEL_BATCH: {
     maxFileCount: 400,
@@ -118,10 +122,26 @@ export const UPLOAD_LIMIT_PRESETS = {
     allowedExtensions: [".xlsx", ".xls"],
     allowedMimeSubstrings: ["sheet", "excel"],
   } as const,
+  /** Same type rules as EXCEL_BATCH; size/count uncapped in-app. */
+  EXCEL_BATCH_UNLIMITED: {
+    maxFileCount: NO_COUNT_CAP,
+    maxFileSizeBytes: NO_SIZE_CAP,
+    maxTotalSizeBytes: NO_SIZE_CAP,
+    allowedExtensions: [".xlsx", ".xls"],
+    allowedMimeSubstrings: ["sheet", "excel"],
+  } as const,
   EXCEL_SINGLE: {
     maxFileCount: 1,
     maxFileSizeBytes: 100 * MB,
     maxTotalSizeBytes: 100 * MB,
+    allowedExtensions: [".xlsx", ".xls"],
+    allowedMimeSubstrings: ["sheet", "excel"],
+  } as const,
+  /** One file; size uncapped in-app. */
+  EXCEL_SINGLE_UNLIMITED: {
+    maxFileCount: 1,
+    maxFileSizeBytes: NO_SIZE_CAP,
+    maxTotalSizeBytes: NO_SIZE_CAP,
     allowedExtensions: [".xlsx", ".xls"],
     allowedMimeSubstrings: ["sheet", "excel"],
   } as const,

@@ -653,80 +653,82 @@ export function WorkspaceSidebar({ user }: { user: AuthUser }) {
             <div
               className={`mt-2 border-t border-emerald-800 ${effectiveCollapsed ? "p-2" : "p-3"}`}
             >
-            <button
-              type="button"
-              onClick={() => setIsProfileOpen(true)}
-              title={
-                effectiveCollapsed ? `${displayName} (${user.email ?? "—"})` : undefined
-              }
-              className={`flex w-full items-center rounded-lg transition hover:bg-emerald-800 ${
-                effectiveCollapsed
-                  ? "justify-center px-2 py-2.5"
-                  : "gap-3 px-3 py-2.5 text-left"
-              }`}
-            >
-              <div
-                className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-800 font-semibold text-white ${
-                  effectiveCollapsed ? "h-9 w-9 text-xs" : "h-10 w-10 text-sm"
+              <button
+                type="button"
+                onClick={() => setIsProfileOpen(true)}
+                title={
+                  effectiveCollapsed
+                    ? `${displayName} (${user.email ?? "—"})`
+                    : undefined
+                }
+                className={`flex w-full items-center rounded-lg transition hover:bg-emerald-800 ${
+                  effectiveCollapsed
+                    ? "justify-center px-2 py-2.5"
+                    : "gap-3 px-3 py-2.5 text-left"
                 }`}
               >
-                {firstLetter}
-              </div>
-              {!effectiveCollapsed && (
-                <>
-                  <div className="min-w-0 flex-1 overflow-hidden">
-                    <p className="truncate text-sm font-medium text-white">
-                      {displayName}
-                    </p>
-                    <p className="truncate text-xs text-emerald-200/80">
-                      {user.email ?? "—"}
-                    </p>
-                    {isMounted && (
-                      <p className="mt-0.5 truncate text-xs font-medium text-emerald-300/90">
-                        {isSuperAdmin
-                          ? "Super Admin"
-                          : user.customClaims?.role === "admin"
-                            ? "Admin"
-                            : "User"}
-                      </p>
-                    )}
-                  </div>
-                  <PencilSimpleIcon
-                    size={18}
-                    weight="duotone"
-                    className="shrink-0 text-white/70"
-                  />
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={handleOpenLogoutModal}
-              title={effectiveCollapsed ? "Logout" : undefined}
-              aria-label="Open logout confirmation"
-              className={`mt-2 flex w-full items-center rounded-lg border border-white/35 transition hover:bg-emerald-800 ${
-                effectiveCollapsed
-                  ? "justify-center px-2 py-2.5"
-                  : "gap-3 px-3 py-2.5 text-left"
-              }`}
-            >
-              <div
-                className={`flex shrink-0 items-center justify-center rounded-full border border-white/30 text-white ${
-                  effectiveCollapsed ? "h-9 w-9" : "h-10 w-10"
-                }`}
-              >
-                <SignOutIcon size={effectiveCollapsed ? 18 : 20} />
-              </div>
-              {!effectiveCollapsed && (
-                <div className="min-w-0 flex-1 overflow-hidden">
-                  <p className="truncate text-sm font-medium text-white">Logout</p>
-                  <p className="truncate text-xs text-emerald-200/80">
-                    End current session safely
-                  </p>
+                <div
+                  className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-emerald-800 font-semibold text-white ${
+                    effectiveCollapsed ? "h-9 w-9 text-xs" : "h-10 w-10 text-sm"
+                  }`}
+                >
+                  {firstLetter}
                 </div>
-              )}
-            </button>
-          </div>
+                {!effectiveCollapsed && (
+                  <>
+                    <div className="min-w-0 flex-1 overflow-hidden">
+                      <p className="truncate text-sm font-medium text-white">
+                        {displayName}
+                      </p>
+                      <p className="truncate text-xs text-emerald-200/80">
+                        {user.email ?? "—"}
+                      </p>
+                      {isMounted && (
+                        <p className="mt-0.5 truncate text-xs font-medium text-emerald-300/90">
+                          {isSuperAdmin
+                            ? "Super Admin"
+                            : user.customClaims?.role === "admin"
+                              ? "Admin"
+                              : "User"}
+                        </p>
+                      )}
+                    </div>
+                    <PencilSimpleIcon
+                      size={18}
+                      weight="duotone"
+                      className="shrink-0 text-white/70"
+                    />
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenLogoutModal}
+                title={effectiveCollapsed ? "Logout" : undefined}
+                aria-label="Open logout confirmation"
+                className={`mt-2 flex w-full items-center rounded-lg border border-white/35 transition hover:bg-emerald-800 ${
+                  effectiveCollapsed
+                    ? "justify-center px-2 py-2.5"
+                    : "gap-3 px-3 py-2.5 text-left"
+                }`}
+              >
+                <div
+                  className={`flex shrink-0 items-center justify-center rounded-full border border-white/30 text-white ${
+                    effectiveCollapsed ? "h-9 w-9" : "h-10 w-10"
+                  }`}
+                >
+                  <SignOutIcon size={effectiveCollapsed ? 18 : 20} />
+                </div>
+                {!effectiveCollapsed && (
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <p className="truncate text-sm font-medium text-white">Logout</p>
+                    <p className="truncate text-xs text-emerald-200/80">
+                      End current session safely
+                    </p>
+                  </div>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -24,7 +24,12 @@ export const BannerWithLoginWrapper = () => {
         <span className="hidden sm:flex sm:h-8 sm:w-8 sm:shrink-0 sm:items-center sm:justify-center sm:overflow-hidden sm:rounded-full sm:bg-emerald-900">
           <UserIcon size={16} weight="fill" className="text-white" />
         </span>
-        <SignInIcon size={16} weight="duotone" className="hidden sm:block" aria-hidden />
+        <SignInIcon
+          size={16}
+          weight="duotone"
+          className="hidden sm:block"
+          aria-hidden
+        />
         <span>Login</span>
       </Link>
     </div>

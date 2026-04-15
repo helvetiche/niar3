@@ -9,32 +9,6 @@ import {
   buildSmtpTestEmailText,
 } from "@/lib/schedule-reminder-email-html";
 
-/**
- * Origin for absolute email asset URLs (e.g. logo). Ignores localhost so a
- * production deploy that still has NEXT_PUBLIC_SITE_URL from .env.local does
- * not embed broken links. On Vercel, falls back to VERCEL_URL.
- */
-const resolvePublicOriginForServerEmail = (): string | undefined => {
-  const raw = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "").trim();
-  if (raw) {
-    try {
-      const u = new URL(raw);
-      const { hostname } = u;
-      if (hostname !== "localhost" && hostname !== "127.0.0.1") {
-        return u.origin.replace(/\/$/, "");
-      }
-    } catch {
-      /* invalid URL — try fallbacks below */
-    }
-  }
-  const vercel = process.env.VERCEL_URL?.trim();
-  if (vercel) {
-    const host = vercel.replace(/^https?:\/\//, "").split("/")[0];
-    return `https://${host}`;
-  }
-  return undefined;
-};
-
 // Email configuration from environment variables
 const getEmailConfig = () => {
   const host = process.env.EMAIL_HOST;
@@ -92,16 +66,12 @@ export const sendReminderEmail = async (
     const subject =
       sendOptions?.subjectOverride ?? buildScheduleReminderEmailSubject(schedule.title);
 
-    const publicSite = resolvePublicOriginForServerEmail();
-
     const mailOptions = {
       from: `"Operation & Maintenance (O&M)" <${config.user}>`,
       to: schedule.personEmail,
       subject,
       text: buildScheduleReminderEmailText(schedule, deadlineDate),
-      html: buildScheduleReminderEmailHtml(schedule, deadlineDate, {
-        assetBaseUrl: publicSite,
-      }),
+      html: buildScheduleReminderEmailHtml(schedule, deadlineDate),
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -185,13 +155,11 @@ export async function sendScheduleReminder(
 export async function sendTestEmail(to: string) {
   const config = getEmailConfig();
   const transporter = createTransporter();
-  const publicSite = resolvePublicOriginForServerEmail();
-
   await transporter.sendMail({
     from: `"Operation & Maintenance (O&M)" <${config.user}>`,
     to,
     subject: buildSmtpTestEmailSubject(),
     text: buildSmtpTestEmailText(),
-    html: buildSmtpTestEmailHtml({ assetBaseUrl: publicSite }),
+    html: buildSmtpTestEmailHtml(),
   });
 }

@@ -22,8 +22,8 @@ import { getErrorMessage } from "@/lib/utils";
 import { withHeavyOperationRateLimit } from "@/lib/rate-limit/with-api-rate-limit";
 import { logger } from "@/lib/logger";
 
-const sourceUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_BATCH;
-const templateUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_SINGLE;
+const sourceUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_BATCH_UNLIMITED;
+const templateUploadLimits = UPLOAD_LIMIT_PRESETS.EXCEL_SINGLE_UNLIMITED;
 
 const parseTextMap = (
   value: FormDataEntryValue | null,

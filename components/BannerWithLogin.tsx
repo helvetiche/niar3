@@ -13,8 +13,8 @@ export const BannerWithLogin = () => {
             <span>Exclusive for NIA O&M Employees</span>
           </div>
           <p className="mt-1 hidden text-xs text-white/90 sm:block">
-            Designed for NIA employees to streamline workflows, automate manual tasks, and
-            boost productivity across the organization.
+            Designed for NIA employees to streamline workflows, automate manual tasks,
+            and boost productivity across the organization.
           </p>
         </div>
         <Link
@@ -25,7 +25,12 @@ export const BannerWithLogin = () => {
           <span className="hidden sm:flex sm:h-8 sm:w-8 sm:shrink-0 sm:items-center sm:justify-center sm:overflow-hidden sm:rounded-full sm:bg-emerald-900">
             <UserIcon size={16} weight="fill" className="text-white" />
           </span>
-          <SignInIcon size={16} weight="duotone" className="hidden sm:block" aria-hidden />
+          <SignInIcon
+            size={16}
+            weight="duotone"
+            className="hidden sm:block"
+            aria-hidden
+          />
           <span>Login</span>
         </Link>
       </div>

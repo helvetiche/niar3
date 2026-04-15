@@ -81,7 +81,9 @@ export function WorkspaceMobileFab() {
     persistMinimized(false);
   }, [persistMinimized]);
 
-  const fabDiameter = fabMinimized ? "h-11 w-11 min-h-[2.75rem] min-w-[2.75rem]" : "h-14 w-14 min-h-[3.5rem] min-w-[3.5rem]";
+  const fabDiameter = fabMinimized
+    ? "h-11 w-11 min-h-[2.75rem] min-w-[2.75rem]"
+    : "h-14 w-14 min-h-[3.5rem] min-w-[3.5rem]";
   const iconSize = fabMinimized ? "h-5 w-5" : "h-7 w-7";
 
   const fadeTransition = reduceMotion
@@ -125,15 +127,11 @@ export function WorkspaceMobileFab() {
                 role="menu"
                 aria-label="Workspace shortcuts"
                 initial={
-                  reduceMotion
-                    ? { opacity: 0 }
-                    : { opacity: 0, y: 18, scale: 0.94 }
+                  reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.94 }
                 }
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={
-                  reduceMotion
-                    ? { opacity: 0 }
-                    : { opacity: 0, y: 10, scale: 0.97 }
+                  reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.97 }
                 }
                 transition={popoverTransition}
                 style={{ transformOrigin: "bottom right" }}
@@ -210,13 +208,9 @@ export function WorkspaceMobileFab() {
                 onClick={() => setMenuOpen(false)}
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-600/50 bg-emerald-900/95 text-white shadow-md transition hover:bg-emerald-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
                 aria-label="Close menu"
-                initial={
-                  reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.88 }
-                }
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.88 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={
-                  reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.88 }
-                }
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.88 }}
                 transition={popoverTransition}
               >
                 <XIcon className="h-5 w-5" weight="bold" aria-hidden />
@@ -231,9 +225,7 @@ export function WorkspaceMobileFab() {
             onClick={handleToggleMain}
             className={`flex items-center justify-center rounded-full border border-emerald-600/55 bg-emerald-800 text-white shadow-lg shadow-emerald-950/30 transition hover:border-emerald-500/50 hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/45 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-950 ${fabDiameter}`}
             aria-label={
-              menuOpen
-                ? "Close shortcuts menu"
-                : "Open shortcuts: widgets and tasks"
+              menuOpen ? "Close shortcuts menu" : "Open shortcuts: widgets and tasks"
             }
             aria-expanded={menuOpen}
             aria-haspopup="menu"

@@ -294,7 +294,8 @@ export function Schedules() {
         });
         return;
       }
-      const errText = [data.error, data.details].filter(Boolean).join(" — ") || "Request failed";
+      const errText =
+        [data.error, data.details].filter(Boolean).join(" — ") || "Request failed";
       setTestEmailNotice({ ok: false, text: errText });
     } catch (error) {
       console.error("Failed to send template test email:", error);
@@ -901,8 +902,8 @@ export function Schedules() {
                   </p>
                 ) : null}
                 <p className="mt-1 text-[11px] leading-relaxed text-white/45">
-                  The test uses the same header, logo, and footer as real reminders (short
-                  connection-test wording in the body).
+                  The test uses the same header, logo, and footer as real reminders
+                  (short connection-test wording in the body).
                 </p>
               </div>
             </div>

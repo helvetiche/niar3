@@ -9,26 +9,31 @@ export const SCHEDULE_REMINDER_PRODUCT_NAME = "NIA Productivity Tools";
 export const buildScheduleReminderEmailSubject = (scheduleTitle: string): string =>
   `Reminder: ${scheduleTitle} · ${SCHEDULE_REMINDER_PRODUCT_NAME}`;
 
+/** Production origin for email logo `<img src>`; override only via env or preview. */
+const CANONICAL_EMAIL_LOGO_ORIGIN = "https://niatools.vercel.app";
+
 export type ScheduleReminderEmailOptions = {
   /**
-   * Site origin only (no trailing slash), e.g. https://niatools.vercel.app.
-   * Used for absolute `/logo.png` in HTML so email clients can load the asset.
+   * Optional origin for the logo only (no trailing slash), e.g. `window.location.origin`
+   * in the schedule email preview iframe. Omit for sent mail so the logo uses
+   * `NEXT_PUBLIC_EMAIL_LOGO_BASE_URL` or `https://niatools.vercel.app`.
    */
   assetBaseUrl?: string;
 };
 
 /**
- * Resolves the public site origin for email assets. Prefer `NEXT_PUBLIC_SITE_URL`
- * on the server; callers may pass an override (e.g. `window.location.origin` in the browser).
+ * Base URL for the logo in HTML emails (no trailing slash).
+ * - With `previewOverride` (e.g. browser preview): loads logo from that origin.
+ * - Without: `NEXT_PUBLIC_EMAIL_LOGO_BASE_URL`, else canonical production URL.
  */
-export const resolveEmailAssetBaseUrl = (override?: string): string => {
-  if (override?.trim()) return override.replace(/\/$/, "");
+export const resolveEmailLogoBaseUrl = (previewOverride?: string): string => {
+  if (previewOverride?.trim()) return previewOverride.replace(/\/$/, "");
   const env =
-    typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL
-      ? String(process.env.NEXT_PUBLIC_SITE_URL).replace(/\/$/, "")
+    typeof process !== "undefined" && process.env.NEXT_PUBLIC_EMAIL_LOGO_BASE_URL
+      ? String(process.env.NEXT_PUBLIC_EMAIL_LOGO_BASE_URL).replace(/\/$/, "").trim()
       : "";
   if (env) return env;
-  return "https://niatools.vercel.app";
+  return CANONICAL_EMAIL_LOGO_ORIGIN;
 };
 
 const escapeHtml = (value: string): string =>
@@ -166,8 +171,8 @@ const buildNiaTransactionalEmailShellHtml = ({
   mainColumnHtml,
   options,
 }: NiaTransactionalEmailShellParams): string => {
-  const assetBase = resolveEmailAssetBaseUrl(options?.assetBaseUrl);
-  const logoUrl = encodeURI(`${assetBase}/logo.png`);
+  const logoBase = resolveEmailLogoBaseUrl(options?.assetBaseUrl);
+  const logoUrl = encodeURI(`${logoBase}/logo.png`);
   const currentYear = new Date().getFullYear();
   const safeProduct = escapeHtml(SCHEDULE_REMINDER_PRODUCT_NAME);
   const preheaderSafe = escapeHtml(preheaderPlain);
@@ -317,7 +322,9 @@ export const buildSmtpTestEmailSubject = (): string =>
 /**
  * HTML for the authenticated "test email" action — same shell as schedule reminders.
  */
-export const buildSmtpTestEmailHtml = (options?: ScheduleReminderEmailOptions): string => {
+export const buildSmtpTestEmailHtml = (
+  options?: ScheduleReminderEmailOptions
+): string => {
   const sentAt = formatDeadlineForEmail(new Date());
   const safeSentAt = escapeHtml(sentAt);
 
