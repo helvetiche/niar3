@@ -38,6 +38,7 @@ import {
   FolderOpenIcon,
   PackageIcon,
   ArrowsOutIcon,
+  EnvelopeSimpleIcon,
 } from "@phosphor-icons/react";
 import type { AuthUser } from "@/types/auth";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
@@ -172,6 +173,13 @@ const TOOLS = [
     description:
       "Check off recurring schedules for the current period with period-based completion tracking.",
     icon: ListChecksIcon,
+  },
+  {
+    id: "compose-email" as const,
+    name: "COMPOSE EMAIL",
+    description:
+      "Send a manual one-off email through SMTP (nodemailer) with rich formatting and optional AI assist.",
+    icon: EnvelopeSimpleIcon,
   },
 ] as const;
 

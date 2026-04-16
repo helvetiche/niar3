@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
+import { QuickSingletonWidgetSidebarPromo } from "@/components/WorkspaceWidgetSidebarPromo";
 import { useConsolidateLandProfiles } from "@/hooks/useConsolidateLandProfiles";
 
 export default function ConsolidateLandProfilesTool() {
@@ -336,6 +337,14 @@ export default function ConsolidateLandProfilesTool() {
         onComplete={() => void handleConsolidate()}
         canProceed={canProceedToStep}
         completeButtonText={isProcessing ? "Processing..." : "Consolidate"}
+      />
+
+      <QuickSingletonWidgetSidebarPromo
+        widget="quick-consolidate-ifr"
+        title="Quick consolidate IFR"
+        intro="Keep the consolidate flow in the widget sidebar for quick merges without stepping through this page."
+        description="Upload IFR Excel files, enter division and irrigation association per file, and consolidate with the same template-backed API as here."
+        addButtonLabel="Add Quick consolidate IFR to widget sidebar"
       />
 
       <ProcessingOverlay

@@ -1,5 +1,48 @@
 import type { ScheduleDeadlineType, TaskCompletion } from "@/types/schedule";
 
+/** Local calendar day key (YYYY-MM-DD) from an ISO timestamp, using the viewer's timezone. */
+export const completionLocalDayKey = (completedAtIso: string): string => {
+  const d = new Date(completedAtIso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+/** Completions whose `completedAt` falls in the given local calendar month (month is 0–11). */
+export const completionsInLocalMonth = (
+  completions: TaskCompletion[],
+  year: number,
+  monthIndex: number
+): TaskCompletion[] => {
+  return completions.filter((c) => {
+    const d = new Date(c.completedAt);
+    return d.getFullYear() === year && d.getMonth() === monthIndex;
+  });
+};
+
+/**
+ * Groups completions by local calendar day; each day's list is sorted by completion time ascending.
+ */
+export const groupCompletionsByLocalDaySorted = (
+  completions: TaskCompletion[]
+): Array<{ dayKey: string; items: TaskCompletion[] }> => {
+  const map = new Map<string, TaskCompletion[]>();
+  for (const c of completions) {
+    const key = completionLocalDayKey(c.completedAt);
+    const list = map.get(key) ?? [];
+    list.push(c);
+    map.set(key, list);
+  }
+  const entries = [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  for (const [, items] of entries) {
+    items.sort(
+      (a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()
+    );
+  }
+  return entries.map(([dayKey, items]) => ({ dayKey, items }));
+};
+
 /** Separator unlikely to appear in schedule IDs or ISO timestamps. */
 const PERIOD_KEY_SEP = "\u001e";
 

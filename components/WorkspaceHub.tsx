@@ -24,6 +24,7 @@ import {
   CubeIcon,
   CalendarIcon,
   ListChecksIcon,
+  EnvelopeSimpleIcon,
 } from "@phosphor-icons/react";
 import {
   useWorkspaceTab,
@@ -184,6 +185,18 @@ const HUB_TOOLS: HubTool[] = [
       { id: "period", label: "Period Tracking", icon: CheckCircleIcon },
       { id: "checklist", label: "Checklist", icon: ListChecksIcon },
       { id: "schedules", label: "Your Schedules", icon: CalendarIcon },
+    ],
+  },
+  {
+    id: "compose-email",
+    name: "COMPOSE EMAIL",
+    description:
+      "Draft and send a manual email through your SMTP account using nodemailer, with rich text formatting and optional AI rewriting or tone changes.",
+    icon: EnvelopeSimpleIcon,
+    tags: [
+      { id: "smtp", label: "SMTP (nodemailer)", icon: LightningIcon },
+      { id: "format", label: "Rich formatting", icon: FileTextIcon },
+      { id: "ai", label: "AI assist", icon: SparkleIcon },
     ],
   },
 ];

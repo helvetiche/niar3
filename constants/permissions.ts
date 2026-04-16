@@ -34,6 +34,7 @@ export const PERMISSIONS = {
   TOOL_ACCOUNTS: "accounts",
   TOOL_INVENTORY: "inventory",
   TOOL_TASK_MANAGER: "task-manager",
+  TOOL_COMPOSE_EMAIL: "compose-email",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

@@ -47,19 +47,26 @@ export type QuickConsolidateIfrWidget = {
   type: "quick-consolidate-ifr";
 };
 
+export type QuickIfrCheckerWidget = {
+  id: string;
+  type: "quick-ifr-checker";
+};
+
 export type Widget =
   | ScheduleWidget
   | PriorityWidget
   | QuickAccomplishmentWidget
   | QuickMergeFilesWidget
   | QuickBillingUnitWidget
-  | QuickConsolidateIfrWidget;
+  | QuickConsolidateIfrWidget
+  | QuickIfrCheckerWidget;
 
 const SINGLETON_QUICK_WIDGET_TYPES = [
   "quick-accomplishment",
   "quick-merge-files",
   "quick-billing-unit",
   "quick-consolidate-ifr",
+  "quick-ifr-checker",
 ] as const;
 
 const isSingletonQuickWidgetType = (
@@ -131,6 +138,8 @@ function parseStoredWidgets(raw: string): Widget[] {
           out.push({ id: rec.id, type: "quick-billing-unit" });
         } else if (t === "quick-consolidate-ifr") {
           out.push({ id: rec.id, type: "quick-consolidate-ifr" });
+        } else if (t === "quick-ifr-checker") {
+          out.push({ id: rec.id, type: "quick-ifr-checker" });
         }
         continue;
       }

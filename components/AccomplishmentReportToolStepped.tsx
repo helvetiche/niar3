@@ -20,6 +20,7 @@ import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { MasonryModal } from "@/components/MasonryModal";
 import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
 import { useAccomplishmentReportTool } from "@/hooks/useAccomplishmentReportTool";
+import { QuickSingletonWidgetSidebarPromo } from "@/components/WorkspaceWidgetSidebarPromo";
 import {
   ACCOMPLISHMENT_TASK_DESIGNATIONS,
   type AccomplishmentTaskDesignation,
@@ -431,6 +432,14 @@ export function AccomplishmentReportToolStepped() {
         onComplete={() => void handleGenerate()}
         canProceed={canProceedToStep}
         completeButtonText={isSubmitting ? "Generating..." : "Generate"}
+      />
+
+      <QuickSingletonWidgetSidebarPromo
+        widget="quick-accomplishment"
+        title="Quick accomplishment report"
+        intro="Pin the full-year accomplishment workbook flow to the widget sidebar when you want a narrow form next to other tools."
+        description="Full name, position, task text with Task manager suggestions, and generate—aligned with the first available accomplishment template."
+        addButtonLabel="Add Quick accomplishment report to widget sidebar"
       />
 
       <ProcessingOverlay

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import type { SendMailOptions } from "nodemailer";
 import { Schedule } from "@/types/schedule";
 import {
   buildScheduleReminderEmailHtml,
@@ -7,6 +8,7 @@ import {
   buildSmtpTestEmailHtml,
   buildSmtpTestEmailSubject,
   buildSmtpTestEmailText,
+  SCHEDULE_REMINDER_PRODUCT_NAME,
 } from "@/lib/schedule-reminder-email-html";
 
 // Email configuration from environment variables
@@ -163,3 +165,67 @@ export async function sendTestEmail(to: string) {
     html: buildSmtpTestEmailHtml(),
   });
 }
+
+export type SendManualComposedEmailInput = {
+  to: string;
+  subject: string;
+  /** Final HTML document (already wrapped and safe). */
+  html: string;
+  /** Plain-text alternative. */
+  text: string;
+  /**
+   * Display name for the From header (SMTP mailbox stays `config.user`).
+   * Keep reasonably short for mail clients (recommended under 78 characters).
+   */
+  fromDisplayName?: string;
+};
+
+const truncateMailDisplayName = (name: string, max = 78): string => {
+  const t = name.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
+};
+
+/**
+ * Sends a workspace-composed message using the same nodemailer SMTP transport as schedule mail.
+ */
+export const sendManualComposedEmail = async (
+  input: SendManualComposedEmailInput
+): Promise<SendReminderResult> => {
+  try {
+    const config = getEmailConfig();
+    const transporter = createTransporter();
+
+    const displayName =
+      input.fromDisplayName?.trim() && input.fromDisplayName.trim().length > 0
+        ? truncateMailDisplayName(input.fromDisplayName.trim())
+        : SCHEDULE_REMINDER_PRODUCT_NAME;
+
+    const mail: SendMailOptions = {
+      from: {
+        name: displayName,
+        address: config.user,
+      },
+      to: input.to,
+      subject: input.subject,
+      text: input.text,
+      html: input.html,
+    };
+
+    const info = await transporter.sendMail(mail);
+
+    return {
+      success: true,
+      messageId: info.messageId,
+    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error sending email";
+    console.error("Failed to send manual compose email:", errorMessage);
+
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+};

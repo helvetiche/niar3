@@ -10,6 +10,7 @@ import {
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { useMergeFiles } from "@/hooks/useMergeFiles";
 import { FileList } from "@/components/merge-files/FileList";
+import { QuickSingletonWidgetSidebarPromo } from "@/components/WorkspaceWidgetSidebarPromo";
 
 export function MergeFilesToolStepped() {
   const {
@@ -209,6 +210,14 @@ export function MergeFilesToolStepped() {
           return true;
         }}
         completeButtonText={isSubmitting ? "Merging..." : "Merge & Download"}
+      />
+
+      <QuickSingletonWidgetSidebarPromo
+        widget="quick-merge-files"
+        title="Quick merge files"
+        intro="The widget sidebar can host a compact version of Merge Files so you can run merges without returning to this stepper."
+        description="Choose PDF or Excel mode, queue files in order, set the output name, and download—same engine as this workspace tool."
+        addButtonLabel="Add Quick merge files to widget sidebar"
       />
     </section>
   );

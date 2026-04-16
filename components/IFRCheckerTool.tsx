@@ -13,6 +13,7 @@ import {
   CaretRightIcon,
 } from "@phosphor-icons/react";
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
+import { QuickSingletonWidgetSidebarPromo } from "@/components/WorkspaceWidgetSidebarPromo";
 import { useIFRChecker } from "@/hooks/useIFRChecker";
 
 export default function IFRCheckerTool() {
@@ -457,6 +458,14 @@ export default function IFRCheckerTool() {
         onComplete={() => void runValidation()}
         canProceed={canProceedToStep}
         completeButtonText={isChecking ? "Validating..." : "Run Validation"}
+      />
+
+      <QuickSingletonWidgetSidebarPromo
+        widget="quick-ifr-checker"
+        title="Quick IFR checker"
+        intro="Keep IFR vs consolidated validation in the widget sidebar when you want quick checks next to other tools."
+        description="Upload IFR sources and the consolidated Excel file, run validation, then review summary counts, filters, and paginated issues—the same behavior as this stepper, in a compact right-hand card."
+        addButtonLabel="Add Quick IFR checker to widget sidebar"
       />
     </section>
   );

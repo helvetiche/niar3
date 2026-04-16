@@ -5,6 +5,7 @@ import {
   CaretDownIcon,
   CheckIcon,
   CheckCircleIcon,
+  ClockCounterClockwiseIcon,
   ClockIcon,
   EnvelopeIcon,
   ListChecksIcon,
@@ -15,6 +16,8 @@ import {
 } from "@phosphor-icons/react";
 import { useCallback, useMemo, useState } from "react";
 import { MasonryModal } from "@/components/MasonryModal";
+import { TaskManagerHistoryPanel } from "@/components/TaskManagerHistoryPanel";
+import { ScheduleWidgetsSidebarPromo } from "@/components/WorkspaceWidgetSidebarPromo";
 import { useScheduleCompletions } from "@/hooks/useScheduleCompletions";
 import { useAllSchedulesForTaskManager } from "@/hooks/useAllSchedulesForTaskManager";
 import { getCurrentPeriod, getPeriodLabel } from "@/lib/period-calculator";
@@ -53,6 +56,8 @@ export type TaskManagerProps = {
   onRequestClose?: () => void;
 };
 
+type TaskManagerViewMode = "checklist" | "history";
+
 export function TaskManager({ variant = "page", onRequestClose }: TaskManagerProps) {
   const isDrawer = variant === "drawer";
   const {
@@ -72,6 +77,7 @@ export function TaskManager({ variant = "page", onRequestClose }: TaskManagerPro
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [optimisticKeys, setOptimisticKeys] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<TaskManagerViewMode>("checklist");
 
   const isLoading = schedulesLoading || completionsLoading;
 
@@ -347,9 +353,11 @@ export function TaskManager({ variant = "page", onRequestClose }: TaskManagerPro
                 isDrawer ? "text-xs sm:text-sm" : "text-sm"
               }`}
             >
-              {isDrawer
-                ? "Same checklist as the workspace hub—tick tasks for the current period."
-                : "Check off recurring schedules for the current period (today, this week, or this month)."}
+              {viewMode === "history"
+                ? "Browse past completions by month—each day lists tasks you marked finished, for any schedule cadence."
+                : isDrawer
+                  ? "Same checklist as the workspace hub—tick tasks for the current period."
+                  : "Check off recurring schedules for the current period (today, this week, or this month)."}
             </p>
           </div>
           {onRequestClose ? (
@@ -389,6 +397,45 @@ export function TaskManager({ variant = "page", onRequestClose }: TaskManagerPro
 
       {!schedulesError && !completionsError && !isLoading ? (
         <>
+          <div
+            className="mb-4 flex rounded-lg border border-emerald-700 bg-emerald-950/50 p-1"
+            role="tablist"
+            aria-label="Task manager view"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === "checklist"}
+              tabIndex={viewMode === "checklist" ? 0 : -1}
+              onClick={() => setViewMode("checklist")}
+              className={`flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 ${
+                viewMode === "checklist"
+                  ? "bg-white text-emerald-900 shadow-sm"
+                  : "text-white/80 hover:bg-emerald-800/40 hover:text-white"
+              }`}
+            >
+              <ListChecksIcon size={18} className="shrink-0" />
+              <span className="hidden sm:inline">This period</span>
+              <span className="sm:hidden">Now</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={viewMode === "history"}
+              tabIndex={viewMode === "history" ? 0 : -1}
+              onClick={() => setViewMode("history")}
+              className={`flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 ${
+                viewMode === "history"
+                  ? "bg-white text-emerald-900 shadow-sm"
+                  : "text-white/80 hover:bg-emerald-800/40 hover:text-white"
+              }`}
+            >
+              <ClockCounterClockwiseIcon size={18} className="shrink-0" />
+              <span className="hidden sm:inline">History</span>
+              <span className="sm:hidden">Past</span>
+            </button>
+          </div>
+
           <div className="relative mb-4">
             <MagnifyingGlassIcon
               size={18}
@@ -398,7 +445,11 @@ export function TaskManager({ variant = "page", onRequestClose }: TaskManagerPro
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search tasks..."
+              placeholder={
+                viewMode === "history"
+                  ? "Filter by task title, assignee, or email..."
+                  : "Search tasks..."
+              }
               className="w-full rounded-lg border border-emerald-700 bg-emerald-950/50 py-2.5 pl-9 pr-10 text-sm text-white placeholder:text-white/40 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             />
             {searchQuery ? (
@@ -414,7 +465,14 @@ export function TaskManager({ variant = "page", onRequestClose }: TaskManagerPro
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
-            {searchQuery.trim() ? (
+            {viewMode === "history" ? (
+              <TaskManagerHistoryPanel
+                completions={completions}
+                searchQuery={searchQuery}
+              />
+            ) : null}
+
+            {viewMode === "checklist" && searchQuery.trim() ? (
               <div className="space-y-2">
                 <div className="mb-2 flex items-center justify-between">
                   <h3 className="text-xs font-medium uppercase tracking-wide text-white/70">
@@ -439,7 +497,9 @@ export function TaskManager({ variant = "page", onRequestClose }: TaskManagerPro
               </div>
             ) : null}
 
-            {!searchQuery.trim() && taskGroups.length > 0 ? (
+            {viewMode === "checklist" &&
+            !searchQuery.trim() &&
+            taskGroups.length > 0 ? (
               <div className="space-y-3">
                 <h3 className="text-xs font-medium uppercase tracking-wide text-white/70">
                   By schedule type
@@ -502,7 +562,9 @@ export function TaskManager({ variant = "page", onRequestClose }: TaskManagerPro
               </div>
             ) : null}
 
-            {!searchQuery.trim() && activeSchedules.length === 0 ? (
+            {viewMode === "checklist" &&
+            !searchQuery.trim() &&
+            activeSchedules.length === 0 ? (
               <div className="py-10 text-center">
                 <CalendarIcon size={40} className="mx-auto mb-3 text-white/40" />
                 <p className="text-sm text-white/70">No active schedules to track</p>
@@ -514,6 +576,10 @@ export function TaskManager({ variant = "page", onRequestClose }: TaskManagerPro
               </div>
             ) : null}
           </div>
+
+          {!isDrawer ? (
+            <ScheduleWidgetsSidebarPromo variant="task-manager" />
+          ) : null}
         </>
       ) : null}
 

@@ -16,6 +16,7 @@ import { Inventory } from "@/components/Inventory/Inventory";
 import { WorkspaceCalendar } from "@/components/WorkspaceCalendar";
 import { Schedules } from "@/components/Schedules";
 import { TaskManager } from "@/components/TaskManager";
+import { ComposeEmailTool } from "@/components/ComposeEmailTool";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { useWorkspaceTab, type WorkspaceTab } from "@/contexts/WorkspaceContext";
 
@@ -76,6 +77,11 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
     name: "TASK MANAGER",
     description:
       "Track recurring schedule completion by period (today, this week, this month).",
+  },
+  "compose-email": {
+    name: "COMPOSE EMAIL",
+    description:
+      "Send manual one-off messages through SMTP (nodemailer) with a dedicated template.",
   },
 };
 
@@ -166,6 +172,10 @@ export default function WorkspacePage() {
           ) : selectedTab === "schedules" ? (
             <PermissionGuard toolId="schedules">
               <Schedules />
+            </PermissionGuard>
+          ) : selectedTab === "compose-email" ? (
+            <PermissionGuard toolId="compose-email">
+              <ComposeEmailTool />
             </PermissionGuard>
           ) : (
             TOOL_CONTENT[selectedTab] && (

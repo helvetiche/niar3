@@ -9,6 +9,7 @@ import {
   ShieldCheckIcon,
   PackageIcon,
   ListChecksIcon,
+  EnvelopeSimpleIcon,
 } from "@phosphor-icons/react";
 import type { AvailableTool } from "./types";
 
@@ -75,6 +76,13 @@ export const AVAILABLE_TOOLS: AvailableTool[] = [
     description:
       "Check off recurring email schedules for the current day, week, or month",
     icon: ListChecksIcon,
+    isBasic: true,
+  },
+  {
+    id: "compose-email",
+    name: "Compose email",
+    description: "Send manual SMTP emails with formatting and AI assist (nodemailer)",
+    icon: EnvelopeSimpleIcon,
     isBasic: true,
   },
   {

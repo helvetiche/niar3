@@ -38,6 +38,10 @@ import {
   CheckIcon,
   FileXlsIcon,
   DownloadSimpleIcon,
+  ShieldCheckIcon,
+  WarningIcon,
+  XCircleIcon,
+  DatabaseIcon,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import {
@@ -71,6 +75,7 @@ import {
   useGenerateProfiles,
 } from "@/hooks/useGenerateProfiles";
 import { useConsolidateLandProfiles } from "@/hooks/useConsolidateLandProfiles";
+import { useIFRChecker } from "@/hooks/useIFRChecker";
 import { getFileKey, sanitizeFolderName } from "@/lib/file-utils";
 
 type WidgetChromeVariant = "sidebar" | "glass";
@@ -128,6 +133,10 @@ const quickBillingUnitTitleIcon = (
 
 const quickConsolidateIfrTitleIcon = (
   <FolderOpenIcon className="h-3.5 w-3.5 shrink-0" weight="duotone" aria-hidden />
+);
+
+const quickIfrCheckerTitleIcon = (
+  <ShieldCheckIcon className="h-3.5 w-3.5 shrink-0" weight="duotone" aria-hidden />
 );
 
 /** Shared shell: sidebar = solid emerald panel; glass = frosted for modal previews. */
@@ -657,7 +666,7 @@ const TasksCountWidgetCard = ({
   );
 };
 
-function NearestDeadlineWidget({ onRemove }: { onRemove: () => void }) {
+export function NearestDeadlineWidget({ onRemove }: { onRemove?: () => void }) {
   const { schedules, isLoading } = useUpcomingSchedules(1);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -718,7 +727,7 @@ function NearestDeadlineWidget({ onRemove }: { onRemove: () => void }) {
   );
 }
 
-function TasksThisWeekWidget({ onRemove }: { onRemove: () => void }) {
+export function TasksThisWeekWidget({ onRemove }: { onRemove?: () => void }) {
   const { schedules, isLoading } = useUpcomingSchedules(100);
   const weekTasks = schedules.filter((s) => s.daysUntil <= 7);
   const tasksThisWeek = weekTasks.length;
@@ -740,7 +749,7 @@ function TasksThisWeekWidget({ onRemove }: { onRemove: () => void }) {
   );
 }
 
-function TasksThisMonthWidget({ onRemove }: { onRemove: () => void }) {
+export function TasksThisMonthWidget({ onRemove }: { onRemove?: () => void }) {
   const { schedules, isLoading } = useUpcomingSchedules(100);
   const monthTasks = schedules.filter((s) => s.daysUntil <= 30);
   const tasksThisMonth = monthTasks.length;
@@ -763,12 +772,12 @@ function TasksThisMonthWidget({ onRemove }: { onRemove: () => void }) {
   );
 }
 
-function PriorityFocusWidget({
+export function PriorityFocusWidget({
   scheduleId,
   onRemove,
 }: {
   scheduleId: string;
-  onRemove: () => void;
+  onRemove?: () => void;
 }) {
   const { data: schedules = [], isLoading: schedulesLoading } =
     useAllSchedulesForTaskManager();
@@ -950,6 +959,59 @@ function PriorityFocusWidget({
   );
 }
 
+/** Live preview for workspace pages: first active schedule, or same chrome with guidance. */
+export function PriorityFocusWorkspacePromoEmbed({
+  onRemove,
+}: {
+  onRemove?: () => void;
+}) {
+  const { data: schedules = [], isLoading } = useAllSchedulesForTaskManager();
+  const firstActiveId = useMemo(
+    () => schedules.find((s) => s.status === "active")?.id,
+    [schedules]
+  );
+
+  if (isLoading) {
+    return (
+      <ScheduleWidgetChrome
+        title="Priority focus"
+        titleIcon={priorityFocusTitleIcon}
+        onRemove={onRemove}
+        titleClassName="text-xs"
+      >
+        <div className="flex items-center justify-center py-4">
+          <div
+            className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"
+            aria-hidden
+          />
+        </div>
+      </ScheduleWidgetChrome>
+    );
+  }
+
+  if (!firstActiveId) {
+    return (
+      <ScheduleWidgetChrome
+        title="Priority focus"
+        titleIcon={priorityFocusTitleIcon}
+        onRemove={onRemove}
+        titleClassName="text-xs"
+      >
+        <p className="px-0.5 py-3 text-center text-xs leading-relaxed text-emerald-200/75">
+          Add an active email schedule to see a live preview. You can still add this
+          widget and pick any schedule from{" "}
+          <span className="font-medium text-emerald-100">Add widget</span> in the Widgets
+          panel.
+        </p>
+      </ScheduleWidgetChrome>
+    );
+  }
+
+  return (
+    <PriorityFocusWidget scheduleId={firstActiveId} onRemove={onRemove} />
+  );
+}
+
 const QUICK_ACCOMPLISHMENT_SUGGESTION_LIMIT = 8;
 
 const QUICK_ACCOMPLISHMENT_SUGGESTIONS_Z = 100;
@@ -978,7 +1040,11 @@ const collectScrollableAncestors = (start: HTMLElement | null): HTMLElement[] =>
   return list;
 };
 
-function QuickAccomplishmentSidebarWidget({ onRemove }: { onRemove: () => void }) {
+export function QuickAccomplishmentSidebarWidget({
+  onRemove,
+}: {
+  onRemove?: () => void;
+}) {
   const formId = useId();
   const taskComboboxRef = useRef<HTMLDivElement>(null);
   const taskTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1340,7 +1406,7 @@ function QuickAccomplishmentSidebarWidget({ onRemove }: { onRemove: () => void }
   );
 }
 
-function QuickMergeSidebarWidget({ onRemove }: { onRemove: () => void }) {
+export function QuickMergeSidebarWidget({ onRemove }: { onRemove?: () => void }) {
   const formId = useId();
   const {
     fileInputRef,
@@ -1495,7 +1561,11 @@ function QuickMergeSidebarWidget({ onRemove }: { onRemove: () => void }) {
   );
 }
 
-function QuickBillingUnitSidebarWidget({ onRemove }: { onRemove: () => void }) {
+export function QuickBillingUnitSidebarWidget({
+  onRemove,
+}: {
+  onRemove?: () => void;
+}) {
   const formId = useId();
   const { data: ifrTemplates = [], isLoading: ifrTemplatesLoading } =
     useTemplates("ifr-scanner");
@@ -1678,7 +1748,11 @@ function QuickBillingUnitSidebarWidget({ onRemove }: { onRemove: () => void }) {
   );
 }
 
-function QuickConsolidateIfrSidebarWidget({ onRemove }: { onRemove: () => void }) {
+export function QuickConsolidateIfrSidebarWidget({
+  onRemove,
+}: {
+  onRemove?: () => void;
+}) {
   const formId = useId();
   const { data: consolidationTemplates = [], isLoading: consolidationLoading } =
     useTemplates("consolidation");
@@ -1854,6 +1928,288 @@ function QuickConsolidateIfrSidebarWidget({ onRemove }: { onRemove: () => void }
           isFinalizing={isFinalizing}
           elapsedSeconds={elapsedSeconds}
         />
+      </div>
+    </ScheduleWidgetChrome>
+  );
+}
+
+export function QuickIfrCheckerSidebarWidget({
+  onRemove,
+}: {
+  onRemove?: () => void;
+}) {
+  const formId = useId();
+  const {
+    ifrFileInputRef,
+    consolidatedFileInputRef,
+    ifrFiles,
+    consolidatedFile,
+    isChecking,
+    result,
+    currentPage,
+    searchQuery,
+    severityFilter,
+    fieldFilter,
+    uniqueFields,
+    filteredIssues,
+    paginatedIssues,
+    totalPages,
+    handleIFRFilesSelection,
+    handleConsolidatedFileSelection,
+    runValidation,
+    handlePageChange,
+    handleSearchChange,
+    handleSeverityFilterChange,
+    handleFieldFilterChange,
+  } = useIFRChecker();
+
+  const canRun = ifrFiles.length > 0 && consolidatedFile !== null;
+
+  return (
+    <ScheduleWidgetChrome
+      title="Quick IFR checker"
+      titleIcon={quickIfrCheckerTitleIcon}
+      titleClassName="text-xs"
+      onRemove={onRemove}
+    >
+      <div className="flex min-w-0 flex-col gap-2.5">
+        <p className="text-[11px] leading-snug text-emerald-200/75">
+          Compare source IFR Excel files against one consolidated workbook—same checks
+          and results as the full IFR Checker workspace tool.
+        </p>
+
+        <input
+          ref={ifrFileInputRef}
+          id={`${formId}-ifr`}
+          type="file"
+          accept=".xlsx,.xls"
+          multiple
+          onChange={(e) => handleIFRFilesSelection(e.target.files)}
+          className="sr-only"
+          aria-label="Select IFR source Excel files"
+        />
+        <button
+          type="button"
+          onClick={() => ifrFileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            handleIFRFilesSelection(e.dataTransfer.files);
+          }}
+          className="flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-emerald-600 bg-emerald-950/40 px-2 py-2.5 text-center text-[11px] text-emerald-100/90 transition hover:border-emerald-500 hover:bg-emerald-900/40"
+        >
+          <UploadSimpleIcon className="h-4 w-4 text-emerald-200" aria-hidden />
+          <span>
+            IFR sources
+            {ifrFiles.length > 0 ? ` · ${ifrFiles.length} file(s)` : ""}
+          </span>
+        </button>
+        {ifrFiles.length > 0 ? (
+          <ul className="max-h-16 space-y-0.5 overflow-y-auto p-0 text-[10px] text-emerald-200/80">
+            {ifrFiles.map((f, i) => (
+              <li key={`${f.name}-${i}`} className="list-none truncate">
+                • {f.name}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+
+        <input
+          ref={consolidatedFileInputRef}
+          id={`${formId}-consolidated`}
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={(e) => handleConsolidatedFileSelection(e.target.files)}
+          className="sr-only"
+          aria-label="Select consolidated Excel file to validate"
+        />
+        <button
+          type="button"
+          onClick={() => consolidatedFileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            handleConsolidatedFileSelection(e.dataTransfer.files);
+          }}
+          className="flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-emerald-600 bg-emerald-950/40 px-2 py-2.5 text-center text-[11px] text-emerald-100/90 transition hover:border-emerald-500 hover:bg-emerald-900/40"
+        >
+          <UploadSimpleIcon className="h-4 w-4 text-emerald-200" aria-hidden />
+          <span>
+            Consolidated file
+            {consolidatedFile ? ` · ${consolidatedFile.name}` : ""}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => void runValidation()}
+          disabled={!canRun || isChecking}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/60 bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isChecking ? (
+            <span
+              className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white border-t-transparent"
+              aria-hidden
+            />
+          ) : (
+            <ShieldCheckIcon className="h-4 w-4 shrink-0" weight="duotone" aria-hidden />
+          )}
+          {isChecking ? "Validating…" : "Run validation"}
+        </button>
+
+        {result ? (
+          <div className="mt-1 space-y-2 border-t border-emerald-700/50 pt-2">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1 rounded-lg border border-emerald-700/50 bg-emerald-950/50 p-2 text-[10px] text-emerald-100/90">
+              <span className="flex items-center gap-1">
+                <DatabaseIcon className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
+                IFR lots: {result.summary.totalLots}
+              </span>
+              <span className="flex items-center gap-1">
+                <DatabaseIcon className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
+                Consolidated: {result.summary.consolidatedLots}
+              </span>
+              <span className="flex items-center gap-1">
+                <CheckCircleIcon className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
+                Matching: {result.summary.matchingLots}
+              </span>
+              <span className="flex items-center gap-1">
+                <WarningIcon className="h-3 w-3 shrink-0 text-amber-300" aria-hidden />
+                Issues: {result.summary.totalIssues}
+              </span>
+              <span className="flex items-center gap-1 text-red-200/90">
+                <XCircleIcon className="h-3 w-3 shrink-0" weight="fill" aria-hidden />
+                Errors: {result.summary.errors}
+              </span>
+              <span className="flex items-center gap-1 text-amber-200/90">
+                <WarningIcon className="h-3 w-3 shrink-0" weight="fill" aria-hidden />
+                Warnings: {result.summary.warnings}
+              </span>
+            </div>
+
+            {result.issues.length === 0 ? (
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-900/35 p-3 text-center text-xs text-emerald-100">
+                <CheckCircleIcon
+                  className="mx-auto mb-2 h-8 w-8 text-emerald-300"
+                  weight="fill"
+                  aria-hidden
+                />
+                Perfect match—no discrepancies.
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <div className="relative">
+                    <MagnifyingGlassIcon
+                      className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-emerald-300/60"
+                      aria-hidden
+                    />
+                    <input
+                      type="search"
+                      value={searchQuery}
+                      onChange={(e) => handleSearchChange(e.target.value)}
+                      placeholder="Search issues…"
+                      className="w-full rounded-lg border border-emerald-700 bg-emerald-950/50 py-1.5 pl-8 pr-2 text-[11px] text-white placeholder:text-emerald-300/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/40"
+                      aria-label="Filter issues"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <select
+                      value={severityFilter}
+                      onChange={(e) =>
+                        handleSeverityFilterChange(
+                          e.target.value as "all" | "error" | "warning"
+                        )
+                      }
+                      className="min-w-0 flex-1 rounded-lg border border-emerald-700 bg-emerald-950/50 px-2 py-1 text-[11px] text-white focus:border-emerald-500 focus:outline-none"
+                      aria-label="Severity filter"
+                    >
+                      <option value="all">All severity</option>
+                      <option value="error">Errors</option>
+                      <option value="warning">Warnings</option>
+                    </select>
+                    <select
+                      value={fieldFilter}
+                      onChange={(e) => handleFieldFilterChange(e.target.value)}
+                      className="min-w-0 flex-1 rounded-lg border border-emerald-700 bg-emerald-950/50 px-2 py-1 text-[11px] text-white focus:border-emerald-500 focus:outline-none"
+                      aria-label="Field filter"
+                    >
+                      <option value="all">All fields</option>
+                      {uniqueFields.map((field) => (
+                        <option key={field} value={field}>
+                          {field}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="text-[10px] text-emerald-200/55">
+                    Showing {paginatedIssues.length} of {filteredIssues.length} filtered (
+                    {result.issues.length} total)
+                  </p>
+                </div>
+
+                <ul className="max-h-52 space-y-2 overflow-y-auto overscroll-contain p-0">
+                  {paginatedIssues.map((issue, idx) => (
+                    <li
+                      key={`${issue.lotCode}-${issue.field}-${idx}`}
+                      className={`list-none rounded-lg border p-2 text-[10px] ${
+                        issue.severity === "error"
+                          ? "border-red-500/35 bg-red-950/25"
+                          : "border-amber-500/35 bg-amber-950/20"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-mono font-medium text-white">
+                          {issue.lotCode}
+                        </span>
+                        {issue.severity === "error" ? (
+                          <span className="shrink-0 rounded bg-red-600/80 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white">
+                            Error
+                          </span>
+                        ) : (
+                          <span className="shrink-0 rounded bg-amber-600/80 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white">
+                            Warn
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-emerald-200/85">{issue.field}</p>
+                      <p className="mt-0.5 line-clamp-3 text-emerald-200/65">
+                        {issue.reason}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+
+                {totalPages > 1 ? (
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <p className="text-[10px] text-emerald-200/60">
+                      Page {currentPage} / {totalPages}
+                    </p>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage <= 1}
+                        className="rounded border border-emerald-600/60 px-2 py-1 text-[10px] font-medium text-emerald-100 transition hover:bg-emerald-800/50 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Previous issues page"
+                      >
+                        Prev
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages}
+                        className="rounded border border-emerald-600/60 px-2 py-1 text-[10px] font-medium text-emerald-100 transition hover:bg-emerald-800/50 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Next issues page"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </div>
+        ) : null}
       </div>
     </ScheduleWidgetChrome>
   );
@@ -2328,6 +2684,7 @@ const SIDEBAR_QUICK_WIDGET_ORDER = [
   "quick-merge-files",
   "quick-billing-unit",
   "quick-consolidate-ifr",
+  "quick-ifr-checker",
 ] as const;
 
 function AddWidgetModalQuickToolSection({
@@ -2526,6 +2883,14 @@ export function WidgetSidebar() {
     setIsAddModalOpen(false);
   };
 
+  const handleAddQuickIfrCheckerWidget = () => {
+    addWidget({
+      id: `quick-ifr-checker-${Date.now()}`,
+      type: "quick-ifr-checker",
+    });
+    setIsAddModalOpen(false);
+  };
+
   const hasExistingPriority = useMemo(
     () => widgets.some((w) => w.type === "priority"),
     [widgets]
@@ -2548,6 +2913,11 @@ export function WidgetSidebar() {
 
   const hasExistingQuickConsolidateIfr = useMemo(
     () => widgets.some((w) => w.type === "quick-consolidate-ifr"),
+    [widgets]
+  );
+
+  const hasExistingQuickIfrChecker = useMemo(
+    () => widgets.some((w) => w.type === "quick-ifr-checker"),
     [widgets]
   );
 
@@ -2692,6 +3062,14 @@ export function WidgetSidebar() {
                     if (widget.type === "quick-consolidate-ifr") {
                       return (
                         <QuickConsolidateIfrSidebarWidget
+                          key={widget.id}
+                          onRemove={() => removeWidget(widget.id)}
+                        />
+                      );
+                    }
+                    if (widget.type === "quick-ifr-checker") {
+                      return (
+                        <QuickIfrCheckerSidebarWidget
                           key={widget.id}
                           onRemove={() => removeWidget(widget.id)}
                         />
@@ -2908,6 +3286,33 @@ export function WidgetSidebar() {
               }
               cardIcon={
                 <FolderOpenIcon
+                  className="h-6 w-6 text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+            />
+
+            <AddWidgetModalQuickToolSection
+              title="Quick IFR checker"
+              description="Upload one or more IFR source Excel files plus the consolidated workbook to validate in place. Same validation pipeline as IFR Checker in the workspace—issues, filters, and pagination—in a narrow sidebar layout."
+              chipIcon={<ShieldCheckIcon size={12} className="text-white" aria-hidden />}
+              chipLabel="Excel · Validate consolidated"
+              cardTitle="Sidebar shortcut"
+              cardBody="Run IFR vs consolidated checks without the three-step workspace flow."
+              onAdd={handleAddQuickIfrCheckerWidget}
+              hasExisting={hasExistingQuickIfrChecker}
+              ariaLabel="Add Quick IFR checker widget to sidebar"
+              headerIcon={
+                <ShieldCheckIcon
+                  size={20}
+                  className="text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+              cardIcon={
+                <ShieldCheckIcon
                   className="h-6 w-6 text-white"
                   weight="duotone"
                   aria-hidden

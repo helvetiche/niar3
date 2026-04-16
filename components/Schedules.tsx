@@ -30,6 +30,7 @@ import {
 import { formatDeadline, formatReminder } from "@/lib/schedule-helpers";
 import { useWorkspaceUser } from "@/contexts/WorkspaceContext";
 import { useSchedules } from "@/hooks/useSchedules";
+import { ScheduleWidgetsSidebarPromo } from "@/components/WorkspaceWidgetSidebarPromo";
 
 const DAYS_OF_WEEK = [
   "Sunday",
@@ -678,6 +679,8 @@ export function Schedules() {
           </div>
         </div>
       )}
+
+      <ScheduleWidgetsSidebarPromo variant="schedules" />
 
       {/* Add / Edit Schedule Modal */}
       <MasonryModal

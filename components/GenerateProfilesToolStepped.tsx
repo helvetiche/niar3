@@ -10,6 +10,7 @@ import {
 } from "@phosphor-icons/react";
 import { WorkspaceStepper } from "@/components/WorkspaceStepper";
 import { ProcessingOverlay } from "@/components/ifr-scanner/ProcessingOverlay";
+import { QuickSingletonWidgetSidebarPromo } from "@/components/WorkspaceWidgetSidebarPromo";
 import {
   defaultBillingUnitFolderName,
   defaultZipName,
@@ -262,6 +263,14 @@ export function GenerateProfilesToolStepped() {
         onComplete={() => void generateBillingUnits()}
         canProceed={canProceedToStep}
         completeButtonText={isGenerating ? "Generating..." : "Generate"}
+      />
+
+      <QuickSingletonWidgetSidebarPromo
+        widget="quick-billing-unit"
+        title="Quick generate billing unit"
+        intro="Run Generate Billing Unit from the right sidebar when you already have IFR Excel sources ready to map."
+        description="Upload IFR files, set division folder names and billing folder name, then download the ZIP using the same pipeline as this tool."
+        addButtonLabel="Add Quick generate billing unit to widget sidebar"
       />
 
       <ProcessingOverlay
