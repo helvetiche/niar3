@@ -29,10 +29,10 @@ import {
   ListChecksIcon,
   MagnifyingGlassIcon,
   MicrosoftExcelLogoIcon,
+  PaperPlaneTiltIcon,
   PlusIcon,
   SquaresFourIcon,
   StarIcon,
-  TrashIcon,
   UploadSimpleIcon,
   XIcon,
   CheckIcon,
@@ -77,8 +77,11 @@ import {
 import { useConsolidateLandProfiles } from "@/hooks/useConsolidateLandProfiles";
 import { useIFRChecker } from "@/hooks/useIFRChecker";
 import { getFileKey, sanitizeFolderName } from "@/lib/file-utils";
-
-type WidgetChromeVariant = "sidebar" | "glass";
+import {
+  ScheduleWidgetChrome,
+  type WidgetChromeVariant,
+} from "@/components/widget-sidebar/ScheduleWidgetChrome";
+import { QuickSendMessageSidebarWidget } from "@/components/widget-sidebar/QuickSendMessageSidebarWidget";
 
 const ALL_MONTHS_ACCOMPLISHMENT = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 
@@ -138,82 +141,6 @@ const quickConsolidateIfrTitleIcon = (
 const quickIfrCheckerTitleIcon = (
   <ShieldCheckIcon className="h-3.5 w-3.5 shrink-0" weight="duotone" aria-hidden />
 );
-
-/** Shared shell: sidebar = solid emerald panel; glass = frosted for modal previews. */
-const ScheduleWidgetChrome = ({
-  title,
-  titleIcon,
-  onRemove,
-  children,
-  variant = "sidebar",
-  fillHeight = false,
-  titleClassName,
-}: {
-  title: string;
-  titleIcon?: ReactNode;
-  onRemove?: () => void;
-  children: React.ReactNode;
-  variant?: WidgetChromeVariant;
-  fillHeight?: boolean;
-  /** Override default `text-sm` title (e.g. compact priority header). */
-  titleClassName?: string;
-}) => {
-  const shell =
-    variant === "glass"
-      ? "min-w-0 overflow-hidden rounded-lg border border-white/40 bg-white/10 p-4 shadow-sm backdrop-blur-md"
-      : "min-w-0 overflow-hidden rounded-lg border border-emerald-700/60 bg-emerald-800/30 p-4";
-  const trashMuted = variant === "glass" ? "text-white/35" : "text-emerald-300/40";
-  const trashBtn =
-    variant === "glass"
-      ? "text-white/60 transition-colors hover:text-red-300"
-      : "text-emerald-300/70 transition-colors hover:text-red-400";
-  const titleIconWrapClass =
-    variant === "glass" ? "text-emerald-200/95" : "text-emerald-300/90";
-
-  const fillClass = fillHeight ? "flex min-h-0 flex-1 flex-col" : "";
-
-  return (
-    <div className={`${shell} ${fillClass}`.trim()}>
-      <div className="mb-3 flex min-w-0 shrink-0 items-center justify-between gap-2">
-        <h3
-          className={`flex min-w-0 items-center gap-1.5 font-semibold leading-tight text-white ${
-            titleClassName ?? "text-sm"
-          }`}
-        >
-          {titleIcon ? (
-            <span className={`inline-flex shrink-0 items-center ${titleIconWrapClass}`}>
-              {titleIcon}
-            </span>
-          ) : null}
-          <span className="min-w-0 truncate">{title}</span>
-        </h3>
-        {onRemove ? (
-          <button
-            type="button"
-            onClick={onRemove}
-            className={`shrink-0 ${trashBtn}`}
-            aria-label={`Remove ${title} widget`}
-          >
-            <TrashIcon className="h-4 w-4" />
-          </button>
-        ) : (
-          <span className={`shrink-0 ${trashMuted}`} aria-hidden>
-            <TrashIcon className="h-4 w-4" />
-          </span>
-        )}
-      </div>
-      <div
-        className={
-          fillHeight
-            ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-            : "min-w-0 overflow-hidden"
-        }
-      >
-        {children}
-      </div>
-    </div>
-  );
-};
 
 const NearestDeadlineWidgetCard = ({
   taskTitle,
@@ -2685,6 +2612,7 @@ const SIDEBAR_QUICK_WIDGET_ORDER = [
   "quick-billing-unit",
   "quick-consolidate-ifr",
   "quick-ifr-checker",
+  "quick-send-message",
 ] as const;
 
 function AddWidgetModalQuickToolSection({
@@ -2891,6 +2819,14 @@ export function WidgetSidebar() {
     setIsAddModalOpen(false);
   };
 
+  const handleAddQuickSendMessageWidget = () => {
+    addWidget({
+      id: `quick-send-message-${Date.now()}`,
+      type: "quick-send-message",
+    });
+    setIsAddModalOpen(false);
+  };
+
   const hasExistingPriority = useMemo(
     () => widgets.some((w) => w.type === "priority"),
     [widgets]
@@ -2918,6 +2854,11 @@ export function WidgetSidebar() {
 
   const hasExistingQuickIfrChecker = useMemo(
     () => widgets.some((w) => w.type === "quick-ifr-checker"),
+    [widgets]
+  );
+
+  const hasExistingQuickSendMessage = useMemo(
+    () => widgets.some((w) => w.type === "quick-send-message"),
     [widgets]
   );
 
@@ -2989,8 +2930,16 @@ export function WidgetSidebar() {
                 </div>
                 <button
                   type="button"
+                  onClick={toggleSidebar}
+                  className="shrink-0 self-start rounded-lg p-2 text-white/80 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 lg:hidden"
+                  aria-label="Close widget sidebar"
+                >
+                  <XIcon className="h-5 w-5" weight="bold" aria-hidden />
+                </button>
+                <button
+                  type="button"
                   onClick={() => openTaskDrawer()}
-                  className="group flex shrink-0 flex-col items-center gap-1 rounded-xl border border-emerald-600/50 bg-emerald-800/40 px-2.5 py-2 text-center shadow-sm transition hover:border-emerald-500/60 hover:bg-emerald-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/45 sm:px-3 sm:py-2.5"
+                  className="group hidden shrink-0 flex-col items-center gap-1 rounded-xl border border-emerald-600/50 bg-emerald-800/40 px-2.5 py-2 text-center shadow-sm transition hover:border-emerald-500/60 hover:bg-emerald-800/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/45 sm:px-3 sm:py-2.5 lg:flex"
                   aria-label="Open tasks and calendar in a side panel"
                 >
                   <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/10 transition group-hover:bg-white/15">
@@ -3070,6 +3019,14 @@ export function WidgetSidebar() {
                     if (widget.type === "quick-ifr-checker") {
                       return (
                         <QuickIfrCheckerSidebarWidget
+                          key={widget.id}
+                          onRemove={() => removeWidget(widget.id)}
+                        />
+                      );
+                    }
+                    if (widget.type === "quick-send-message") {
+                      return (
+                        <QuickSendMessageSidebarWidget
                           key={widget.id}
                           onRemove={() => removeWidget(widget.id)}
                         />
@@ -3313,6 +3270,33 @@ export function WidgetSidebar() {
               }
               cardIcon={
                 <ShieldCheckIcon
+                  className="h-6 w-6 text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+            />
+
+            <AddWidgetModalQuickToolSection
+              title="Quick message"
+              description="Send an email from the sidebar with To, Subject, plain-text message, and optional attachments—same send API as Compose email, without the rich editor or AI assist."
+              chipIcon={<EnvelopeIcon size={12} className="text-white" aria-hidden />}
+              chipLabel="Email · Plain text"
+              cardTitle="Sidebar shortcut"
+              cardBody="Fire off a quick note while you stay on any workspace tab."
+              onAdd={handleAddQuickSendMessageWidget}
+              hasExisting={hasExistingQuickSendMessage}
+              ariaLabel="Add Quick message widget to sidebar"
+              headerIcon={
+                <PaperPlaneTiltIcon
+                  size={20}
+                  className="text-white"
+                  weight="duotone"
+                  aria-hidden
+                />
+              }
+              cardIcon={
+                <PaperPlaneTiltIcon
                   className="h-6 w-6 text-white"
                   weight="duotone"
                   aria-hidden

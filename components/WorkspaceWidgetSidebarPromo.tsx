@@ -19,6 +19,7 @@ import {
   TasksThisMonthWidget,
   TasksThisWeekWidget,
 } from "@/components/WidgetSidebar";
+import { QuickSendMessageSidebarWidget } from "@/components/widget-sidebar/QuickSendMessageSidebarWidget";
 
 /** Quick-tool promo: bounded preview so long forms stay scrollable. */
 const QUICK_PROMO_PREVIEW_BOX_CLASS =
@@ -194,7 +195,8 @@ export type QuickWorkspacePromoWidget =
   | "quick-merge-files"
   | "quick-billing-unit"
   | "quick-consolidate-ifr"
-  | "quick-ifr-checker";
+  | "quick-ifr-checker"
+  | "quick-send-message";
 
 type QuickSingletonWidgetSidebarPromoProps = {
   widget: QuickWorkspacePromoWidget;
@@ -226,10 +228,15 @@ export const QuickSingletonWidgetSidebarPromo = ({
         id: `quick-consolidate-ifr-${idSuffix}`,
         type: "quick-consolidate-ifr",
       });
-    } else {
+    } else if (widget === "quick-ifr-checker") {
       addWidget({
         id: `quick-ifr-checker-${idSuffix}`,
         type: "quick-ifr-checker",
+      });
+    } else {
+      addWidget({
+        id: `quick-send-message-${idSuffix}`,
+        type: "quick-send-message",
       });
     }
     openSidebar();
@@ -245,8 +252,10 @@ export const QuickSingletonWidgetSidebarPromo = ({
       <QuickBillingUnitSidebarWidget />
     ) : widget === "quick-consolidate-ifr" ? (
       <QuickConsolidateIfrSidebarWidget />
-    ) : (
+    ) : widget === "quick-ifr-checker" ? (
       <QuickIfrCheckerSidebarWidget />
+    ) : (
+      <QuickSendMessageSidebarWidget />
     );
 
   return (

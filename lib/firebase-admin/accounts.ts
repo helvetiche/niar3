@@ -49,6 +49,49 @@ export async function getAccountsPaginated(
   };
 }
 
+const EMAIL_SUGGESTIONS_BATCH = 100;
+const EMAIL_SUGGESTIONS_MAX = 400;
+
+export type AccountEmailSuggestionRow = {
+  email: string;
+  displayName: string;
+};
+
+/**
+ * Walks Firebase Auth pages (same source as Account Management) for autocomplete.
+ * Capped for performance; sorted by email.
+ */
+export async function listAccountEmailSuggestions(): Promise<
+  AccountEmailSuggestionRow[]
+> {
+  const seen = new Set<string>();
+  const out: AccountEmailSuggestionRow[] = [];
+  let pageToken: string | undefined;
+
+  while (out.length < EMAIL_SUGGESTIONS_MAX) {
+    const { accounts, nextPageToken } = await getAccountsPaginated(
+      EMAIL_SUGGESTIONS_BATCH,
+      pageToken
+    );
+    for (const a of accounts) {
+      const email = a.email?.trim();
+      if (!email) continue;
+      const key = email.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        email,
+        displayName: (a.displayName ?? "").trim(),
+      });
+    }
+    if (!nextPageToken || accounts.length === 0) break;
+    pageToken = nextPageToken;
+  }
+
+  out.sort((a, b) => a.email.localeCompare(b.email, undefined, { sensitivity: "base" }));
+  return out;
+}
+
 /**
  * Gets total account count (cached for 5 minutes).
  * Note: This is expensive for large user bases. Consider caching in Firestore.

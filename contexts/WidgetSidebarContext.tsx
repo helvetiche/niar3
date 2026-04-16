@@ -52,6 +52,11 @@ export type QuickIfrCheckerWidget = {
   type: "quick-ifr-checker";
 };
 
+export type QuickSendMessageWidget = {
+  id: string;
+  type: "quick-send-message";
+};
+
 export type Widget =
   | ScheduleWidget
   | PriorityWidget
@@ -59,7 +64,8 @@ export type Widget =
   | QuickMergeFilesWidget
   | QuickBillingUnitWidget
   | QuickConsolidateIfrWidget
-  | QuickIfrCheckerWidget;
+  | QuickIfrCheckerWidget
+  | QuickSendMessageWidget;
 
 const SINGLETON_QUICK_WIDGET_TYPES = [
   "quick-accomplishment",
@@ -67,6 +73,7 @@ const SINGLETON_QUICK_WIDGET_TYPES = [
   "quick-billing-unit",
   "quick-consolidate-ifr",
   "quick-ifr-checker",
+  "quick-send-message",
 ] as const;
 
 const isSingletonQuickWidgetType = (
@@ -140,6 +147,8 @@ function parseStoredWidgets(raw: string): Widget[] {
           out.push({ id: rec.id, type: "quick-consolidate-ifr" });
         } else if (t === "quick-ifr-checker") {
           out.push({ id: rec.id, type: "quick-ifr-checker" });
+        } else if (t === "quick-send-message") {
+          out.push({ id: rec.id, type: "quick-send-message" });
         }
         continue;
       }

@@ -1,16 +1,25 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   PaperPlaneTiltIcon,
   EnvelopeSimpleIcon,
   CircleNotchIcon,
   TextAaIcon,
   ArticleMediumIcon,
+  PaperclipIcon,
+  TrashSimpleIcon,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import type { RichTextEmailEditorHandle } from "@/components/compose-email/RichTextEmailEditor";
+import {
+  COMPOSE_EMAIL_MAX_ATTACHMENTS,
+  COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES,
+} from "@/lib/compose-email-attachment-limits";
+import { formatComposeEmailAttachmentSizeLabel } from "@/lib/compose-email-client-attachments";
+import { QuickSingletonWidgetSidebarPromo } from "@/components/WorkspaceWidgetSidebarPromo";
+import { AccountRecipientEmailInput } from "@/components/compose-email/AccountRecipientEmailInput";
 
 const RichTextEmailEditor = dynamic(
   () => import("@/components/compose-email/RichTextEmailEditor"),
@@ -28,9 +37,45 @@ const RichTextEmailEditor = dynamic(
 
 export const ComposeEmailTool = () => {
   const editorRef = useRef<RichTextEmailEditorHandle | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [subject, setSubject] = useState("");
   const [to, setTo] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
   const [isSending, setIsSending] = useState(false);
+
+  const attachmentBytesTotal = useMemo(
+    () => attachments.reduce((sum, f) => sum + f.size, 0),
+    [attachments]
+  );
+
+  const handleAddAttachmentsClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAttachmentInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const list = event.target.files;
+    event.target.value = "";
+    if (!list?.length) return;
+
+    const incoming = Array.from(list);
+    const next = [...attachments, ...incoming];
+    if (next.length > COMPOSE_EMAIL_MAX_ATTACHMENTS) {
+      toast.error(`You can attach at most ${COMPOSE_EMAIL_MAX_ATTACHMENTS} files.`);
+      return;
+    }
+    const nextTotal = next.reduce((sum, f) => sum + f.size, 0);
+    if (nextTotal > COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES) {
+      toast.error(
+        `Attachments cannot exceed ${formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)} in total.`
+      );
+      return;
+    }
+    setAttachments(next);
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -49,18 +94,46 @@ export const ComposeEmailTool = () => {
       return;
     }
 
+    const attachmentTotal = attachments.reduce((sum, f) => sum + f.size, 0);
+    if (attachments.length > COMPOSE_EMAIL_MAX_ATTACHMENTS) {
+      toast.error(`You can attach at most ${COMPOSE_EMAIL_MAX_ATTACHMENTS} files.`);
+      return;
+    }
+    if (attachmentTotal > COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES) {
+      toast.error(
+        `Attachments cannot exceed ${formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)} in total.`
+      );
+      return;
+    }
+
     setIsSending(true);
     try {
-      const response = await fetch("/api/v1/compose-email/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          to: to.trim(),
-          subject: subject.trim(),
-          htmlBody,
-        }),
-      });
+      let response: Response;
+      if (attachments.length > 0) {
+        const formData = new FormData();
+        formData.append("to", to.trim());
+        formData.append("subject", subject.trim());
+        formData.append("htmlBody", htmlBody);
+        for (const file of attachments) {
+          formData.append("attachments", file, file.name);
+        }
+        response = await fetch("/api/v1/compose-email/send", {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        });
+      } else {
+        response = await fetch("/api/v1/compose-email/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            to: to.trim(),
+            subject: subject.trim(),
+            htmlBody,
+          }),
+        });
+      }
       const data = (await response.json().catch(() => ({}))) as {
         error?: string;
         messageId?: string;
@@ -99,6 +172,10 @@ export const ComposeEmailTool = () => {
             <ArticleMediumIcon size={12} className="text-white" weight="duotone" />
             Custom layout
           </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/10 px-3 py-1 text-xs font-medium text-white">
+            <PaperclipIcon size={12} className="text-white" weight="duotone" />
+            Attachments
+          </span>
         </div>
         <p className="mt-2 text-sm text-white/85">
           Enter the subject and recipient, write your message, then send. This flow uses the
@@ -132,16 +209,82 @@ export const ComposeEmailTool = () => {
               <span className="text-xs font-medium uppercase tracking-wide text-white/80">
                 To
               </span>
-              <input
-                type="text"
+              <AccountRecipientEmailInput
+                id="compose-email-to"
                 value={to}
-                onChange={(e) => setTo(e.target.value)}
+                onChange={setTo}
                 required
-                className="w-full min-w-0 rounded-lg border border-white/40 bg-white/5 px-3 py-2.5 text-sm font-light text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
                 placeholder="name@example.com"
                 aria-label="Recipients To"
+                className="w-full min-w-0 rounded-lg border border-white/40 bg-white/5 px-3 py-2.5 text-sm font-light text-white placeholder:text-white/60 focus:border-white focus:outline-none focus:ring-2 focus:ring-white/30"
+                hintClassName="mt-1 text-[11px] font-light leading-snug text-white/55"
               />
             </label>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-white/80">
+                Attachments
+              </span>
+              <span className="text-[11px] font-light text-white/70">
+                Up to {COMPOSE_EMAIL_MAX_ATTACHMENTS} files,{" "}
+                {formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)} total
+              </span>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="sr-only"
+              tabIndex={-1}
+              aria-label="Choose files to attach"
+              onChange={handleAttachmentInputChange}
+            />
+            <button
+              type="button"
+              onClick={handleAddAttachmentsClick}
+              disabled={attachments.length >= COMPOSE_EMAIL_MAX_ATTACHMENTS}
+              className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm font-light text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
+              aria-label="Add file attachments"
+            >
+              <PaperclipIcon size={18} weight="duotone" className="shrink-0 text-white" />
+              Add files
+            </button>
+            {attachments.length > 0 ? (
+              <ul
+                className="divide-y divide-white/15 rounded-lg border border-white/25 bg-white/5"
+                aria-label="Files to attach"
+              >
+                {attachments.map((file, index) => (
+                  <li
+                    key={`${file.name}-${file.size}-${index}`}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-light text-white"
+                  >
+                    <span className="min-w-0 flex-1 truncate" title={file.name}>
+                      {file.name}
+                    </span>
+                    <span className="shrink-0 text-xs text-white/70">
+                      {formatComposeEmailAttachmentSizeLabel(file.size)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAttachment(index)}
+                      className="inline-flex shrink-0 items-center justify-center rounded-md border border-white/30 p-1.5 text-white transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
+                      aria-label={`Remove ${file.name}`}
+                    >
+                      <TrashSimpleIcon size={16} weight="bold" aria-hidden />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {attachmentBytesTotal > 0 ? (
+              <p className="text-[11px] font-light text-white/65">
+                Selected: {formatComposeEmailAttachmentSizeLabel(attachmentBytesTotal)} of{" "}
+                {formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-2">
@@ -167,6 +310,14 @@ export const ComposeEmailTool = () => {
           </button>
         </div>
       </form>
+
+      <QuickSingletonWidgetSidebarPromo
+        widget="quick-send-message"
+        title="Quick message"
+        intro="Pin a compact email form in the widget sidebar so you can send short plain-text notes without leaving your current tab."
+        description="Uses the same send route as this page: To, Subject, message body, and optional attachments (same limits). Blank lines become paragraphs; single line breaks stay as line breaks. Rich text and AI assist stay here in the full composer."
+        addButtonLabel="Add Quick message to widget sidebar"
+      />
     </section>
   );
 };

@@ -166,6 +166,12 @@ export async function sendTestEmail(to: string) {
   });
 }
 
+export type SendManualComposedEmailAttachment = {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+};
+
 export type SendManualComposedEmailInput = {
   to: string;
   subject: string;
@@ -178,6 +184,7 @@ export type SendManualComposedEmailInput = {
    * Keep reasonably short for mail clients (recommended under 78 characters).
    */
   fromDisplayName?: string;
+  attachments?: SendManualComposedEmailAttachment[];
 };
 
 const truncateMailDisplayName = (name: string, max = 78): string => {
@@ -201,6 +208,19 @@ export const sendManualComposedEmail = async (
         ? truncateMailDisplayName(input.fromDisplayName.trim())
         : SCHEDULE_REMINDER_PRODUCT_NAME;
 
+    const attachmentParts =
+      input.attachments?.map((a) => {
+        const content = Buffer.isBuffer(a.content)
+          ? a.content
+          : Buffer.from(a.content as Uint8Array);
+        return {
+          filename: a.filename,
+          content,
+          contentType: a.contentType?.trim() || "application/octet-stream",
+          contentDisposition: "attachment" as const,
+        };
+      }) ?? [];
+
     const mail: SendMailOptions = {
       from: {
         name: displayName,
@@ -210,6 +230,7 @@ export const sendManualComposedEmail = async (
       subject: input.subject,
       text: input.text,
       html: input.html,
+      ...(attachmentParts.length > 0 ? { attachments: attachmentParts } : {}),
     };
 
     const info = await transporter.sendMail(mail);

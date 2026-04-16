@@ -49,6 +49,8 @@ export type ManualComposeEmailMeta = {
   senderDisplayName: string;
   senderEmail: string;
   sentAtLabel: string;
+  /** Shown in the HTML body so readers see what was sent (MIME parts are still attached). */
+  attachmentFilenames?: readonly string[];
 };
 
 export type ManualComposeEmailHtmlOptions = {
@@ -74,6 +76,18 @@ export const buildManualComposeEmailDocumentHtml = (
   const docTitle = escapeHtml(`Message · ${SCHEDULE_REMINDER_PRODUCT_NAME}`);
 
   const mailtoHref = encodeURIComponent(meta.senderEmail.trim());
+
+  const attachmentBlock =
+    meta.attachmentFilenames && meta.attachmentFilenames.length > 0
+      ? `<div style="margin-top:18px;padding-top:16px;border-top:1px solid ${C.metaBorder};">
+              <p style="margin:0 0 8px;font-family:${fontStack};font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;">Attached files</p>
+              <ul style="margin:0;padding-left:18px;font-family:${fontStack};font-size:13px;line-height:1.5;font-weight:300;color:${C.bodyText};">
+                ${meta.attachmentFilenames
+                  .map((name) => `<li>${escapeHtml(name)}</li>`)
+                  .join("")}
+              </ul>
+            </div>`
+      : "";
 
   const senderBlock =
     meta.senderEmail.trim().length > 0
@@ -140,6 +154,7 @@ export const buildManualComposeEmailDocumentHtml = (
           <tr>
             <td style="padding:20px 28px 28px;font-family:${fontStack};font-size:14px;line-height:1.65;font-weight:300;color:${C.bodyText};background-color:${C.bodySurface};">
               <div class="compose-email-body">${sanitizedInnerBodyHtml}</div>
+              ${attachmentBlock}
             </td>
           </tr>
           <tr>

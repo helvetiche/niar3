@@ -39,6 +39,8 @@ import toast from "react-hot-toast";
 export type RichTextEmailEditorHandle = {
   getHtml: () => string;
   setHtml: (html: string) => void;
+  /** Inserts parsed HTML at the end of the document (for snippets / autofill). */
+  appendHtml: (html: string) => void;
 };
 
 type RichTextEmailEditorProps = {
@@ -134,6 +136,13 @@ const RichTextEmailEditor = forwardRef<
       getHtml: () => editor?.getHTML() ?? "",
       setHtml: (html: string) => {
         editor?.commands.setContent(html, { emitUpdate: false });
+      },
+      appendHtml: (html: string) => {
+        if (!editor) return;
+        const trimmed = html.trim();
+        if (!trimmed) return;
+        const end = editor.state.doc.content.size;
+        editor.chain().focus().insertContentAt(end, trimmed).run();
       },
     }),
     [editor]
@@ -393,13 +402,20 @@ const RichTextEmailEditor = forwardRef<
             size={14}
             weight="bold"
             className={
-              customInstructionsOpen ? "rotate-180 transition-transform" : "transition-transform"
+              customInstructionsOpen
+                ? "rotate-180 transition-transform"
+                : "transition-transform"
             }
             aria-hidden
           />
         </button>
         {customInstructionsOpen ? (
-          <div className="mt-2 space-y-1" id="compose-ai-custom-panel" role="region" aria-labelledby="compose-ai-custom-toggle">
+          <div
+            className="mt-2 space-y-1"
+            id="compose-ai-custom-panel"
+            role="region"
+            aria-labelledby="compose-ai-custom-toggle"
+          >
             <label htmlFor="compose-ai-custom-instructions" className="sr-only">
               Custom instructions for writing help
             </label>
@@ -413,9 +429,12 @@ const RichTextEmailEditor = forwardRef<
               className="w-full resize-y rounded-md border border-slate-300 bg-white px-2.5 py-2 text-xs leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-emerald-800/40 focus:outline-none focus:ring-2 focus:ring-emerald-900/15 sm:text-sm"
               aria-describedby="compose-ai-custom-hint"
             />
-            <p id="compose-ai-custom-hint" className="text-[11px] leading-snug text-slate-500">
-              Combined with the action you pick above. Only this compose session—nothing is
-              saved. Up to 4,000 characters.
+            <p
+              id="compose-ai-custom-hint"
+              className="text-[11px] leading-snug text-slate-500"
+            >
+              Combined with the action you pick above. Only this compose session—nothing
+              is saved. Up to 4,000 characters.
             </p>
           </div>
         ) : null}
