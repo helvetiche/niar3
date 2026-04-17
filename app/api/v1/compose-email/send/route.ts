@@ -39,6 +39,28 @@ const MAX_HTML_LEN = 500_000;
 const MAX_TO_LEN = 2000;
 const MAX_SUB_LEN = 998;
 
+const inferExtensionFromMimeType = (mimeType: string | undefined): string => {
+  const t = mimeType?.trim().toLowerCase() ?? "";
+  if (!t) return ".bin";
+  if (t === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+    return ".xlsx";
+  }
+  if (t === "application/vnd.ms-excel") {
+    return ".xls";
+  }
+  if (t === "text/csv") {
+    return ".csv";
+  }
+  if (t === "application/pdf") {
+    return ".pdf";
+  }
+  if (t.startsWith("image/")) {
+    const subtype = t.split("/")[1] || "img";
+    return `.${subtype.replace(/[^a-z0-9.+-]/g, "") || "img"}`;
+  }
+  return ".bin";
+};
+
 const validateComposeFields = (to: string, subject: string, htmlBody: string) => {
   if (to.length < 3 || to.length > MAX_TO_LEN) {
     return "Invalid To field length.";
@@ -67,14 +89,17 @@ const readMultipartCompose = async (
     if (typeof (entry as Blob).arrayBuffer !== "function") continue;
     const blob = entry as Blob;
     const ab = await blob.arrayBuffer();
-    const name =
-      entry instanceof File && entry.name.trim().length > 0
-        ? entry.name.trim()
-        : "attachment";
-    const type =
-      entry instanceof File && entry.type.trim().length > 0
-        ? entry.type.trim()
-        : undefined;
+    const maybeName =
+      typeof (entry as { name?: unknown }).name === "string"
+        ? (entry as { name: string }).name.trim()
+        : "";
+    const maybeType =
+      typeof (entry as { type?: unknown }).type === "string"
+        ? (entry as { type: string }).type.trim()
+        : "";
+    const inferredExtension = inferExtensionFromMimeType(maybeType || blob.type);
+    const name = maybeName.length > 0 ? maybeName : `attachment${inferredExtension}`;
+    const type = maybeType.length > 0 ? maybeType : undefined;
     buffers.push({
       filename: name,
       content: Buffer.from(ab),

@@ -5,12 +5,14 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   ClockIcon,
+  DownloadSimpleIcon,
 } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import {
   completionsInLocalMonth,
   groupCompletionsByLocalDaySorted,
 } from "@/lib/task-manager-utils";
+import { getFileNameFromContentDisposition } from "@/lib/api/api-client-utils";
 import type { TaskCompletion } from "@/types/schedule";
 
 export type TaskManagerHistoryPanelProps = {
@@ -49,6 +51,7 @@ export const TaskManagerHistoryPanel = ({
   const now = new Date();
   const [cursorYear, setCursorYear] = useState(now.getFullYear());
   const [cursorMonth, setCursorMonth] = useState(now.getMonth());
+  const [isExporting, setIsExporting] = useState(false);
 
   const monthLabel = useMemo(
     () =>
@@ -108,6 +111,41 @@ export const TaskManagerHistoryPanel = ({
   const isCurrentMonth =
     cursorYear === now.getFullYear() && cursorMonth === now.getMonth();
 
+  const handleExportMonthlyWorkbook = async () => {
+    if (isExporting) {
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const response = await fetch(`/api/v1/completions/export?year=${cursorYear}`, {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to export accomplishments.");
+      }
+
+      const blob = await response.blob();
+      const fileName = getFileNameFromContentDisposition(
+        response.headers.get("Content-Disposition"),
+        `accomplishments-${cursorYear}.xlsx`
+      );
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("[TaskManagerHistoryPanel] export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -115,6 +153,15 @@ export const TaskManagerHistoryPanel = ({
           Completion history
         </h3>
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleExportMonthlyWorkbook()}
+            disabled={isExporting}
+            className="inline-flex min-h-[40px] items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-70 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
+          >
+            <DownloadSimpleIcon size={15} />
+            {isExporting ? "Exporting..." : `Export ${cursorYear} Excel`}
+          </button>
           <div
             className="flex items-center gap-1 rounded-lg border border-emerald-700 bg-emerald-950/60 p-1"
             role="group"

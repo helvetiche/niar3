@@ -37,10 +37,12 @@ const RichTextEmailEditor = dynamic(
 
 export const ComposeEmailTool = () => {
   const editorRef = useRef<RichTextEmailEditorHandle | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [subject, setSubject] = useState("");
   const [to, setTo] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const [lastAttachmentSelectionMessage, setLastAttachmentSelectionMessage] =
+    useState<string>("");
   const [isSending, setIsSending] = useState(false);
 
   const attachmentBytesTotal = useMemo(
@@ -48,26 +50,31 @@ export const ComposeEmailTool = () => {
     [attachments]
   );
 
-  const handleAddAttachmentsClick = () => {
-    fileInputRef.current?.click();
-  };
-
   const handleAttachmentInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const list = event.target.files;
-    event.target.value = "";
-    if (!list?.length) return;
+    const input = event.currentTarget;
+    const incoming = input.files ? Array.from(input.files) : [];
+    input.value = "";
 
-    const incoming = Array.from(list);
+    if (incoming.length === 0) {
+      setLastAttachmentSelectionMessage("No files selected.");
+      return;
+    }
+    setAttachmentError(null);
+    setLastAttachmentSelectionMessage(
+      `${incoming.length} file${incoming.length === 1 ? "" : "s"} selected.`
+    );
     const next = [...attachments, ...incoming];
     if (next.length > COMPOSE_EMAIL_MAX_ATTACHMENTS) {
-      toast.error(`You can attach at most ${COMPOSE_EMAIL_MAX_ATTACHMENTS} files.`);
+      const message = `You can attach at most ${COMPOSE_EMAIL_MAX_ATTACHMENTS} files.`;
+      setAttachmentError(message);
+      toast.error(message);
       return;
     }
     const nextTotal = next.reduce((sum, f) => sum + f.size, 0);
     if (nextTotal > COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES) {
-      toast.error(
-        `Attachments cannot exceed ${formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)} in total.`
-      );
+      const message = `Attachments cannot exceed ${formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)} in total.`;
+      setAttachmentError(message);
+      toast.error(message);
       return;
     }
     setAttachments(next);
@@ -75,6 +82,7 @@ export const ComposeEmailTool = () => {
 
   const handleRemoveAttachment = (index: number) => {
     setAttachments((prev) => prev.filter((_, i) => i !== index));
+    setAttachmentError(null);
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -233,24 +241,31 @@ export const ComposeEmailTool = () => {
               </span>
             </div>
             <input
-              ref={fileInputRef}
+              id="compose-email-attachments-input"
               type="file"
               multiple
               className="sr-only"
               tabIndex={-1}
               aria-label="Choose files to attach"
               onChange={handleAttachmentInputChange}
+              onInput={(event) =>
+                handleAttachmentInputChange(event as ChangeEvent<HTMLInputElement>)
+              }
             />
-            <button
-              type="button"
-              onClick={handleAddAttachmentsClick}
-              disabled={attachments.length >= COMPOSE_EMAIL_MAX_ATTACHMENTS}
-              className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm font-light text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
+            <label
+              htmlFor={
+                attachments.length >= COMPOSE_EMAIL_MAX_ATTACHMENTS
+                  ? undefined
+                  : "compose-email-attachments-input"
+              }
+              className={`inline-flex w-fit items-center gap-2 rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm font-light text-white transition focus-within:outline-none focus-within:ring-2 focus-within:ring-white/35 ${attachments.length >= COMPOSE_EMAIL_MAX_ATTACHMENTS ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-white/10"}`}
               aria-label="Add file attachments"
             >
               <PaperclipIcon size={18} weight="duotone" className="shrink-0 text-white" />
-              Add files
-            </button>
+              {attachments.length > 0
+                ? `Add files (${attachments.length} selected)`
+                : "Add files"}
+            </label>
             {attachments.length > 0 ? (
               <ul
                 className="divide-y divide-white/15 rounded-lg border border-white/25 bg-white/5"
@@ -278,11 +293,29 @@ export const ComposeEmailTool = () => {
                   </li>
                 ))}
               </ul>
-            ) : null}
+            ) : (
+              <p className="rounded-lg border border-dashed border-white/25 bg-white/5 px-3 py-2 text-xs font-light text-white/65">
+                No files attached yet. Selected files will appear here before sending.
+              </p>
+            )}
             {attachmentBytesTotal > 0 ? (
               <p className="text-[11px] font-light text-white/65">
                 Selected: {formatComposeEmailAttachmentSizeLabel(attachmentBytesTotal)} of{" "}
                 {formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)}
+              </p>
+            ) : null}
+            {lastAttachmentSelectionMessage ? (
+              <p className="text-[11px] font-light text-white/70">
+                {lastAttachmentSelectionMessage}
+              </p>
+            ) : null}
+            {attachmentError ? (
+              <p
+                className="rounded-lg border border-rose-300/45 bg-rose-900/20 px-3 py-2 text-xs font-light text-rose-100"
+                role="alert"
+                aria-live="polite"
+              >
+                {attachmentError}
               </p>
             ) : null}
           </div>

@@ -19,6 +19,9 @@ const C = {
   bodySurface: "#ffffff",
   metaBg: "#f8fafc",
   metaBorder: "#e2e8f0",
+  accentBg: "#ecfdf5",
+  accentBorder: "#a7f3d0",
+  accentText: "#065f46",
   bodyText: "#0f172a",
 } as const;
 
@@ -76,11 +79,12 @@ export const buildManualComposeEmailDocumentHtml = (
   const docTitle = escapeHtml(`Message · ${SCHEDULE_REMINDER_PRODUCT_NAME}`);
 
   const mailtoHref = encodeURIComponent(meta.senderEmail.trim());
+  const preheader = escapeHtml(`${meta.senderDisplayName} sent you a message.`);
 
   const attachmentBlock =
     meta.attachmentFilenames && meta.attachmentFilenames.length > 0
-      ? `<div style="margin-top:18px;padding-top:16px;border-top:1px solid ${C.metaBorder};">
-              <p style="margin:0 0 8px;font-family:${fontStack};font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;">Attached files</p>
+      ? `<div style="margin-top:20px;padding:14px 16px;border:1px solid ${C.accentBorder};background-color:${C.accentBg};border-radius:10px;">
+              <p style="margin:0 0 8px;font-family:${fontStack};font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:${C.accentText};">Attachments included</p>
               <ul style="margin:0;padding-left:18px;font-family:${fontStack};font-size:13px;line-height:1.5;font-weight:300;color:${C.bodyText};">
                 ${meta.attachmentFilenames
                   .map((name) => `<li>${escapeHtml(name)}</li>`)
@@ -113,20 +117,21 @@ export const buildManualComposeEmailDocumentHtml = (
   </style>
 </head>
 <body style="margin:0;padding:0;background-color:${C.page};-webkit-text-size-adjust:100%;">
+  <span style="display:none !important;visibility:hidden;mso-hide:all;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;color:transparent;">${preheader}</span>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background-color:${C.page};">
     <tr>
       <td align="center" style="padding:24px 14px;font-family:${fontStack};">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="border-collapse:collapse;max-width:600px;width:100%;background-color:${C.panel};border:1px solid ${C.borderSoft};border-radius:14px;overflow:hidden;">
+        <table role="presentation" width="620" cellpadding="0" cellspacing="0" style="border-collapse:collapse;max-width:620px;width:100%;background-color:${C.panel};border:1px solid ${C.borderSoft};border-radius:16px;overflow:hidden;">
           <tr>
-            <td style="padding:18px 22px 16px;border-bottom:1px solid ${C.borderSoft};">
+            <td style="padding:20px 24px 18px;border-bottom:1px solid ${C.borderSoft};">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                 <tr>
-                  <td valign="top" style="width:84px;padding:2px 14px 0 0;">
-                    <img src="${logoUrl}" alt="National Irrigation Administration" width="72" style="display:block;width:72px;max-width:72px;height:auto;border:0;outline:none;text-decoration:none;object-fit:contain;" />
+                  <td valign="top" style="width:90px;padding:2px 14px 0 0;">
+                    <img src="${logoUrl}" alt="National Irrigation Administration" width="78" style="display:block;width:78px;max-width:78px;height:auto;border:0;outline:none;text-decoration:none;object-fit:contain;" />
                   </td>
                   <td valign="top" style="font-family:${fontStack};padding-top:2px;">
                     <p style="margin:0;font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:${C.muted};">${safeProduct}</p>
-                    <h1 style="margin:4px 0 0;font-size:17px;line-height:1.3;font-weight:500;color:${C.white};font-family:${fontStack};letter-spacing:-0.01em;">National Irrigation Administration</h1>
+                    <h1 style="margin:4px 0 0;font-size:18px;line-height:1.3;font-weight:500;color:${C.white};font-family:${fontStack};letter-spacing:-0.01em;">National Irrigation Administration</h1>
                     <p style="margin:4px 0 0;font-size:12px;line-height:1.45;color:${C.subtle};font-weight:300;">Region 3 · Operation &amp; Maintenance (O&amp;M)</p>
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:10px 0 0;border-collapse:separate;border-spacing:0;">
                       <tr>
@@ -141,20 +146,32 @@ export const buildManualComposeEmailDocumentHtml = (
             </td>
           </tr>
           <tr>
-            <td style="padding:20px 28px 0;font-family:${fontStack};">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background-color:${C.metaBg};border:1px solid ${C.metaBorder};border-radius:12px;">
+            <td style="padding:20px 28px 28px;background-color:${C.bodySurface};font-family:${fontStack};">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;border-spacing:0;">
                 <tr>
-                  <td style="padding:16px 18px;">
-                    ${senderBlock}
+                  <td style="padding:0;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background-color:${C.metaBg};border:1px solid ${C.metaBorder};border-radius:12px;">
+                      <tr>
+                        <td style="padding:16px 18px;">
+                          ${senderBlock}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="height:16px;line-height:16px;font-size:0;">&nbsp;</td>
+                </tr>
+                <tr>
+                  <td style="padding:0;">
+                    <p style="margin:0 0 12px;font-family:${fontStack};font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">Message</p>
+                    <div style="border:1px solid ${C.metaBorder};border-radius:12px;padding:16px 18px;font-family:${fontStack};font-size:14px;line-height:1.65;font-weight:300;color:${C.bodyText};">
+                    <div class="compose-email-body">${sanitizedInnerBodyHtml}</div>
+                    ${attachmentBlock}
+                    </div>
                   </td>
                 </tr>
               </table>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:20px 28px 28px;font-family:${fontStack};font-size:14px;line-height:1.65;font-weight:300;color:${C.bodyText};background-color:${C.bodySurface};">
-              <div class="compose-email-body">${sanitizedInnerBodyHtml}</div>
-              ${attachmentBlock}
             </td>
           </tr>
           <tr>
