@@ -2,12 +2,24 @@ import "server-only";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { isQuotaOrRateLimitError, parseRetryDelayMs } from "@/lib/lipa-helpers";
 import { sanitizeComposeEmailBodyHtml } from "@/lib/email-body-sanitize";
+import {
+  DEFAULT_GEMINI_SERVICE_TIER,
+  type GeminiServiceTier,
+} from "@/lib/ai-usage-pricing";
+import { buildUsageMetricsFromGeminiUsage, type AiUsageMetrics } from "@/lib/ai-usage";
 
 const modelName = "gemini-2.5-flash-lite";
+export const COMPOSE_EMAIL_AI_MODEL_NAME = modelName;
+const composeEmailGeminiServiceTier: GeminiServiceTier = DEFAULT_GEMINI_SERVICE_TIER;
+export const COMPOSE_EMAIL_AI_SERVICE_TIER = composeEmailGeminiServiceTier;
 
 export type ComposeEmailAiAction = "rewrite" | "shorten" | "expand" | "tone";
 
 export type ComposeEmailTone = "professional" | "friendly" | "formal" | "concise";
+export type ComposeEmailAiResult = {
+  html: string;
+  usage: AiUsageMetrics;
+};
 
 const generateWithQuotaGuard = async (
   model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
@@ -84,7 +96,7 @@ export const runComposeEmailAi = async (opts: {
   action: ComposeEmailAiAction;
   tone?: ComposeEmailTone;
   customInstructions?: string;
-}): Promise<string> => {
+}): Promise<ComposeEmailAiResult> => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured.");
@@ -114,5 +126,13 @@ export const runComposeEmailAi = async (opts: {
     .replace(/\s*```$/i, "")
     .trim();
 
-  return sanitizeComposeEmailBodyHtml(unfenced);
+  const usage = buildUsageMetricsFromGeminiUsage(
+    result.response.usageMetadata,
+    composeEmailGeminiServiceTier
+  );
+
+  return {
+    html: sanitizeComposeEmailBodyHtml(unfenced),
+    usage,
+  };
 };

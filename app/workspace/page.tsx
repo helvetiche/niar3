@@ -17,6 +17,7 @@ import { WorkspaceCalendar } from "@/components/WorkspaceCalendar";
 import { Schedules } from "@/components/Schedules";
 import { TaskManager } from "@/components/TaskManager";
 import { ComposeEmailTool } from "@/components/ComposeEmailTool";
+import { UsageTool } from "@/components/UsageTool";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { useWorkspaceTab, type WorkspaceTab } from "@/contexts/WorkspaceContext";
 
@@ -82,6 +83,10 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
     name: "COMPOSE EMAIL",
     description:
       "Send manual one-off messages through SMTP (nodemailer) with a dedicated template.",
+  },
+  usage: {
+    name: "USAGE",
+    description: "Track AI activity, token usage, estimated spend, and request outcomes.",
   },
 };
 
@@ -176,6 +181,10 @@ export default function WorkspacePage() {
           ) : selectedTab === "compose-email" ? (
             <PermissionGuard toolId="compose-email">
               <ComposeEmailTool />
+            </PermissionGuard>
+          ) : selectedTab === "usage" ? (
+            <PermissionGuard toolId="usage">
+              <UsageTool />
             </PermissionGuard>
           ) : (
             TOOL_CONTENT[selectedTab] && (

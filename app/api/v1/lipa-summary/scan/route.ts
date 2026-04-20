@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth";
 import { applySecurityHeaders } from "@/lib/security-headers";
-import { scanLipaSourceFile } from "@/lib/lipa-summary";
+import {
+  GEMINI_MODEL_NAME,
+  GEMINI_SERVICE_TIER,
+  scanLipaSourceFile,
+} from "@/lib/lipa-summary";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { logUsageEntry } from "@/lib/firebase-admin/usage-log";
 import { validateUploads } from "@/lib/upload-limits";
 import { withHeavyOperationRateLimit } from "@/lib/rate-limit/with-api-rate-limit";
 import { logger } from "@/lib/logger";
@@ -21,6 +26,7 @@ const scanUploadLimits = {
 } as const;
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
   const rateLimitResponse = await withHeavyOperationRateLimit(request);
   if (rateLimitResponse) {
     await logAuditTrailEntry({
@@ -137,6 +143,25 @@ export async function POST(request: Request) {
       },
     });
 
+    await logUsageEntry({
+      uid: user.uid,
+      taskType: "lipa-summary-scan",
+      status: "success",
+      provider: "google",
+      model: GEMINI_MODEL_NAME,
+      serviceTier: GEMINI_SERVICE_TIER,
+      inputTokens: scanned.inputTokens,
+      outputTokens: scanned.outputTokens,
+      totalTokens: scanned.totalTokens,
+      estimatedCostUsd: scanned.estimatedCostUsd,
+      durationMs: Date.now() - startedAt,
+      metadata: {
+        fileName: file.name,
+        divisionName: payload.divisionName.trim(),
+        pageNumber: payload.pageNumber,
+      },
+    });
+
     return applySecurityHeaders(NextResponse.json({ scanned }));
   } catch (error) {
     logger.error("[api/lipa-summary/scan POST]", error);
@@ -156,6 +181,20 @@ export async function POST(request: Request) {
       method: "POST",
       request,
       httpStatus: isQuotaOrRateLimit ? 429 : 500,
+      errorMessage: message,
+    });
+    await logUsageEntry({
+      uid: user.uid,
+      taskType: "lipa-summary-scan",
+      status: "error",
+      provider: "google",
+      model: GEMINI_MODEL_NAME,
+      serviceTier: GEMINI_SERVICE_TIER,
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      estimatedCostUsd: 0,
+      durationMs: Date.now() - startedAt,
       errorMessage: message,
     });
     const isValidationError = error instanceof z.ZodError;

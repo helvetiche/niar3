@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent, type SyntheticEvent } from "react";
 import {
   PaperPlaneTiltIcon,
   EnvelopeSimpleIcon,
@@ -50,7 +50,7 @@ export const ComposeEmailTool = () => {
     [attachments]
   );
 
-  const handleAttachmentInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleAttachmentInputChange = (event: SyntheticEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const incoming = input.files ? Array.from(input.files) : [];
     input.value = "";
@@ -248,9 +248,7 @@ export const ComposeEmailTool = () => {
               tabIndex={-1}
               aria-label="Choose files to attach"
               onChange={handleAttachmentInputChange}
-              onInput={(event) =>
-                handleAttachmentInputChange(event as ChangeEvent<HTMLInputElement>)
-              }
+              onInput={handleAttachmentInputChange}
             />
             <label
               htmlFor={

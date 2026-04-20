@@ -8,6 +8,11 @@ import {
 } from "./lipa-helpers";
 import { z } from "zod";
 import type { LipaDivision, LipaReportData } from "@/lib/lipa-report-generator";
+import {
+  DEFAULT_GEMINI_SERVICE_TIER,
+  type GeminiServiceTier,
+} from "@/lib/ai-usage-pricing";
+import { buildUsageMetricsFromGeminiUsage } from "@/lib/ai-usage";
 
 export type LipaSourceFile = {
   fileName: string;
@@ -43,10 +48,9 @@ type ExtractedFileResult = {
 };
 
 const geminiModelName = "gemini-2.5-flash-lite";
-const geminiPricingPerMillionTokens = {
-  input: 0.15,
-  output: 1.25,
-};
+export const GEMINI_MODEL_NAME = geminiModelName;
+const geminiServiceTier: GeminiServiceTier = DEFAULT_GEMINI_SERVICE_TIER;
+export const GEMINI_SERVICE_TIER = geminiServiceTier;
 
 const geminiJsonSchema = z.object({
   confidence: z.number().min(0).max(100).optional(),
@@ -177,19 +181,24 @@ const extractFromSinglePdf = async (
 };
 
 const toScannedFile = (entry: ExtractedFileResult): LipaScannedFile => {
-  const estimatedCostUsd =
-    (entry.inputTokens / 1_000_000) * geminiPricingPerMillionTokens.input +
-    (entry.outputTokens / 1_000_000) * geminiPricingPerMillionTokens.output;
+  const metrics = buildUsageMetricsFromGeminiUsage(
+    {
+      promptTokenCount: entry.inputTokens,
+      candidatesTokenCount: entry.outputTokens,
+      totalTokenCount: entry.totalTokens,
+    },
+    geminiServiceTier
+  );
 
   return {
     fileName: entry.fileName,
     divisionName: entry.divisionName,
     confidence: entry.confidence,
     associations: entry.associations,
-    inputTokens: entry.inputTokens,
-    outputTokens: entry.outputTokens,
-    totalTokens: entry.totalTokens,
-    estimatedCostUsd: Number(estimatedCostUsd.toFixed(6)),
+    inputTokens: metrics.inputTokens,
+    outputTokens: metrics.outputTokens,
+    totalTokens: metrics.totalTokens,
+    estimatedCostUsd: metrics.estimatedCostUsd,
   };
 };
 
@@ -322,9 +331,14 @@ export const buildLipaReportDataFromScannedFiles = ({
 
   const inputTokens = extracted.reduce((sum, file) => sum + file.inputTokens, 0);
   const outputTokens = extracted.reduce((sum, file) => sum + file.outputTokens, 0);
-  const estimatedCostUsd =
-    (inputTokens / 1_000_000) * geminiPricingPerMillionTokens.input +
-    (outputTokens / 1_000_000) * geminiPricingPerMillionTokens.output;
+  const estimatedCostUsd = buildUsageMetricsFromGeminiUsage(
+    {
+      promptTokenCount: inputTokens,
+      candidatesTokenCount: outputTokens,
+      totalTokenCount: inputTokens + outputTokens,
+    },
+    geminiServiceTier
+  ).estimatedCostUsd;
   const averageConfidence =
     extracted.length > 0
       ? Number(
@@ -347,6 +361,6 @@ export const buildLipaReportDataFromScannedFiles = ({
     averageConfidence,
     inputTokens,
     outputTokens,
-    estimatedCostUsd: Number(estimatedCostUsd.toFixed(6)),
+    estimatedCostUsd,
   };
 };

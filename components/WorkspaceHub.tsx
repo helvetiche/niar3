@@ -25,6 +25,7 @@ import {
   CalendarIcon,
   ListChecksIcon,
   EnvelopeSimpleIcon,
+  ChartLineUpIcon,
 } from "@phosphor-icons/react";
 import {
   useWorkspaceTab,
@@ -197,6 +198,18 @@ const HUB_TOOLS: HubTool[] = [
       { id: "smtp", label: "SMTP (nodemailer)", icon: LightningIcon },
       { id: "format", label: "Rich formatting", icon: FileTextIcon },
       { id: "ai", label: "AI assist", icon: SparkleIcon },
+    ],
+  },
+  {
+    id: "usage",
+    name: "USAGE",
+    description:
+      "Review AI activity logs with per-task token totals, estimated model costs, and request outcomes.",
+    icon: ChartLineUpIcon,
+    tags: [
+      { id: "tokens", label: "Token tracking", icon: DatabaseIcon },
+      { id: "cost", label: "Cost estimate", icon: LightningIcon },
+      { id: "activity", label: "Activity history", icon: CheckCircleIcon },
     ],
   },
 ];

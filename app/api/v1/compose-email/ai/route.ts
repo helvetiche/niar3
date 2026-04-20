@@ -3,9 +3,12 @@ import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
 import {
   runComposeEmailAi,
+  COMPOSE_EMAIL_AI_MODEL_NAME,
+  COMPOSE_EMAIL_AI_SERVICE_TIER,
   type ComposeEmailAiAction,
   type ComposeEmailTone,
 } from "@/lib/compose-email-ai";
+import { logUsageEntry } from "@/lib/firebase-admin/usage-log";
 
 const bodySchema = z.object({
   htmlBody: z.string().min(1).max(120_000),
@@ -16,8 +19,12 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
+  let userId = "";
+
   try {
-    await requireAuth();
+    const user = await requireAuth();
+    userId = user.uid;
 
     const json = (await request.json()) as unknown;
     const parsed = bodySchema.safeParse(json);
@@ -30,18 +37,51 @@ export async function POST(request: NextRequest) {
 
     const { htmlBody, action, tone, customInstructions } = parsed.data;
 
-    const html = await runComposeEmailAi({
+    const result = await runComposeEmailAi({
       htmlFragment: htmlBody,
       action: action as ComposeEmailAiAction,
       tone: tone as ComposeEmailTone | undefined,
       customInstructions: customInstructions?.trim() || undefined,
     });
 
-    return NextResponse.json({ html });
+    await logUsageEntry({
+      uid: user.uid,
+      taskType: "compose-email",
+      status: "success",
+      provider: "google",
+      model: COMPOSE_EMAIL_AI_MODEL_NAME,
+      serviceTier: COMPOSE_EMAIL_AI_SERVICE_TIER,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      totalTokens: result.usage.totalTokens,
+      estimatedCostUsd: result.usage.estimatedCostUsd,
+      durationMs: Date.now() - startedAt,
+      metadata: { action, hasCustomInstructions: Boolean(customInstructions?.trim()) },
+    });
+
+    return NextResponse.json({ html: result.html });
   } catch (error) {
     console.error("compose-email ai:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     const status = message.includes("Unauthorized") ? 401 : 500;
+
+    if (userId) {
+      await logUsageEntry({
+        uid: userId,
+        taskType: "compose-email",
+        status: "error",
+        provider: "google",
+        model: COMPOSE_EMAIL_AI_MODEL_NAME,
+        serviceTier: COMPOSE_EMAIL_AI_SERVICE_TIER,
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        estimatedCostUsd: 0,
+        durationMs: Date.now() - startedAt,
+        errorMessage: message,
+      });
+    }
+
     return NextResponse.json({ error: message }, { status });
   }
 }

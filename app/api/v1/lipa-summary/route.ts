@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth } from "@/lib/auth";
 import { applySecurityHeaders, secureFileResponse } from "@/lib/security-headers";
-import { buildLipaReportData } from "@/lib/lipa-summary";
+import {
+  buildLipaReportData,
+  GEMINI_MODEL_NAME,
+  GEMINI_SERVICE_TIER,
+} from "@/lib/lipa-summary";
 import { generateLipaReportWorkbook } from "@/lib/lipa-report-generator";
 import { logAuditTrailEntry } from "@/lib/firebase-admin/audit-trail";
+import { logUsageEntry } from "@/lib/firebase-admin/usage-log";
 import { validateUploads } from "@/lib/upload-limits";
 import { withHeavyOperationRateLimit } from "@/lib/rate-limit/with-api-rate-limit";
 import { logger } from "@/lib/logger";
@@ -40,6 +45,7 @@ const lipaUploadLimits = {
 } as const;
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
   const rateLimitResponse = await withHeavyOperationRateLimit(request);
   if (rateLimitResponse) {
     await logAuditTrailEntry({
@@ -51,6 +57,7 @@ export async function POST(request: Request) {
       httpStatus: 429,
       details: { reason: "rate-limited" },
     });
+
     return rateLimitResponse;
   }
 
@@ -191,6 +198,23 @@ export async function POST(request: Request) {
         outputName,
       },
     });
+    await logUsageEntry({
+      uid: user.uid,
+      taskType: "lipa-summary-bulk",
+      status: "success",
+      provider: "google",
+      model: GEMINI_MODEL_NAME,
+      serviceTier: GEMINI_SERVICE_TIER,
+      inputTokens: data.inputTokens,
+      outputTokens: data.outputTokens,
+      totalTokens: data.inputTokens + data.outputTokens,
+      estimatedCostUsd: data.estimatedCostUsd,
+      durationMs: Date.now() - startedAt,
+      metadata: {
+        fileCount: files.length,
+        scannedFiles: data.scannedFiles,
+      },
+    });
 
     return secureFileResponse(buffer, {
       contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -220,6 +244,20 @@ export async function POST(request: Request) {
       method: "POST",
       request,
       httpStatus: isQuotaOrRateLimit ? 429 : 500,
+      errorMessage: message,
+    });
+    await logUsageEntry({
+      uid: user.uid,
+      taskType: "lipa-summary-bulk",
+      status: "error",
+      provider: "google",
+      model: GEMINI_MODEL_NAME,
+      serviceTier: GEMINI_SERVICE_TIER,
+      inputTokens: 0,
+      outputTokens: 0,
+      totalTokens: 0,
+      estimatedCostUsd: 0,
+      durationMs: Date.now() - startedAt,
       errorMessage: message,
     });
     const isValidationError = error instanceof z.ZodError;

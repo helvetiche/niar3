@@ -25,6 +25,7 @@ export const WORKSPACE_TABS = [
   "schedules",
   "task-manager",
   "compose-email",
+  "usage",
 ] as const;
 export type WorkspaceTab = (typeof WORKSPACE_TABS)[number];
 

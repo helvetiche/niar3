@@ -10,6 +10,7 @@ import {
   PackageIcon,
   ListChecksIcon,
   EnvelopeSimpleIcon,
+  ChartLineUpIcon,
 } from "@phosphor-icons/react";
 import type { AvailableTool } from "./types";
 
@@ -83,6 +84,13 @@ export const AVAILABLE_TOOLS: AvailableTool[] = [
     name: "Compose email",
     description: "Send manual SMTP emails with formatting and AI assist (nodemailer)",
     icon: EnvelopeSimpleIcon,
+    isBasic: true,
+  },
+  {
+    id: "usage",
+    name: "Usage",
+    description: "Track AI activity logs with tokens, estimated spend, and request status",
+    icon: ChartLineUpIcon,
     isBasic: true,
   },
   {

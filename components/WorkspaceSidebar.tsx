@@ -39,6 +39,7 @@ import {
   PackageIcon,
   ArrowsOutIcon,
   EnvelopeSimpleIcon,
+  ChartLineUpIcon,
 } from "@phosphor-icons/react";
 import type { AuthUser } from "@/types/auth";
 import { useWorkspaceTab } from "@/contexts/WorkspaceContext";
@@ -180,6 +181,13 @@ const TOOLS = [
     description:
       "Send a manual one-off email through SMTP (nodemailer) with rich formatting and optional AI assist.",
     icon: EnvelopeSimpleIcon,
+  },
+  {
+    id: "usage" as const,
+    name: "USAGE",
+    description:
+      "View AI usage logs by task with token totals, estimated spend, and request status.",
+    icon: ChartLineUpIcon,
   },
 ] as const;
 

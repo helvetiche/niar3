@@ -136,6 +136,9 @@ export const generateLipaReportWorkbook = async ({
       fgColor: { argb: "FFFCE4D6" },
     };
     worksheet.mergeCells(`A${divisionRow.number}:C${divisionRow.number}`);
+    divisionRow.getCell(1).border = createThinBorder();
+    divisionRow.getCell(2).border = createThinBorder();
+    divisionRow.getCell(3).border = createThinBorder();
 
     division.irrigators.forEach((irrigator, index) => {
       const row = worksheet.addRow([
