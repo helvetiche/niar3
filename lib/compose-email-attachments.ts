@@ -66,9 +66,7 @@ export const finalizeComposeAttachmentBuffers = (
 ): ParsedComposeAttachment[] => {
   if (!parts.length) return [];
   if (parts.length > COMPOSE_EMAIL_MAX_ATTACHMENTS) {
-    throw new Error(
-      `Too many attachments (max ${COMPOSE_EMAIL_MAX_ATTACHMENTS}).`
-    );
+    throw new Error(`Too many attachments (max ${COMPOSE_EMAIL_MAX_ATTACHMENTS}).`);
   }
 
   let total = 0;
@@ -99,9 +97,7 @@ export const parseComposeEmailAttachments = (
 ): ParsedComposeAttachment[] => {
   if (!items?.length) return [];
   if (items.length > COMPOSE_EMAIL_MAX_ATTACHMENTS) {
-    throw new Error(
-      `Too many attachments (max ${COMPOSE_EMAIL_MAX_ATTACHMENTS}).`
-    );
+    throw new Error(`Too many attachments (max ${COMPOSE_EMAIL_MAX_ATTACHMENTS}).`);
   }
 
   const buffers: ComposeAttachmentBufferInput[] = items.map((item) => ({
@@ -118,9 +114,10 @@ export const formatAttachmentListForPlainText = (
 ): string => {
   if (attachments.length === 0) return "";
   const lines = attachments.map((a) => {
-    const kb = a.content.length >= 1024
-      ? `${(a.content.length / 1024).toFixed(1)} KB`
-      : `${a.content.length} B`;
+    const kb =
+      a.content.length >= 1024
+        ? `${(a.content.length / 1024).toFixed(1)} KB`
+        : `${a.content.length} B`;
     return `- ${a.filename} (${kb})`;
   });
   return ["", "Attachments:", ...lines].join("\n");

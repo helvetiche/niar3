@@ -255,7 +255,9 @@ export const AccountRecipientEmailInput = ({
           Type to filter workspace accounts. Arrow keys and Enter choose a row.
         </p>
       ) : isLoading ? (
-        <p className="mt-1 text-[10px] font-light text-emerald-200/55">Loading addresses…</p>
+        <p className="mt-1 text-[10px] font-light text-emerald-200/55">
+          Loading addresses…
+        </p>
       ) : (
         <p className="mt-1 text-[10px] font-light text-emerald-200/55">
           Account directory suggestions appear for super-admins (same list as Account

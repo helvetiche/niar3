@@ -7,8 +7,12 @@ import { COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES } from "@/lib/compose-email-at
 
 describe("sanitizeComposeAttachmentFilename", () => {
   it("strips path segments", () => {
-    expect(sanitizeComposeAttachmentFilename("C:\\fake\\report.pdf")).toBe("report.pdf");
-    expect(sanitizeComposeAttachmentFilename("/tmp/docs/sheet.xlsx")).toBe("sheet.xlsx");
+    expect(sanitizeComposeAttachmentFilename("C:\\fake\\report.pdf")).toBe(
+      "report.pdf"
+    );
+    expect(sanitizeComposeAttachmentFilename("/tmp/docs/sheet.xlsx")).toBe(
+      "sheet.xlsx"
+    );
   });
 
   it("returns a fallback for empty input", () => {
@@ -28,7 +32,9 @@ describe("parseComposeEmailAttachments", () => {
   });
 
   it("rejects when total size exceeds limit", () => {
-    const chunk = Buffer.alloc(Math.floor(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES / 2) + 1);
+    const chunk = Buffer.alloc(
+      Math.floor(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES / 2) + 1
+    );
     const b64 = chunk.toString("base64");
     const items = [
       { filename: "a.bin", contentBase64: b64 },

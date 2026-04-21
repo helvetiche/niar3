@@ -126,7 +126,7 @@ const styleSheet = (
   const dayBuckets: DayBucket[] = [...dayMap.entries()]
     .map(([dayKey, items]) => {
       const [yearStr, monthStr, dayStr] = dayKey.split("-").map(Number);
-      const dayDate = new Date((yearStr ?? 2000), (monthStr ?? 1) - 1, dayStr ?? 1);
+      const dayDate = new Date(yearStr ?? 2000, (monthStr ?? 1) - 1, dayStr ?? 1);
       const sortedItems = [...items].sort(
         (a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()
       );
@@ -191,7 +191,11 @@ const styleSheet = (
       row.height = 22;
 
       row.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
-      row.getCell(2).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+      row.getCell(2).alignment = {
+        horizontal: "left",
+        vertical: "middle",
+        wrapText: true,
+      };
       row.getCell(3).numFmt = "hh:mm AM/PM";
       row.getCell(3).alignment = { horizontal: "center", vertical: "middle" };
       row.getCell(4).alignment = { horizontal: "left", vertical: "middle" };
@@ -214,7 +218,11 @@ const styleSheet = (
 
     const sectionEndRow = rowPointer - 1;
     for (let outerCol = 1; outerCol <= 5; outerCol += 1) {
-      applyCellBorder(worksheet.getCell(sectionStartRow, outerCol), "FF065F46", "medium");
+      applyCellBorder(
+        worksheet.getCell(sectionStartRow, outerCol),
+        "FF065F46",
+        "medium"
+      );
       applyCellBorder(worksheet.getCell(sectionEndRow, outerCol), "FF065F46", "medium");
     }
     for (let outerRow = sectionStartRow; outerRow <= sectionEndRow; outerRow += 1) {

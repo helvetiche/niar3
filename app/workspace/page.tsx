@@ -86,7 +86,8 @@ const TOOL_CONTENT: Record<string, { name: string; description: string }> = {
   },
   usage: {
     name: "USAGE",
-    description: "Track AI activity, token usage, estimated spend, and request outcomes.",
+    description:
+      "Track AI activity, token usage, estimated spend, and request outcomes.",
   },
 };
 

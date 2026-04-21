@@ -244,14 +244,20 @@ export const QuickSendMessageSidebarWidget = ({
                 className="inline-flex h-[2.125rem] min-w-[5.5rem] items-center justify-center gap-1.5 rounded-lg border border-dashed border-emerald-600 bg-emerald-950/40 px-2.5 text-[11px] font-light text-emerald-100/90 transition hover:border-emerald-500 hover:bg-emerald-900/40 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
                 aria-label="Add file attachments"
               >
-                <PaperclipIcon className="h-4 w-4 shrink-0" weight="duotone" aria-hidden />
+                <PaperclipIcon
+                  className="h-4 w-4 shrink-0"
+                  weight="duotone"
+                  aria-hidden
+                />
                 Add files
               </button>
             </div>
           </div>
           <p className="mt-1 text-[9px] font-light text-emerald-200/55">
             Max {COMPOSE_EMAIL_MAX_ATTACHMENTS} files ·{" "}
-            {formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)}{" "}
+            {formatComposeEmailAttachmentSizeLabel(
+              COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES
+            )}{" "}
             total
           </p>
           {attachments.length > 0 ? (
@@ -276,7 +282,11 @@ export const QuickSendMessageSidebarWidget = ({
                     className="inline-flex shrink-0 rounded p-1 text-emerald-200 transition hover:bg-emerald-800/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40"
                     aria-label={`Remove ${file.name}`}
                   >
-                    <TrashSimpleIcon className="h-3.5 w-3.5" weight="bold" aria-hidden />
+                    <TrashSimpleIcon
+                      className="h-3.5 w-3.5"
+                      weight="bold"
+                      aria-hidden
+                    />
                   </button>
                 </li>
               ))}
@@ -285,7 +295,9 @@ export const QuickSendMessageSidebarWidget = ({
           {attachmentBytesTotal > 0 ? (
             <p className="mb-2 text-[9px] font-light text-emerald-200/55">
               Selected: {formatComposeEmailAttachmentSizeLabel(attachmentBytesTotal)} of{" "}
-              {formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)}
+              {formatComposeEmailAttachmentSizeLabel(
+                COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES
+              )}
             </p>
           ) : null}
         </div>
@@ -315,9 +327,17 @@ export const QuickSendMessageSidebarWidget = ({
           className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500/60 bg-emerald-600 px-3 py-2 text-xs font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50"
         >
           {isSending ? (
-            <CircleNotchIcon className="h-4 w-4 animate-spin" weight="bold" aria-hidden />
+            <CircleNotchIcon
+              className="h-4 w-4 animate-spin"
+              weight="bold"
+              aria-hidden
+            />
           ) : (
-            <PaperPlaneTiltIcon className="h-4 w-4 shrink-0" weight="bold" aria-hidden />
+            <PaperPlaneTiltIcon
+              className="h-4 w-4 shrink-0"
+              weight="bold"
+              aria-hidden
+            />
           )}
           {isSending ? "Sending…" : "Send"}
         </button>

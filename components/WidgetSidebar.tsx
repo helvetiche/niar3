@@ -927,16 +927,14 @@ export function PriorityFocusWorkspacePromoEmbed({
         <p className="px-0.5 py-3 text-center text-xs leading-relaxed text-emerald-200/75">
           Add an active email schedule to see a live preview. You can still add this
           widget and pick any schedule from{" "}
-          <span className="font-medium text-emerald-100">Add widget</span> in the Widgets
-          panel.
+          <span className="font-medium text-emerald-100">Add widget</span> in the
+          Widgets panel.
         </p>
       </ScheduleWidgetChrome>
     );
   }
 
-  return (
-    <PriorityFocusWidget scheduleId={firstActiveId} onRemove={onRemove} />
-  );
+  return <PriorityFocusWidget scheduleId={firstActiveId} onRemove={onRemove} />;
 }
 
 const QUICK_ACCOMPLISHMENT_SUGGESTION_LIMIT = 8;
@@ -1488,11 +1486,7 @@ export function QuickMergeSidebarWidget({ onRemove }: { onRemove?: () => void })
   );
 }
 
-export function QuickBillingUnitSidebarWidget({
-  onRemove,
-}: {
-  onRemove?: () => void;
-}) {
+export function QuickBillingUnitSidebarWidget({ onRemove }: { onRemove?: () => void }) {
   const formId = useId();
   const { data: ifrTemplates = [], isLoading: ifrTemplatesLoading } =
     useTemplates("ifr-scanner");
@@ -1860,11 +1854,7 @@ export function QuickConsolidateIfrSidebarWidget({
   );
 }
 
-export function QuickIfrCheckerSidebarWidget({
-  onRemove,
-}: {
-  onRemove?: () => void;
-}) {
+export function QuickIfrCheckerSidebarWidget({ onRemove }: { onRemove?: () => void }) {
   const formId = useId();
   const {
     ifrFileInputRef,
@@ -1979,7 +1969,11 @@ export function QuickIfrCheckerSidebarWidget({
               aria-hidden
             />
           ) : (
-            <ShieldCheckIcon className="h-4 w-4 shrink-0" weight="duotone" aria-hidden />
+            <ShieldCheckIcon
+              className="h-4 w-4 shrink-0"
+              weight="duotone"
+              aria-hidden
+            />
           )}
           {isChecking ? "Validating…" : "Run validation"}
         </button>
@@ -2069,8 +2063,8 @@ export function QuickIfrCheckerSidebarWidget({
                     </select>
                   </div>
                   <p className="text-[10px] text-emerald-200/55">
-                    Showing {paginatedIssues.length} of {filteredIssues.length} filtered (
-                    {result.issues.length} total)
+                    Showing {paginatedIssues.length} of {filteredIssues.length} filtered
+                    ({result.issues.length} total)
                   </p>
                 </div>
 
@@ -3253,7 +3247,9 @@ export function WidgetSidebar() {
             <AddWidgetModalQuickToolSection
               title="Quick IFR checker"
               description="Upload one or more IFR source Excel files plus the consolidated workbook to validate in place. Same validation pipeline as IFR Checker in the workspace—issues, filters, and pagination—in a narrow sidebar layout."
-              chipIcon={<ShieldCheckIcon size={12} className="text-white" aria-hidden />}
+              chipIcon={
+                <ShieldCheckIcon size={12} className="text-white" aria-hidden />
+              }
               chipLabel="Excel · Validate consolidated"
               cardTitle="Sidebar shortcut"
               cardBody="Run IFR vs consolidated checks without the three-step workspace flow."

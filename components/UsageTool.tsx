@@ -114,7 +114,9 @@ export function UsageTool() {
           Task
           <select
             value={taskType}
-            onChange={(event) => setTaskType(event.target.value as "" | AiUsageTaskType)}
+            onChange={(event) =>
+              setTaskType(event.target.value as "" | AiUsageTaskType)
+            }
             className="h-10 rounded-lg border border-white/30 bg-emerald-950/60 px-3 text-sm text-white focus:outline-none"
           >
             {TASK_OPTIONS.map((option) => (
@@ -148,15 +150,21 @@ export function UsageTool() {
         </div>
         <div className="rounded-xl border border-white/25 bg-white/10 p-3 text-white">
           <p className="text-xs text-white/75">Input tokens</p>
-          <p className="mt-1 text-lg font-medium">{formatNumber(summary.totalInputTokens)}</p>
+          <p className="mt-1 text-lg font-medium">
+            {formatNumber(summary.totalInputTokens)}
+          </p>
         </div>
         <div className="rounded-xl border border-white/25 bg-white/10 p-3 text-white">
           <p className="text-xs text-white/75">Output tokens</p>
-          <p className="mt-1 text-lg font-medium">{formatNumber(summary.totalOutputTokens)}</p>
+          <p className="mt-1 text-lg font-medium">
+            {formatNumber(summary.totalOutputTokens)}
+          </p>
         </div>
         <div className="rounded-xl border border-white/25 bg-white/10 p-3 text-white">
           <p className="text-xs text-white/75">Estimated spend</p>
-          <p className="mt-1 text-lg font-medium">{formatPhp(summary.totalEstimatedCostPhp)}</p>
+          <p className="mt-1 text-lg font-medium">
+            {formatPhp(summary.totalEstimatedCostPhp)}
+          </p>
         </div>
       </div>
 

@@ -89,7 +89,8 @@ export const AVAILABLE_TOOLS: AvailableTool[] = [
   {
     id: "usage",
     name: "Usage",
-    description: "Track AI activity logs with tokens, estimated spend, and request status",
+    description:
+      "Track AI activity logs with tokens, estimated spend, and request status",
     icon: ChartLineUpIcon,
     isBasic: true,
   },

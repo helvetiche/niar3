@@ -170,7 +170,9 @@ export const ScheduleWidgetsSidebarPromo = ({
             </p>
 
             {tile.addDisabled && tile.addDisabledReason ? (
-              <p className="shrink-0 text-xs text-amber-200/85">{tile.addDisabledReason}</p>
+              <p className="shrink-0 text-xs text-amber-200/85">
+                {tile.addDisabledReason}
+              </p>
             ) : null}
 
             <button
@@ -218,7 +220,10 @@ export const QuickSingletonWidgetSidebarPromo = ({
   const handleAdd = () => {
     const idSuffix = `${Date.now()}`;
     if (widget === "quick-accomplishment") {
-      addWidget({ id: `quick-accomplishment-${idSuffix}`, type: "quick-accomplishment" });
+      addWidget({
+        id: `quick-accomplishment-${idSuffix}`,
+        type: "quick-accomplishment",
+      });
     } else if (widget === "quick-merge-files") {
       addWidget({ id: `quick-merge-files-${idSuffix}`, type: "quick-merge-files" });
     } else if (widget === "quick-billing-unit") {

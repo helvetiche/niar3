@@ -88,7 +88,9 @@ export async function listAccountEmailSuggestions(): Promise<
     pageToken = nextPageToken;
   }
 
-  out.sort((a, b) => a.email.localeCompare(b.email, undefined, { sensitivity: "base" }));
+  out.sort((a, b) =>
+    a.email.localeCompare(b.email, undefined, { sensitivity: "base" })
+  );
   return out;
 }
 

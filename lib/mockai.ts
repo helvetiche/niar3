@@ -75,7 +75,8 @@ const MOCK_USAGE_ENTRIES: AiUsageEntry[] = [
     estimatedCostUsd: 0,
     estimatedCostPhp: 0,
     durationMs: 2150,
-    errorMessage: "Gemini API quota/rate limit reached. Please retry in about 60 seconds.",
+    errorMessage:
+      "Gemini API quota/rate limit reached. Please retry in about 60 seconds.",
     metadata: {
       fileCount: 3,
       scannedFiles: 1,

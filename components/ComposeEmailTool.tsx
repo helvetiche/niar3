@@ -186,8 +186,9 @@ export const ComposeEmailTool = () => {
           </span>
         </div>
         <p className="mt-2 text-sm text-white/85">
-          Enter the subject and recipient, write your message, then send. This flow uses the
-          same workspace styling as your other tools—not the automated schedule email layout.
+          Enter the subject and recipient, write your message, then send. This flow uses
+          the same workspace styling as your other tools—not the automated schedule
+          email layout.
         </p>
       </div>
 
@@ -237,7 +238,10 @@ export const ComposeEmailTool = () => {
               </span>
               <span className="text-[11px] font-light text-white/70">
                 Up to {COMPOSE_EMAIL_MAX_ATTACHMENTS} files,{" "}
-                {formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)} total
+                {formatComposeEmailAttachmentSizeLabel(
+                  COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES
+                )}{" "}
+                total
               </span>
             </div>
             <input
@@ -259,7 +263,11 @@ export const ComposeEmailTool = () => {
               className={`inline-flex w-fit items-center gap-2 rounded-lg border border-white/40 bg-white/5 px-3 py-2 text-sm font-light text-white transition focus-within:outline-none focus-within:ring-2 focus-within:ring-white/35 ${attachments.length >= COMPOSE_EMAIL_MAX_ATTACHMENTS ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-white/10"}`}
               aria-label="Add file attachments"
             >
-              <PaperclipIcon size={18} weight="duotone" className="shrink-0 text-white" />
+              <PaperclipIcon
+                size={18}
+                weight="duotone"
+                className="shrink-0 text-white"
+              />
               {attachments.length > 0
                 ? `Add files (${attachments.length} selected)`
                 : "Add files"}
@@ -298,8 +306,11 @@ export const ComposeEmailTool = () => {
             )}
             {attachmentBytesTotal > 0 ? (
               <p className="text-[11px] font-light text-white/65">
-                Selected: {formatComposeEmailAttachmentSizeLabel(attachmentBytesTotal)} of{" "}
-                {formatComposeEmailAttachmentSizeLabel(COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES)}
+                Selected: {formatComposeEmailAttachmentSizeLabel(attachmentBytesTotal)}{" "}
+                of{" "}
+                {formatComposeEmailAttachmentSizeLabel(
+                  COMPOSE_EMAIL_MAX_TOTAL_ATTACHMENT_BYTES
+                )}
               </p>
             ) : null}
             {lastAttachmentSelectionMessage ? (

@@ -577,9 +577,7 @@ export function TaskManager({ variant = "page", onRequestClose }: TaskManagerPro
             ) : null}
           </div>
 
-          {!isDrawer ? (
-            <ScheduleWidgetsSidebarPromo variant="task-manager" />
-          ) : null}
+          {!isDrawer ? <ScheduleWidgetsSidebarPromo variant="task-manager" /> : null}
         </>
       ) : null}
 

@@ -37,12 +37,12 @@ export async function GET(request: Request) {
       uid: user.uid,
       email: user.email ?? "",
       query: {
-      limit: parsed.limit,
-      taskType: parsed.taskType as AiUsageTaskType | undefined,
-      model: parsed.model as AiModelName | undefined,
-      status: parsed.status as AiUsageStatus | undefined,
-      fromTimestamp: parsed.fromTimestamp,
-      toTimestamp: parsed.toTimestamp,
+        limit: parsed.limit,
+        taskType: parsed.taskType as AiUsageTaskType | undefined,
+        model: parsed.model as AiModelName | undefined,
+        status: parsed.status as AiUsageStatus | undefined,
+        fromTimestamp: parsed.fromTimestamp,
+        toTimestamp: parsed.toTimestamp,
       },
     });
 
@@ -78,7 +78,9 @@ export async function GET(request: Request) {
     return applySecurityHeaders(
       NextResponse.json(
         {
-          error: isValidationError ? "Invalid usage query." : "Failed to load usage logs.",
+          error: isValidationError
+            ? "Invalid usage query."
+            : "Failed to load usage logs.",
         },
         { status: isValidationError ? 400 : 500 }
       )

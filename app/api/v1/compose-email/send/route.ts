@@ -29,10 +29,7 @@ const bodySchema = z.object({
   to: z.string().min(3).max(2000),
   subject: z.string().min(1).max(998),
   htmlBody: z.string().min(1).max(500_000),
-  attachments: z
-    .array(attachmentSchema)
-    .max(COMPOSE_EMAIL_MAX_ATTACHMENTS)
-    .optional(),
+  attachments: z.array(attachmentSchema).max(COMPOSE_EMAIL_MAX_ATTACHMENTS).optional(),
 });
 
 const MAX_HTML_LEN = 500_000;
@@ -77,7 +74,12 @@ const validateComposeFields = (to: string, subject: string, htmlBody: string) =>
 
 const readMultipartCompose = async (
   request: NextRequest
-): Promise<{ to: string; subject: string; htmlBody: string; parsedAttachments: ParsedComposeAttachment[] }> => {
+): Promise<{
+  to: string;
+  subject: string;
+  htmlBody: string;
+  parsedAttachments: ParsedComposeAttachment[];
+}> => {
   const form = await request.formData();
   const to = String(form.get("to") ?? "").trim();
   const subject = String(form.get("subject") ?? "").trim();
@@ -117,7 +119,12 @@ const readMultipartCompose = async (
 
 const readJsonCompose = async (
   request: NextRequest
-): Promise<{ to: string; subject: string; htmlBody: string; parsedAttachments: ParsedComposeAttachment[] }> => {
+): Promise<{
+  to: string;
+  subject: string;
+  htmlBody: string;
+  parsedAttachments: ParsedComposeAttachment[];
+}> => {
   const json = (await request.json()) as unknown;
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
@@ -238,7 +245,8 @@ export async function POST(request: NextRequest) {
 
     if (contentType.includes("multipart/form-data")) {
       try {
-        ({ to, subject, htmlBody, parsedAttachments } = await readMultipartCompose(request));
+        ({ to, subject, htmlBody, parsedAttachments } =
+          await readMultipartCompose(request));
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Invalid multipart request";
         return NextResponse.json({ error: msg }, { status: 400 });

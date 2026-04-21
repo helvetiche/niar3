@@ -74,7 +74,10 @@ const sanitizeValue = (value: unknown, depth = 0): unknown => {
   }
 
   if (typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>).slice(0, MAX_OBJECT_KEYS);
+    const entries = Object.entries(value as Record<string, unknown>).slice(
+      0,
+      MAX_OBJECT_KEYS
+    );
     return Object.fromEntries(
       entries
         .map(([key, item]) => [key, sanitizeValue(item, depth + 1)])
@@ -97,7 +100,9 @@ const isConfigurationError = (error: unknown): boolean => {
 };
 
 const omitUndefined = <T extends Record<string, unknown>>(obj: T): T =>
-  Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== undefined)) as T;
+  Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== undefined)
+  ) as T;
 
 const normalizeLimit = (value?: number): number => {
   if (!Number.isFinite(value)) return 100;
@@ -149,7 +154,9 @@ export async function logUsageEntry(input: LogUsageEntryInput): Promise<void> {
       usageState.isDisabled = true;
       if (!usageState.hasReportedDisabled) {
         usageState.hasReportedDisabled = true;
-        logger.warn("[usage-log] Disabled because Firebase Realtime Database is not configured.");
+        logger.warn(
+          "[usage-log] Disabled because Firebase Realtime Database is not configured."
+        );
       }
       return;
     }
@@ -183,7 +190,8 @@ export async function getUsageEntries(
         if (filters.taskType && item.taskType !== filters.taskType) return false;
         if (filters.model && item.model !== filters.model) return false;
         if (filters.status && item.status !== filters.status) return false;
-        if (filters.fromTimestamp && item.createdAt < filters.fromTimestamp) return false;
+        if (filters.fromTimestamp && item.createdAt < filters.fromTimestamp)
+          return false;
         if (filters.toTimestamp && item.createdAt > filters.toTimestamp) return false;
         return true;
       })
