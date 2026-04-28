@@ -5,6 +5,7 @@
 
 import * as XLSX from "xlsx";
 import { extractIFRData } from "@/lib/consolidate-ifr";
+import { standardizeLotNumber } from "@/lib/lot-code";
 
 export interface Issue {
   lotCode: string;
@@ -31,6 +32,14 @@ export interface ValidationSummary {
   totalIssues: number;
   errors: number;
   warnings: number;
+  /** IFR lots with no issues on that lot code (subset of totalLots). */
+  ifrLotsCorrect: number;
+  /** IFR lots that appear in at least one issue row. */
+  ifrLotsWithIssues: number;
+  /** Share of IFR lots that are fully OK (0–100, one decimal). */
+  ifrLotsCorrectPercent: number;
+  /** Share of IFR lots with any issue (0–100, one decimal). */
+  ifrLotsWithIssuesPercent: number;
 }
 
 export interface ValidationResult {
@@ -50,17 +59,22 @@ interface LotData {
 const TOLERANCE = 0.02; // Allow small rounding differences
 const AREA_TOLERANCE = 0.01;
 
+const roundPercentOneDecimal = (value: number): number => Math.round(value * 10) / 10;
+
 /**
  * Process IFR files and extract expected data
  */
 export async function processIFRFiles(
-  ifrFiles: File[]
+  ifrFiles: File[],
+  standardizeLotNumbers: boolean
 ): Promise<Map<string, LotData & { sourceFile: string }>> {
   const expectedData = new Map<string, LotData & { sourceFile: string }>();
 
   for (const ifrFile of ifrFiles) {
     const buffer = Buffer.from(await ifrFile.arrayBuffer());
-    const lotsData = await extractIFRData(buffer, ifrFile.name);
+    const lotsData = await extractIFRData(buffer, ifrFile.name, {
+      standardizeLotNumbers,
+    });
 
     for (const lot of lotsData) {
       expectedData.set(lot.lotCode, {
@@ -81,7 +95,8 @@ export async function processIFRFiles(
  * Parse consolidated file and extract lot data
  */
 export function parseConsolidatedFile(
-  buffer: Buffer
+  buffer: Buffer,
+  standardizeLotNumbers: boolean
 ): Map<string, LotData & { row: number }> {
   const workbook = XLSX.read(buffer, { type: "buffer" });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -91,7 +106,11 @@ export function parseConsolidatedFile(
 
   // Parse consolidated file (starting from row 3)
   for (let row = 3; row <= range.e.r; row++) {
-    const lotCode = sheet[`B${row}`]?.v;
+    const rawLot = sheet[`B${row}`]?.v;
+    if (rawLot === undefined || rawLot === null || rawLot === "") continue;
+
+    const lotStr = String(rawLot).trim();
+    const lotCode = standardizeLotNumbers ? standardizeLotNumber(lotStr) : lotStr;
     if (!lotCode) continue;
 
     const principal = sheet[`J${row}`]?.v || 0;
@@ -99,8 +118,8 @@ export function parseConsolidatedFile(
     const oldAccount = sheet[`L${row}`]?.v || 0;
     const area = sheet[`I${row}`]?.v || 0;
 
-    consolidatedData.set(String(lotCode), {
-      lotCode: String(lotCode),
+    consolidatedData.set(lotCode, {
+      lotCode,
       principal: Number(principal),
       penalty: Number(penalty),
       oldAccount: Number(oldAccount),
@@ -262,16 +281,26 @@ export function compareMatchingLots(
 /**
  * Validate IFR files against consolidated file
  */
+export type ValidateIFRFilesOptions = {
+  standardizeLotNumbers?: boolean;
+};
+
 export async function validateIFRFiles(
   ifrFiles: File[],
-  consolidatedFile: File
+  consolidatedFile: File,
+  options?: ValidateIFRFilesOptions
 ): Promise<ValidationResult> {
+  const standardizeLotNumbers = options?.standardizeLotNumbers === true;
+
   // Process IFR files
-  const expectedData = await processIFRFiles(ifrFiles);
+  const expectedData = await processIFRFiles(ifrFiles, standardizeLotNumbers);
 
   // Parse consolidated file
   const consolidatedBuffer = Buffer.from(await consolidatedFile.arrayBuffer());
-  const consolidatedData = parseConsolidatedFile(consolidatedBuffer);
+  const consolidatedData = parseConsolidatedFile(
+    consolidatedBuffer,
+    standardizeLotNumbers
+  );
 
   // Find issues
   const issues: Issue[] = [
@@ -288,6 +317,20 @@ export async function validateIFRFiles(
     return a.lotCode.localeCompare(b.lotCode);
   });
 
+  const lotCodesWithAnyIssue = new Set(issues.map((i) => i.lotCode));
+  let ifrLotsCorrect = 0;
+  for (const lotCode of expectedData.keys()) {
+    if (!lotCodesWithAnyIssue.has(lotCode)) {
+      ifrLotsCorrect += 1;
+    }
+  }
+  const ifrLotsWithIssues = expectedData.size - ifrLotsCorrect;
+  const ifrTotal = expectedData.size;
+  const ifrLotsCorrectPercent =
+    ifrTotal > 0 ? roundPercentOneDecimal((ifrLotsCorrect / ifrTotal) * 100) : 0;
+  const ifrLotsWithIssuesPercent =
+    ifrTotal > 0 ? roundPercentOneDecimal((ifrLotsWithIssues / ifrTotal) * 100) : 0;
+
   // Generate summary
   const summary: ValidationSummary = {
     totalLots: expectedData.size,
@@ -298,6 +341,10 @@ export async function validateIFRFiles(
     totalIssues: issues.length,
     errors: issues.filter((i) => i.severity === "error").length,
     warnings: issues.filter((i) => i.severity === "warning").length,
+    ifrLotsCorrect,
+    ifrLotsWithIssues,
+    ifrLotsCorrectPercent,
+    ifrLotsWithIssuesPercent,
   };
 
   return {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   UploadSimpleIcon,
   FileIcon,
@@ -16,6 +17,7 @@ import { QuickSingletonWidgetSidebarPromo } from "@/components/WorkspaceWidgetSi
 import { useConsolidateLandProfiles } from "@/hooks/useConsolidateLandProfiles";
 
 export default function ConsolidateLandProfilesTool() {
+  const standardizeLotFieldId = useId();
   const {
     landProfileInputRef,
     templateFile,
@@ -33,6 +35,8 @@ export default function ConsolidateLandProfilesTool() {
     handleConsolidate,
     canProceedToStep,
     updateFileDetails,
+    standardizeLotNumbers,
+    setStandardizeLotNumbers,
   } = useConsolidateLandProfiles();
 
   const steps = [
@@ -206,6 +210,32 @@ export default function ConsolidateLandProfilesTool() {
                 {landProfileFiles.length}
               </p>
             </div>
+          </div>
+
+          <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+            <label
+              htmlFor={standardizeLotFieldId}
+              className="flex cursor-pointer items-start gap-3 text-sm text-white/90"
+            >
+              <input
+                id={standardizeLotFieldId}
+                type="checkbox"
+                checked={standardizeLotNumbers}
+                onChange={(e) => setStandardizeLotNumbers(e.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 rounded border-white/40 bg-white/10 text-emerald-500 focus:ring-2 focus:ring-emerald-400 focus:ring-offset-0"
+              />
+              <span>
+                <span className="font-medium text-white">Standardize Lot Number</span>
+                <span className="mt-1 block text-white/70">
+                  Optional. Output lot codes use only digits, letters, and hyphens;
+                  spaces are removed (e.g.{" "}
+                  <span className="font-mono text-white/85">1023 - A</span> →{" "}
+                  <span className="font-mono text-white/85">1023-A</span>,{" "}
+                  <span className="font-mono text-white/85">104.32-A</span> →{" "}
+                  <span className="font-mono text-white/85">10432-A</span>).
+                </span>
+              </span>
+            </label>
           </div>
 
           <div className="rounded-lg border border-white/30 bg-white/5 p-4">

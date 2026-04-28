@@ -22,6 +22,10 @@ interface CheckResult {
     totalIssues: number;
     errors: number;
     warnings: number;
+    ifrLotsCorrect: number;
+    ifrLotsWithIssues: number;
+    ifrLotsCorrectPercent: number;
+    ifrLotsWithIssuesPercent: number;
   };
   issues: Issue[];
 }
@@ -43,6 +47,7 @@ export function useIFRChecker() {
     "all"
   );
   const [fieldFilter, setFieldFilter] = useState<string>("all");
+  const [standardizeLotNumbers, setStandardizeLotNumbers] = useState(true);
 
   const handleIFRFilesSelection = (incoming: FileList | null) => {
     setIfrFiles(Array.from(incoming ?? []));
@@ -72,6 +77,10 @@ export function useIFRChecker() {
         formData.append("ifrFiles", file);
       }
       formData.append("consolidatedFile", consolidatedFile);
+      formData.append(
+        "standardizeLotNumbers",
+        standardizeLotNumbers ? "true" : "false"
+      );
 
       const res = await fetch("/api/v1/ifr-checker", {
         method: "POST",
@@ -164,6 +173,11 @@ export function useIFRChecker() {
     setCurrentPage(1);
   };
 
+  const handleStandardizeLotNumbersChange = (checked: boolean) => {
+    setStandardizeLotNumbers(checked);
+    setResult(null);
+  };
+
   const canProceedToStep = (step: number): boolean => {
     if (step === 0) return ifrFiles.length > 0;
     if (step === 1) return !!consolidatedFile;
@@ -183,6 +197,7 @@ export function useIFRChecker() {
     searchQuery,
     severityFilter,
     fieldFilter,
+    standardizeLotNumbers,
     uniqueFields,
     filteredIssues,
     paginatedIssues,
@@ -195,6 +210,7 @@ export function useIFRChecker() {
     handleSearchChange,
     handleSeverityFilterChange,
     handleFieldFilterChange,
+    handleStandardizeLotNumbersChange,
     canProceedToStep,
   };
 }

@@ -30,6 +30,7 @@ export function useConsolidateLandProfiles() {
   const [isOverlayOpaque, setIsOverlayOpaque] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isFinalizing, setIsFinalizing] = useState(false);
+  const [standardizeLotNumbers, setStandardizeLotNumbers] = useState(true);
 
   const { data: consolidationTemplates = [] } = useTemplates("consolidation");
 
@@ -170,6 +171,8 @@ export function useConsolidateLandProfiles() {
         item.irrigationAssociation || ""
       );
     });
+
+    formData.append("standardizeLotNumbers", standardizeLotNumbers ? "true" : "false");
 
     return formData;
   };
@@ -312,5 +315,7 @@ export function useConsolidateLandProfiles() {
     handleConsolidate,
     canProceedToStep,
     updateFileDetails,
+    standardizeLotNumbers,
+    setStandardizeLotNumbers,
   };
 }

@@ -12,6 +12,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const ifrFiles = formData.getAll("ifrFiles") as File[];
     const consolidatedFile = formData.get("consolidatedFile") as File;
 
+    const standardizeRaw = formData.get("standardizeLotNumbers");
+    const standardizeLotNumbers = standardizeRaw === "true" || standardizeRaw === "on";
+
     // Validate inputs
     if (!ifrFiles || ifrFiles.length === 0) {
       return NextResponse.json({ error: "No IFR files provided" }, { status: 400 });
@@ -25,7 +28,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Validate using service
-    const result = await validateIFRFiles(ifrFiles, consolidatedFile);
+    const result = await validateIFRFiles(ifrFiles, consolidatedFile, {
+      standardizeLotNumbers,
+    });
 
     return NextResponse.json(result);
   } catch (error) {

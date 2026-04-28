@@ -34,6 +34,9 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
+    const standardizeRaw = formData.get("standardizeLotNumbers");
+    const standardizeLotNumbers = standardizeRaw === "true" || standardizeRaw === "on";
+
     // Get template file
     const templateFile = formData.get("template") as File;
     if (!templateFile) {
@@ -119,14 +122,18 @@ export async function POST(request: NextRequest) {
           processedCount: fileProcessedCount,
           errors,
           warnings,
-        } = await consolidateIFR(templateBuffer, [
-          {
-            buffer: file.buffer,
-            fileName: file.fileName,
-            divisionNumber: file.divisionNumber,
-            irrigationAssociation: file.irrigationAssociation,
-          },
-        ]);
+        } = await consolidateIFR(
+          templateBuffer,
+          [
+            {
+              buffer: file.buffer,
+              fileName: file.fileName,
+              divisionNumber: file.divisionNumber,
+              irrigationAssociation: file.irrigationAssociation,
+            },
+          ],
+          { standardizeLotNumbers }
+        );
 
         if (fileProcessedCount > 0) {
           // Generate output filename: DIV. {NO} - {NAME} (CONSOLIDATED).xlsx

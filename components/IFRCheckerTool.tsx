@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import {
   CheckCircleIcon,
   WarningIcon,
@@ -17,6 +18,7 @@ import { QuickSingletonWidgetSidebarPromo } from "@/components/WorkspaceWidgetSi
 import { useIFRChecker } from "@/hooks/useIFRChecker";
 
 export default function IFRCheckerTool() {
+  const standardizeLotFieldId = useId();
   const {
     ifrFileInputRef,
     consolidatedFileInputRef,
@@ -28,6 +30,7 @@ export default function IFRCheckerTool() {
     searchQuery,
     severityFilter,
     fieldFilter,
+    standardizeLotNumbers,
     uniqueFields,
     filteredIssues,
     paginatedIssues,
@@ -39,6 +42,7 @@ export default function IFRCheckerTool() {
     handleSearchChange,
     handleSeverityFilterChange,
     handleFieldFilterChange,
+    handleStandardizeLotNumbersChange,
     canProceedToStep,
   } = useIFRChecker();
 
@@ -175,6 +179,33 @@ export default function IFRCheckerTool() {
             </div>
           </div>
 
+          <div className="rounded-lg border border-white/30 bg-white/5 p-4">
+            <label
+              htmlFor={standardizeLotFieldId}
+              className="flex cursor-pointer items-start gap-3 text-sm text-white/90"
+            >
+              <input
+                id={standardizeLotFieldId}
+                type="checkbox"
+                checked={standardizeLotNumbers}
+                onChange={(e) => handleStandardizeLotNumbersChange(e.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 rounded border-white/40 bg-white/10 text-emerald-500 focus:ring-2 focus:ring-emerald-400 focus:ring-offset-0"
+              />
+              <span>
+                <span className="font-medium text-white">Standardize Lot Number</span>
+                <span className="mt-1 block text-white/70">
+                  Optional. Keeps only digits, letters, and hyphens in lot codes, and
+                  removes spaces so consolidated entries like{" "}
+                  <span className="font-mono text-white/85">1023 - A</span> match IFR{" "}
+                  <span className="font-mono text-white/85">1023-A</span> (also fixes
+                  typos such as{" "}
+                  <span className="font-mono text-white/85">104.32-A</span> vs{" "}
+                  <span className="font-mono text-white/85">10432-A</span>).
+                </span>
+              </span>
+            </label>
+          </div>
+
           {result && (
             <div className="space-y-4">
               <div className="rounded-lg border border-white/30 bg-white/5 p-4">
@@ -211,6 +242,52 @@ export default function IFRCheckerTool() {
                       <WarningIcon size={16} className="text-white/60" />
                       Warnings: {result.summary.warnings}
                     </div>
+                  </div>
+                </div>
+
+                <div
+                  className="mt-4 border-t border-white/20 pt-4"
+                  aria-label="IFR lot outcome summary"
+                >
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/60">
+                    Lot outcomes (IFR basis)
+                  </p>
+                  <p className="mb-2 text-sm text-white/90">
+                    <span className="text-emerald-200/95">
+                      {result.summary.ifrLotsCorrect} correct
+                    </span>
+                    <span className="text-white/50"> · </span>
+                    <span className="text-white/80">
+                      {result.summary.ifrLotsCorrectPercent}% of IFR lots
+                    </span>
+                    <span className="mx-2 text-white/40" aria-hidden>
+                      |
+                    </span>
+                    <span className="text-rose-200/95">
+                      {result.summary.ifrLotsWithIssues} with issues
+                    </span>
+                    <span className="text-white/50"> · </span>
+                    <span className="text-white/80">
+                      {result.summary.ifrLotsWithIssuesPercent}% of IFR lots
+                    </span>
+                  </p>
+                  <div
+                    className="flex h-2.5 w-full overflow-hidden rounded-full bg-white/10"
+                    role="img"
+                    aria-label={`${result.summary.ifrLotsCorrectPercent} percent of IFR lots had no issues; ${result.summary.ifrLotsWithIssuesPercent} percent had at least one issue.`}
+                  >
+                    <div
+                      className="h-full bg-emerald-400/90"
+                      style={{
+                        width: `${result.summary.totalLots > 0 ? result.summary.ifrLotsCorrectPercent : 0}%`,
+                      }}
+                    />
+                    <div
+                      className="h-full bg-rose-500/85"
+                      style={{
+                        width: `${result.summary.totalLots > 0 ? result.summary.ifrLotsWithIssuesPercent : 0}%`,
+                      }}
+                    />
                   </div>
                 </div>
               </div>

@@ -9,6 +9,7 @@ import {
   extractRowData,
   type LotGroup,
 } from "./consolidate-ifr-helpers";
+import { standardizeLotNumber } from "./lot-code";
 
 export interface IFRLotData {
   lotCode: string;
@@ -30,10 +31,16 @@ export interface IFRLotData {
  * Extract and calculate data from a single IFR file
  * Returns an array of lot data (one IFR can have multiple lots)
  */
+export type ExtractIFROptions = {
+  standardizeLotNumbers?: boolean;
+};
+
 export async function extractIFRData(
   fileBuffer: Buffer,
-  fileName: string
+  fileName: string,
+  options?: ExtractIFROptions
 ): Promise<IFRLotData[]> {
+  const standardizeLotNumbers = options?.standardizeLotNumbers === true;
   try {
     // Read with XLSX for data extraction
     const workbook = XLSX.read(fileBuffer, {
@@ -55,9 +62,15 @@ export async function extractIFRData(
     for (let row = 2; row <= range.e.r; row++) {
       const rowData = extractRowData(sheet, row);
 
-      if (!rowData.lotCode) continue;
+      if (rowData.lotCode === null || rowData.lotCode === undefined) continue;
 
-      const lotKey = String(rowData.lotCode);
+      const rawLotKey = String(rowData.lotCode);
+      if (!rawLotKey.trim()) continue;
+
+      const lotKey = standardizeLotNumbers
+        ? standardizeLotNumber(rawLotKey)
+        : rawLotKey;
+      if (!lotKey) continue;
 
       if (!lotGroups.has(lotKey)) {
         lotGroups.set(lotKey, {
@@ -137,6 +150,10 @@ export async function extractIFRData(
 /**
  * Consolidate multiple IFR files into a template
  */
+export type ConsolidateIFROptions = {
+  standardizeLotNumbers?: boolean;
+};
+
 export async function consolidateIFR(
   templateBuffer: Buffer,
   ifrFiles: {
@@ -144,7 +161,8 @@ export async function consolidateIFR(
     fileName: string;
     divisionNumber?: string;
     irrigationAssociation?: string;
-  }[]
+  }[],
+  options?: ConsolidateIFROptions
 ): Promise<{
   buffer: Buffer;
   processedCount: number;
@@ -163,7 +181,7 @@ export async function consolidateIFR(
 
     for (const file of ifrFiles) {
       try {
-        const lotsData = await extractIFRData(file.buffer, file.fileName);
+        const lotsData = await extractIFRData(file.buffer, file.fileName, options);
 
         if (lotsData.length === 0) {
           errors.push(`No data extracted from ${file.fileName}`);

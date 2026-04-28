@@ -1690,6 +1690,8 @@ export function QuickConsolidateIfrSidebarWidget({
     removeLandProfileFile,
     handleConsolidate,
     updateFileDetails,
+    standardizeLotNumbers,
+    setStandardizeLotNumbers,
   } = useConsolidateLandProfiles();
 
   const templateName =
@@ -1821,6 +1823,26 @@ export function QuickConsolidateIfrSidebarWidget({
                 ))}
               </div>
             ) : null}
+            <label
+              htmlFor={`${formId}-standardize-lot`}
+              className="flex cursor-pointer items-start gap-2 rounded-lg border border-emerald-700/50 bg-emerald-950/40 px-2 py-2 text-[10px] leading-snug text-emerald-100/90"
+            >
+              <input
+                id={`${formId}-standardize-lot`}
+                type="checkbox"
+                checked={standardizeLotNumbers}
+                onChange={(e) => setStandardizeLotNumbers(e.target.checked)}
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-emerald-600 bg-emerald-950 text-emerald-500 focus:ring-1 focus:ring-emerald-400"
+              />
+              <span>
+                <span className="font-medium text-emerald-50">
+                  Standardize Lot Number
+                </span>
+                <span className="mt-0.5 block text-emerald-200/70">
+                  Digits, letters, hyphens only (e.g. 104.32-A → 10432-A).
+                </span>
+              </span>
+            </label>
             <button
               type="button"
               onClick={() => void handleConsolidate()}
@@ -1867,6 +1889,7 @@ export function QuickIfrCheckerSidebarWidget({ onRemove }: { onRemove?: () => vo
     searchQuery,
     severityFilter,
     fieldFilter,
+    standardizeLotNumbers,
     uniqueFields,
     filteredIssues,
     paginatedIssues,
@@ -1878,6 +1901,7 @@ export function QuickIfrCheckerSidebarWidget({ onRemove }: { onRemove?: () => vo
     handleSearchChange,
     handleSeverityFilterChange,
     handleFieldFilterChange,
+    handleStandardizeLotNumbersChange,
   } = useIFRChecker();
 
   const canRun = ifrFiles.length > 0 && consolidatedFile !== null;
@@ -1957,6 +1981,25 @@ export function QuickIfrCheckerSidebarWidget({ onRemove }: { onRemove?: () => vo
           </span>
         </button>
 
+        <label
+          htmlFor={`${formId}-standardize-lot`}
+          className="flex cursor-pointer items-start gap-2 rounded-lg border border-emerald-700/50 bg-emerald-950/40 px-2 py-2 text-[10px] leading-snug text-emerald-100/90"
+        >
+          <input
+            id={`${formId}-standardize-lot`}
+            type="checkbox"
+            checked={standardizeLotNumbers}
+            onChange={(e) => handleStandardizeLotNumbersChange(e.target.checked)}
+            className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-emerald-600 bg-emerald-950 text-emerald-500 focus:ring-1 focus:ring-emerald-400"
+          />
+          <span>
+            <span className="font-medium text-emerald-50">Standardize Lot Number</span>
+            <span className="mt-0.5 block text-emerald-200/70">
+              Match IFR and consolidated lots when typos include extra punctuation.
+            </span>
+          </span>
+        </label>
+
         <button
           type="button"
           onClick={() => void runValidation()}
@@ -2005,6 +2048,28 @@ export function QuickIfrCheckerSidebarWidget({ onRemove }: { onRemove?: () => vo
                 <WarningIcon className="h-3 w-3 shrink-0" weight="fill" aria-hidden />
                 Warnings: {result.summary.warnings}
               </span>
+              <span className="col-span-2 border-t border-emerald-700/40 pt-1.5 text-[10px] leading-snug text-emerald-100/85">
+                Lots (IFR): {result.summary.ifrLotsCorrect} ok (
+                {result.summary.ifrLotsCorrectPercent}%) ·{" "}
+                {result.summary.ifrLotsWithIssues} with issues (
+                {result.summary.ifrLotsWithIssuesPercent}%)
+              </span>
+              <div className="col-span-2 flex h-1.5 w-full overflow-hidden rounded-full bg-emerald-950/80">
+                <div
+                  className="h-full bg-emerald-400/90"
+                  style={{
+                    width: `${result.summary.totalLots > 0 ? result.summary.ifrLotsCorrectPercent : 0}%`,
+                  }}
+                  aria-hidden
+                />
+                <div
+                  className="h-full bg-rose-500/85"
+                  style={{
+                    width: `${result.summary.totalLots > 0 ? result.summary.ifrLotsWithIssuesPercent : 0}%`,
+                  }}
+                  aria-hidden
+                />
+              </div>
             </div>
 
             {result.issues.length === 0 ? (
