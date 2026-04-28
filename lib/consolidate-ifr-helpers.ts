@@ -49,7 +49,7 @@ export function buildCropSeasonCode(
 ): string {
   const yearCode = year >= 2000 ? String(year) : String(year).slice(-2);
   const seasonStr = String(season || "").toUpperCase();
-  const seasonCode = seasonStr === "DRY" ? "D" : "W";
+  const seasonCode = seasonStr === "DRY" || seasonStr === "D" ? "D" : "W";
   return `${yearCode}-${seasonCode}`;
 }
 
