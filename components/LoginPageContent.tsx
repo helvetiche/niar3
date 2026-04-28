@@ -177,7 +177,7 @@ export const LoginPageContent = () => {
                     name="email"
                     type="email"
                     autoComplete="email"
-                    placeholder="your.email@nia.gov.ph"
+                    placeholder="email@example.com"
                     className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
                   />
                   <div>
@@ -222,7 +222,7 @@ export const LoginPageContent = () => {
                     name="reset-email"
                     type="email"
                     autoComplete="email"
-                    placeholder="your.email@nia.gov.ph"
+                    placeholder="email@example.com"
                     className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
                   />
                   <button

@@ -5,8 +5,6 @@ import Image from "next/image";
 import {
   MapPinIcon,
   CheckCircleIcon,
-  LightbulbIcon,
-  TargetIcon,
   FlagBannerIcon,
   CrosshairIcon,
   InfoIcon,
@@ -85,20 +83,6 @@ export function Footer() {
               >
                 Nasche Del Ponso
               </h2>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm sm:px-3">
-                  <MapPinIcon size={12} weight="duotone" className="shrink-0" />
-                  NIA
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm sm:px-3">
-                  <LightbulbIcon size={12} weight="duotone" className="shrink-0" />
-                  INTERN
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm sm:px-3">
-                  <TargetIcon size={12} weight="duotone" className="shrink-0" />
-                  OJT
-                </span>
-              </div>
             </div>
           </div>
           <div className="flex items-start gap-3 self-start md:self-auto">
